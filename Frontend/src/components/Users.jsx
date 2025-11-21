@@ -48,10 +48,19 @@ function UserForm() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    // Se o campo alterado for grupo, limpa o campo nome
+    if (name === "grupo") {
+      setFormData((prev) => ({
+        ...prev,
+        grupo: value,
+        nome: "",
+      }));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -165,18 +174,39 @@ function UserForm() {
           />
         </div>
 
-        {/* Nome Completo */}
+        {/* Nome Completo - muda conforme grupo */}
         <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-2 items-center">
           <label>Nome Completo:</label>
-          <input
-            type="text"
-            name="nome"
-            value={formData.nome}
-            onChange={handleChange}
-            className="border border-gray-300 rounded-md p-2 w-full text-black bg-white"
-            placeholder="Nome completo do usuário"
-            required
-          />
+          {formData.grupo === "Alunos" ? (
+            loadingAlunos ? (
+              <p className="text-gray-400">Carregando alunos...</p>
+            ) : (
+              <select
+                name="nome"
+                value={formData.nome}
+                onChange={handleChange}
+                className="border border-gray-300 rounded-md p-2 w-full text-black bg-white"
+                required
+              >
+                <option value="">Selecione o nome do aluno</option>
+                {alunos.map((aluno) => (
+                  <option key={aluno.Alunos_Codigo} value={aluno.Alunos_Nome}>
+                    {aluno.Alunos_Nome}
+                  </option>
+                ))}
+              </select>
+            )
+          ) : (
+            <input
+              type="text"
+              name="nome"
+              value={formData.nome}
+              onChange={handleChange}
+              className="border border-gray-300 rounded-md p-2 w-full text-black bg-white"
+              placeholder="Nome completo do usuário"
+              required
+            />
+          )}
         </div>
 
         {/* Grupo */}

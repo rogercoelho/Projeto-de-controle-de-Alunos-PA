@@ -469,6 +469,7 @@ function StudentForm() {
             Campos com * são obrigatórios.
           </span>
         </div>
+
         {/* Código do Aluno */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -1383,6 +1384,24 @@ function StudentSearch() {
               onSubmit={handleUpdateSubmit}
               className="bg-gray-800 rounded-xl p-6 space-y-4 mx-auto"
             >
+              <div className="w-full mb-8 flex">
+                <span
+                  style={{
+                    color: "#b91c1c",
+                    fontWeight: "bold",
+                    fontSize: "13px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                  }}
+                >
+                  <span role="img" aria-label="alerta">
+                    ⚠️
+                  </span>
+                  Campos com * são obrigatórios.
+                </span>
+              </div>
+
               {/* Foto do Aluno */}
               {selectedAluno.Alunos_Foto && (
                 <div className="flex flex-col items-center mb-2">

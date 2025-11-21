@@ -33,7 +33,11 @@ function Faturamento() {
     const fetchAlunos = async () => {
       try {
         const res = await api.get("/alunos/");
-        setAlunos(res.data.Listagem_de_Alunos || []);
+        // Filtra apenas alunos ativos
+        const ativos = (res.data.Listagem_de_Alunos || []).filter(
+          (aluno) => aluno.Alunos_Situacao === "Ativo"
+        );
+        setAlunos(ativos);
       } catch {
         setAlunos([]);
       }
@@ -41,7 +45,11 @@ function Faturamento() {
     const fetchPlanos = async () => {
       try {
         const res = await api.get("/planos");
-        setPlanos(res.data.Planos || []);
+        // Filtra apenas planos ativos
+        const ativos = (res.data.Planos || []).filter(
+          (plano) => plano.Plano_Ativo === "Ativo"
+        );
+        setPlanos(ativos);
       } catch {
         setPlanos([]);
       }

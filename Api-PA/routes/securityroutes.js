@@ -134,6 +134,36 @@ function verificarAdmin(req, res, next) {
   next();
 }
 
+// Rota para verificar senha do usuário autenticado (para ações sensíveis)
+router.post("/verify-password", async (req, res) => {
+  const { usuario, senha } = req.body;
+  if (!usuario || !senha) {
+    return res
+      .status(400)
+      .json({ Mensagem: "Usuário e senha são obrigatórios." });
+  }
+  try {
+    const usuarioEncontrado = await Usuarios.findOne({
+      where: { Usuario_Login: usuario, Usuario_Ativo: true },
+    });
+    if (!usuarioEncontrado) {
+      return res.status(401).json({ Mensagem: "Usuário ou senha inválidos." });
+    }
+    const senhaValida = await bcrypt.compare(
+      senha,
+      usuarioEncontrado.Usuario_Senha
+    );
+    if (!senhaValida) {
+      return res.status(401).json({ Mensagem: "Usuário ou senha inválidos." });
+    }
+    return res.status(200).json({ Mensagem: "Senha verificada com sucesso." });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ Mensagem: "Erro ao verificar senha.", Erro: error.message });
+  }
+});
+
 // 🟢 Rota para criar novo usuário (apenas para Administradores)
 router.post(
   "/usuarios/create",

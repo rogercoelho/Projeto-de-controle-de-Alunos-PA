@@ -7,15 +7,18 @@ function AdminDelete() {
   const [registroId, setRegistroId] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
+  const [showSenhaModal, setShowSenhaModal] = useState(false);
+  const [senha, setSenha] = useState("");
+  const [senhaError, setSenhaError] = useState("");
 
   const tabelas = [
     { value: "Alunos_Cadastros", label: "Alunos" },
     { value: "usuarios", label: "Usuários" },
   ];
 
-  const handleDelete = async (e) => {
+  // Primeiro passo: abrir modal de senha ao tentar excluir
+  const handleDelete = (e) => {
     e.preventDefault();
-
     if (!tabela || !registroId) {
       setMessage({
         type: "error",
@@ -23,20 +26,27 @@ function AdminDelete() {
       });
       return;
     }
-
     const confirmar = window.confirm(
       `⚠️ ATENÇÃO: Você está prestes a excluir permanentemente o registro ID ${registroId} da tabela ${tabela}.\n\nEsta ação NÃO PODE SER DESFEITA!\n\nDeseja continuar?`
     );
-
     if (!confirmar) return;
+    setShowSenhaModal(true);
+    setSenha("");
+    setSenhaError("");
+  };
 
+  // Segundo passo: validar senha e excluir
+  const handleConfirmSenha = async () => {
+    setSenhaError("");
     setLoading(true);
-    setMessage({ type: "", text: "" });
-
     try {
       const usuarioLogado = getUsuario();
-
-      // Usa a rota genérica de admin que registra no log
+      // Verifica senha no backend (rota de verificação)
+      await api.post("/auth/verify-password", {
+        usuario: usuarioLogado?.login || usuarioLogado?.usuario,
+        senha,
+      });
+      // Se sucesso, prossegue com exclusão
       const response = await api.delete(
         `/admin/delete/${tabela}/${registroId}`,
         {
@@ -45,29 +55,30 @@ function AdminDelete() {
           },
         }
       );
-
       setMessage({
         type: "success",
         text: response.data.Mensagem || "Registro excluído com sucesso!",
       });
-
-      // Limpa os campos após sucesso
       setTabela("");
       setRegistroId("");
-
-      // Limpa a mensagem após 3 segundos
+      setShowSenhaModal(false);
+      setSenha("");
       setTimeout(() => {
         setMessage({ type: "", text: "" });
       }, 3000);
     } catch (error) {
-      console.error("Erro ao excluir registro:", error);
-      setMessage({
-        type: "error",
-        text:
-          error.response?.data?.Mensagem ||
-          error.response?.data?.message ||
-          "Erro ao excluir registro. Verifique se o ID existe.",
-      });
+      if (error.response?.status === 401) {
+        setSenhaError("Senha incorreta. Tente novamente.");
+      } else {
+        setMessage({
+          type: "error",
+          text:
+            error.response?.data?.Mensagem ||
+            error.response?.data?.message ||
+            "Erro ao excluir registro. Verifique se o ID existe.",
+        });
+        setShowSenhaModal(false);
+      }
     } finally {
       setLoading(false);
     }
@@ -81,6 +92,56 @@ function AdminDelete() {
 
   return (
     <div className="w-full max-w-2xl mx-auto h-auto p-6 bg-gray-800 rounded-xl">
+      {/* Modal de senha */}
+      {showSenhaModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 px-2">
+          <div
+            className="bg-gray-800 rounded-2xl p-6 w-full max-w-xs flex flex-col items-center shadow-lg border border-gray-700"
+            style={{ minWidth: 0 }}
+          >
+            <span className="text-red-400 text-lg font-bold mb-4 text-center w-full">
+              Confirme sua senha
+            </span>
+            <input
+              type="password"
+              value={senha}
+              onChange={(e) => setSenha(e.target.value)}
+              className="w-full border border-gray-600 bg-gray-700 text-red-400 rounded-lg p-3 mb-3 text-base focus:outline-none focus:ring-2 focus:ring-red-400 placeholder-gray-400"
+              placeholder="Digite sua senha"
+              autoFocus
+              disabled={loading}
+              style={{ fontSize: 16 }}
+            />
+            {senhaError && (
+              <span className="text-red-400 text-sm mb-3 text-center w-full">
+                {senhaError}
+              </span>
+            )}
+            <div className="flex flex-col sm:flex-row gap-2 w-full mt-2">
+              <button
+                onClick={handleConfirmSenha}
+                className="bg-red-600 text-white w-full sm:w-auto px-4 py-2 rounded-lg font-semibold hover:bg-red-700 disabled:bg-gray-400 transition-colors"
+                disabled={loading || !senha}
+                style={{ fontSize: 16 }}
+              >
+                {loading ? "Validando..." : "Confirmar e Excluir"}
+              </button>
+              <button
+                onClick={() => {
+                  setShowSenhaModal(false);
+                  setSenha("");
+                  setSenhaError("");
+                }}
+                className="bg-gray-600 text-white w-full sm:w-auto px-4 py-2 rounded-lg font-semibold hover:bg-gray-700 transition-colors"
+                disabled={loading}
+                style={{ fontSize: 16 }}
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <h2 className="text-2xl font-bold text-red-500 mb-6 text-center">
         ⚠️ Exclusão de Registros - CUIDADO
       </h2>

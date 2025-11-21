@@ -11,6 +11,7 @@ const alunosroutes = require("./routes/alunosroutes"); // Importando as rotas de
 const adminroutes = require("./routes/adminroutes"); // Importando as rotas de administração
 const planosroutes = require("./routes/planosroutes"); // Importando as rotas de planos
 const Alunos_Cadastro = require("./models/Alunos_Cadastro"); // Importando o modelo Alunos_Cadastro
+const faturamentoroutes = require("./routes/faturamento");
 const app = express(); // Criando uma variavel constante para iniciar o express
 
 //middlewares basicos
@@ -32,13 +33,13 @@ const corsOptions = {
   origin: [
     "https://www.plantandoalegria.com.br",
     "https://plantandoalegria.com.br",
-    "http://localhost:5173", // Vite dev server
-    "http://localhost:5174", // Vite dev server (porta alternativa)
-    "http://127.0.0.1:5173", // Vite dev server alternativo
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "http://127.0.0.1:5173",
   ], // Domínios permitidos (com e sem www)
-  optionsSuccessStatus: 200, // Alguns navegadores (como o IE11) exigem um status 200 para respostas de pré-voo
   methods: ["GET", "DELETE", "PATCH", "POST"], // Métodos HTTP permitidos
   credentials: true, // Permite envio de cookies e headers de autenticação
+  optionsSuccessStatus: 200, // Alguns navegadores (como o IE11) exigem um status 200 para respostas de pré-voo
 };
 app.use(cors(corsOptions)); // Aplicando as opções de CORS ao aplicativo Express
 //🧰 Fim - Restringindo o acesso a API apenas para o site especificado
@@ -85,7 +86,7 @@ function verificarIP(req, res, next) {
   next(); // Se o IP for permitido, prosseguir para a próxima função de middleware ou rota
 }
 
-app.use(verificarIP); // Usando o middleware de verificação de IP para todas as rotas
+//comentado para nao bloquear geral -->app.use(verificarIP); // Usando o middleware de verificação de IP para todas as rotas
 
 // ROTAS -- Rotas da API
 
@@ -93,9 +94,11 @@ app.use(verificarIP); // Usando o middleware de verificação de IP para todas a
 app.use("/auth", securityroutes); // rotas de autenticação (ex: /auth/login)
 
 // rotas protegidas (só acessa quem tiver token válido)
+
 app.use("/alunos", autenticarToken, alunosroutes);
 app.use("/admin", autenticarToken, adminroutes);
 app.use("/planos", autenticarToken, planosroutes);
+app.use("/faturamento", autenticarToken, faturamentoroutes);
 
 //Bloqueeia acesso a rota raiz
 app.get("/", (req, res) => {

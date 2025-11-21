@@ -14,6 +14,7 @@ function AdminDelete() {
   const tabelas = [
     { value: "Alunos_Cadastros", label: "Alunos" },
     { value: "usuarios", label: "Usuários" },
+    { value: "faturamento", label: "Faturamento" },
   ];
 
   // Primeiro passo: abrir modal de senha ao tentar excluir

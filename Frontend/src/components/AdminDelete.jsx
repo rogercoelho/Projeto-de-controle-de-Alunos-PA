@@ -65,7 +65,7 @@ function AdminDelete() {
       setSenha("");
       setTimeout(() => {
         setMessage({ type: "", text: "" });
-      }, 3000);
+      }, 1500);
     } catch (error) {
       if (error.response?.status === 401) {
         setSenhaError("Senha incorreta. Tente novamente.");
@@ -78,6 +78,9 @@ function AdminDelete() {
             "Erro ao excluir registro. Verifique se o ID existe.",
         });
         setShowSenhaModal(false);
+        setTimeout(() => {
+          setMessage({ type: "", text: "" });
+        }, 1500);
       }
     } finally {
       setLoading(false);

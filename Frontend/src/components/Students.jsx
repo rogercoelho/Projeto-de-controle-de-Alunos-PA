@@ -133,8 +133,13 @@ function StudentForm() {
 
   const handleTelefoneChange = (e) => {
     const { name, value } = e.target;
-    const telefoneFormatado = formatarTelefone(value);
-
+    // Permite digitar só números e aplicar máscara
+    let apenasNumeros = value.replace(/\D/g, "");
+    // Limita a 11 dígitos
+    if (apenasNumeros.length > 11) {
+      apenasNumeros = apenasNumeros.slice(0, 11);
+    }
+    const telefoneFormatado = formatarTelefone(apenasNumeros);
     setFormData((prev) => ({
       ...prev,
       [name]: telefoneFormatado,
@@ -195,14 +200,14 @@ function StudentForm() {
     setLoading(true);
     setMessage({ type: "", text: "" });
 
-    // Validação dos telefones: pelo menos 11 dígitos
+    // Validação dos telefones: exatamente 11 dígitos (com máscara)
     const telPrincipal = formData.Alunos_Telefone.replace(/\D/g, "");
     const telEmerg1 = formData.Alunos_Telefone_Emergencia_1.replace(/\D/g, "");
     const telEmerg2 = formData.Alunos_Telefone_Emergencia_2.replace(/\D/g, "");
-    if (telPrincipal.length > 0 && telPrincipal.length < 11) {
+    if (formData.Alunos_Telefone && telPrincipal.length !== 11) {
       setMessage({
         type: "error",
-        text: "O telefone principal deve ter pelo menos 11 dígitos.",
+        text: "O telefone principal deve ter exatamente 11 dígitos.",
       });
       setTimeout(() => {
         setMessage({ type: "", text: "" });
@@ -210,10 +215,10 @@ function StudentForm() {
       setLoading(false);
       return;
     }
-    if (telEmerg1.length > 0 && telEmerg1.length < 11) {
+    if (formData.Alunos_Telefone_Emergencia_1 && telEmerg1.length !== 11) {
       setMessage({
         type: "error",
-        text: "O telefone de emergência 1 deve ter pelo menos 11 dígitos.",
+        text: "O telefone de emergência 1 deve ter exatamente 11 dígitos.",
       });
       setTimeout(() => {
         setMessage({ type: "", text: "" });
@@ -221,10 +226,10 @@ function StudentForm() {
       setLoading(false);
       return;
     }
-    if (telEmerg2.length > 0 && telEmerg2.length < 11) {
+    if (formData.Alunos_Telefone_Emergencia_2 && telEmerg2.length !== 11) {
       setMessage({
         type: "error",
-        text: "O telefone de emergência 2 deve ter pelo menos 11 dígitos.",
+        text: "O telefone de emergência 2 deve ter exatamente 11 dígitos.",
       });
       setTimeout(() => {
         setMessage({ type: "", text: "" });
@@ -447,6 +452,23 @@ function StudentForm() {
         onSubmit={handleSubmit}
         className="bg-gray-800 rounded-xl p-6 space-y-4 mx-auto"
       >
+        <div className="w-full mb-8 flex">
+          <span
+            style={{
+              color: "#b91c1c",
+              fontWeight: "bold",
+              fontSize: "13px",
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+            }}
+          >
+            <span role="img" aria-label="alerta">
+              ⚠️
+            </span>
+            Campos com * são obrigatórios.
+          </span>
+        </div>
         {/* Código do Aluno */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -680,7 +702,7 @@ function StudentForm() {
         {/* Telefone de Emergência 2 */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
-            Telefone Emergência 2 *
+            Telefone Emergência 2
           </label>
           <input
             type="tel"
@@ -1163,7 +1185,13 @@ function StudentSearch() {
 
   const handleTelefoneEditChange = (e) => {
     const { name, value } = e.target;
-    const telefoneFormatado = formatarTelefone(value);
+    // Permite digitar só números e aplicar máscara
+    let apenasNumeros = value.replace(/\D/g, "");
+    // Limita a 11 dígitos
+    if (apenasNumeros.length > 11) {
+      apenasNumeros = apenasNumeros.slice(0, 11);
+    }
+    const telefoneFormatado = formatarTelefone(apenasNumeros);
     setEditFormData((prev) => ({
       ...prev,
       [name]: telefoneFormatado,
@@ -1183,6 +1211,53 @@ function StudentSearch() {
     e.preventDefault();
     setLoading(true);
     setMessage({ type: "", text: "" });
+
+    // Validação dos telefones: exatamente 11 dígitos (com máscara)
+    const telPrincipal = (editFormData.Alunos_Telefone || "").replace(
+      /\D/g,
+      ""
+    );
+    const telEmerg1 = (editFormData.Alunos_Telefone_Emergencia_1 || "").replace(
+      /\D/g,
+      ""
+    );
+    const telEmerg2 = (editFormData.Alunos_Telefone_Emergencia_2 || "").replace(
+      /\D/g,
+      ""
+    );
+    if (editFormData.Alunos_Telefone && telPrincipal.length !== 11) {
+      setMessage({
+        type: "error",
+        text: "O telefone principal deve ter exatamente 11 dígitos.",
+      });
+      setTimeout(() => {
+        setMessage({ type: "", text: "" });
+      }, 1500);
+      setLoading(false);
+      return;
+    }
+    if (editFormData.Alunos_Telefone_Emergencia_1 && telEmerg1.length !== 11) {
+      setMessage({
+        type: "error",
+        text: "O telefone de emergência 1 deve ter exatamente 11 dígitos.",
+      });
+      setTimeout(() => {
+        setMessage({ type: "", text: "" });
+      }, 1500);
+      setLoading(false);
+      return;
+    }
+    if (editFormData.Alunos_Telefone_Emergencia_2 && telEmerg2.length !== 11) {
+      setMessage({
+        type: "error",
+        text: "O telefone de emergência 2 deve ter exatamente 11 dígitos.",
+      });
+      setTimeout(() => {
+        setMessage({ type: "", text: "" });
+      }, 1500);
+      setLoading(false);
+      return;
+    }
 
     try {
       const formDataToSend = new FormData();

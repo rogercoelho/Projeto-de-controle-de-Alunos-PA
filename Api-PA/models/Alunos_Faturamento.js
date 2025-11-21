@@ -27,6 +27,11 @@ const Alunos_Faturamento = db.sequelizeconnection.define(
       type: db.Sequelize.DATEONLY,
       allowNull: true,
     },
+    Faturamento_Valor_Total: {
+      type: db.Sequelize.DECIMAL(10, 2),
+      allowNull: true,
+      comment: "Valor total do faturamento",
+    },
   },
   {
     timestamps: false,

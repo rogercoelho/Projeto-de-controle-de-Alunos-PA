@@ -445,16 +445,38 @@ function PlanoSearch() {
                         selectedPlano.Plano_Ativo === "Ativo"
                           ? "Inativo"
                           : "Ativo";
-                      await api.put(
-                        `/planos/update-status/${selectedPlano.Plano_Codigo}`,
-                        { status: novoStatus }
+                      setMessage({ type: "", text: "" });
+                      const response = await api.patch(
+                        `/planos/update/${selectedPlano.Plano_Codigo}`,
+                        { ativo: novoStatus }
                       );
                       setSelectedPlano({
                         ...selectedPlano,
                         Plano_Ativo: novoStatus,
                       });
-                    } catch {
-                      alert("Erro ao atualizar status do plano.");
+                      setMessage({
+                        type: "success",
+                        text:
+                          response.data.Mensagem ||
+                          (novoStatus === "Ativo"
+                            ? "Plano ativado com sucesso!"
+                            : "Plano desativado com sucesso!"),
+                      });
+                      setTimeout(
+                        () => setMessage({ type: "", text: "" }),
+                        1500
+                      );
+                    } catch (error) {
+                      setMessage({
+                        type: "error",
+                        text:
+                          error.response?.data?.Erro ||
+                          "Erro ao atualizar status do plano.",
+                      });
+                      setTimeout(
+                        () => setMessage({ type: "", text: "" }),
+                        1500
+                      );
                     }
                   }}
                   className={`px-4 py-2 rounded-md text-white transition-colors focus:outline-none ${

@@ -1,0 +1,29 @@
+Pacotes instalados
+
+Framework Express
+npm install express --save
+
+Nodemon servidor auto update
+npm install --save-dev nodemon
+ou
+npm install -g nodemon
+
+ORM Sequelize
+npm install --save sequelize
+
+Bando de dados Mysql2
+npm install --save mysql2
+
+Cross Origin Cors
+npm install cors
+
+Pacote de autenticacao e token
+npm install jsonwebtoken
+
+pacote dotenv para ocultar usuario e senha pelo arquivo .env
+mas foi configurado nas variaveis de ambiente do proprio cpanel
+npm install --save dotenv
+
+BCrypt para hash de senha segura
+
+Multer upload de arquivos

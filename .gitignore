@@ -1,0 +1,36 @@
+# Upload de arquivos
+Api-PA/uploads/
+
+
+# Dependências
+node_modules/
+
+# Build / produção
+dist/
+build/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+
+# Ambiente
+.env
+.env.local
+.env.*.local
+
+# Sistema / Editor
+.vscode/
+
+# Cache
+.cache/
+.next/
+out/
+coverage/
+
+# Arquivos temporários
+*.tmp
+*.swp
+*.swo

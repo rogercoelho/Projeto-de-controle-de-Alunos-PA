@@ -1,0 +1,147 @@
+@font-face {
+  font-family: circus1;
+  src: url("../src/fonts/Circus.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+}
+@font-face {
+  font-family: circus2;
+  src: url("../src/fonts/CircusManerus.otf") format("opentype");
+  font-weight: normal;
+  font-style: normal;
+}
+@font-face {
+  font-family: circus3;
+  src: url("../src/fonts/CircusWorld.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+}
+@font-face {
+  font-family: circus4;
+  src: url("../src/fonts/ItalianCircus.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+}
+@font-face {
+  font-family: circus5;
+  src: url("../src/fonts/SpanishCircus.otf") format("opentype");
+  font-weight: normal;
+  font-style: normal;
+}
+@font-face {
+  font-family: circus6;
+  src: url("../src/fonts/TheLastCircus.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+}
+
+@import "tailwindcss";
+
+@theme {
+  --font-circus1: circus1, sans-serif;
+  --font-circus2: circus2, sans-serif;
+  --font-circus3: circus3, sans-serif;
+  --font-circus4: circus4, sans-serif;
+  --font-circus5: circus5, sans-serif;
+  --font-circus6: circus6, sans-serif;
+}
+:root {
+  @apply bg-gray-800;
+}
+
+/* Responsividade para telas pequenas (320x240) */
+@media screen and (max-width: 320px), screen and (max-height: 240px) {
+  html {
+    zoom: 0.6;
+  }
+
+  body {
+    min-width: 320px;
+    overflow-x: auto;
+  }
+
+  /* Ajustes para containers principais */
+  .min-h-screen {
+    min-height: 100vh;
+  }
+
+  /* Reduz padding e margens */
+  .p-6,
+  .p-8 {
+    padding: 0.75rem !important;
+  }
+
+  .px-6,
+  .px-8 {
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+  }
+
+  .py-6,
+  .py-8 {
+    padding-top: 0.75rem !important;
+    padding-bottom: 0.75rem !important;
+  }
+
+  .m-4,
+  .m-6 {
+    margin: 0.5rem !important;
+  }
+
+  /* Ajusta tamanho de fonte */
+  .text-xl,
+  .text-2xl,
+  .text-3xl,
+  .text-4xl {
+    font-size: 1rem !important;
+  }
+
+  /* Botões mais compactos */
+  button {
+    padding: 0.25rem 0.5rem !important;
+    font-size: 0.875rem !important;
+  }
+
+  /* Inputs mais compactos */
+  input,
+  select,
+  textarea {
+    padding: 0.25rem 0.5rem !important;
+    font-size: 0.875rem !important;
+  }
+
+  /* Grid mais compacto */
+  .grid {
+    gap: 0.5rem !important;
+  }
+
+  /* Formulários em coluna única */
+  .grid-cols-2,
+  .grid-cols-3,
+  .grid-cols-4 {
+    grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
+  }
+}
+
+/* Responsividade para telas pequenas em landscape */
+@media screen and (max-width: 640px) and (orientation: landscape) {
+  html {
+    zoom: 0.75;
+  }
+}
+
+/* Ajustes gerais para mobile */
+@media screen and (max-width: 640px) {
+  .grid-cols-2 {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
+
+  .text-3xl,
+  .text-4xl {
+    font-size: 1.5rem;
+  }
+
+  button {
+    padding: 0.5rem 1rem;
+  }
+}

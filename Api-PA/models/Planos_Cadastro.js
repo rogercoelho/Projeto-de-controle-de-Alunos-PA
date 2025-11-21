@@ -3,7 +3,7 @@ const db = require("./db.js");
 const Planos_Cadastro = db.sequelizeconnection.define(
   "Planos_Cadastro",
   {
-    Plano_Cod: {
+    Plano_Codigo: {
       type: db.Sequelize.STRING(20),
       allowNull: false,
       primaryKey: true,

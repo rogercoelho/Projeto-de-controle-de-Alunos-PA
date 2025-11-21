@@ -252,8 +252,7 @@ function PlanoSearch() {
       const response = await api.get("/planos/");
       const todosPlanos = response.data.Planos || [];
 
-      // Verifica se algum campo foi preenchido
-      const temFiltro = searchData.codigo || searchData.nome;
+      // ...
 
       let resultadosFiltrados;
 
@@ -454,7 +453,7 @@ function PlanoSearch() {
                         ...selectedPlano,
                         Plano_Ativo: novoStatus,
                       });
-                    } catch (err) {
+                    } catch {
                       alert("Erro ao atualizar status do plano.");
                     }
                   }}
@@ -592,7 +591,7 @@ function PlanoSearch() {
                 >
                   <option value="">Selecione...</option>
                   <option value="Ativo">Ativo</option>
-                  <option value="Desativado">Desativado</option>
+                  <option value="Inativo">Inativo</option>
                 </select>
               </div>
 

@@ -16,7 +16,7 @@ router.post("/create", async (req, res) => {
 
     // Verifica se o código já existe
     const planoExistente = await Planos_Cadastro.findOne({
-      where: { Plano_Cod: codigo },
+      where: { Plano_Codigo: codigo },
     });
 
     if (planoExistente) {
@@ -27,7 +27,7 @@ router.post("/create", async (req, res) => {
 
     // Cria o plano
     const novoPlano = await Planos_Cadastro.create({
-      Plano_Cod: codigo,
+      Plano_Codigo: codigo,
       Plano_Nome: nome,
       Plano_Quantidade_Semana: quantidadeSemana,
       Plano_Pagamento: tipoPagamento,
@@ -52,7 +52,7 @@ router.post("/create", async (req, res) => {
 router.get("/", async (req, res) => {
   try {
     const planos = await Planos_Cadastro.findAll({
-      order: [["Plano_Cod", "ASC"]],
+      order: [["Plano_Codigo", "ASC"]],
     });
 
     res.status(200).json({
@@ -75,7 +75,7 @@ router.get("/search", async (req, res) => {
     const where = {};
 
     if (codigo) {
-      where.Plano_Cod = { [require("sequelize").Op.like]: `%${codigo}%` };
+      where.Plano_Codigo = { [require("sequelize").Op.like]: `%${codigo}%` };
     }
     if (nome) {
       where.Plano_Nome = { [require("sequelize").Op.like]: `%${nome}%` };
@@ -83,7 +83,7 @@ router.get("/search", async (req, res) => {
 
     const planos = await Planos_Cadastro.findAll({
       where,
-      order: [["Plano_Cod", "ASC"]],
+      order: [["Plano_Codigo", "ASC"]],
     });
 
     res.status(200).json({
@@ -103,7 +103,7 @@ router.get("/search", async (req, res) => {
 router.get("/:codigo", async (req, res) => {
   try {
     const plano = await Planos_Cadastro.findOne({
-      where: { Plano_Cod: req.params.codigo },
+      where: { Plano_Codigo: req.params.codigo },
     });
 
     if (!plano) {
@@ -131,7 +131,7 @@ router.patch("/update/:codigo", async (req, res) => {
     const { nome, quantidadeSemana, tipoPagamento, valor, ativo } = req.body;
 
     const plano = await Planos_Cadastro.findOne({
-      where: { Plano_Cod: req.params.codigo },
+      where: { Plano_Codigo: req.params.codigo },
     });
 
     if (!plano) {
@@ -165,7 +165,7 @@ router.patch("/update/:codigo", async (req, res) => {
 router.delete("/delete/:codigo", async (req, res) => {
   try {
     const plano = await Planos_Cadastro.findOne({
-      where: { Plano_Cod: req.params.codigo },
+      where: { Plano_Codigo: req.params.codigo },
     });
 
     if (!plano) {

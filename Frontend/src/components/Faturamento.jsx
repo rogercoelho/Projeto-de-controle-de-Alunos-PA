@@ -24,7 +24,7 @@ function Faturamento() {
       try {
         const res = await api.get(`/alunos/search/${formData.codigoAluno}`);
         setAlunoInfo(res.data);
-      } catch (err) {
+      } catch {
         setAlunoInfo(null);
       } finally {
         setFetchingAluno(false);
@@ -43,7 +43,7 @@ function Faturamento() {
       try {
         const res = await api.get(`/planos/${formData.codigoPlano}`);
         setPlanoInfo(res.data.Plano);
-      } catch (err) {
+      } catch {
         setPlanoInfo(null);
       } finally {
         setFetchingPlano(false);

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import PropTypes from "prop-types";
 
 function MobileMenu({ onNavigate, ehAdmin }) {
   const [menuAlunosAberto, setMenuAlunosAberto] = useState(false);
@@ -53,6 +54,7 @@ function MobileMenu({ onNavigate, ehAdmin }) {
           break;
       }
     }, 150);
+    // Nenhuma mensagem de erro é exibida neste componente. Nenhuma alteração funcional necessária.
   };
 
   return (
@@ -649,3 +651,8 @@ function MobileMenu({ onNavigate, ehAdmin }) {
 }
 
 export default MobileMenu;
+
+MobileMenu.propTypes = {
+  onNavigate: PropTypes.func,
+  ehAdmin: PropTypes.bool,
+};

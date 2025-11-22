@@ -1,42 +1,24 @@
-// PATCH /faturamento/registrar-pagamento
-router.patch("/registrar-pagamento", async (req, res) => {
-  try {
-    const { pagamentos } = req.body; // [{ id, Faturamento_Data_Pagamento, Faturamento_Desconto, Faturamento_Motivo }]
-    if (!Array.isArray(pagamentos) || pagamentos.length === 0) {
-      return res.status(400).json({ Erro: "Nenhum pagamento enviado." });
-    }
-    const resultados = [];
-    for (const pag of pagamentos) {
-      const {
-        id,
-        Faturamento_Data_Pagamento,
-        Faturamento_Desconto,
-        Faturamento_Motivo,
-      } = pag;
-      if (!id) continue;
-      const [updated] = await Alunos_Faturamento.update(
-        {
-          Faturamento_Data_Pagamento: Faturamento_Data_Pagamento || null,
-          Faturamento_Desconto: Faturamento_Desconto || null,
-          Faturamento_Motivo: Faturamento_Motivo || null,
-        },
-        { where: { id } }
-      );
-      resultados.push({ id, atualizado: !!updated });
-    }
-    res.json({ Mensagem: "Pagamentos registrados.", resultados });
-  } catch (error) {
-    console.error("Erro ao registrar pagamento:", error);
-    res
-      .status(500)
-      .json({ Erro: "Erro ao registrar pagamento.", Detalhes: error.message });
-  }
-});
 const express = require("express");
 const router = express.Router();
 const Planos_Cadastro = require("../models/Planos_Cadastro");
 const Alunos_Cadastros = require("../models/Alunos_Cadastro");
 const Alunos_Faturamento = require("../models/Alunos_Faturamento");
+
+// Rota para buscar faturamentos pendentes de um aluno
+router.get("/pendentes/:Aluno_Codigo", async (req, res) => {
+  try {
+    const { Aluno_Codigo } = req.params;
+    const faturamentos = await Alunos_Faturamento.findAll({
+      where: {
+        Aluno_Codigo,
+        Faturamento_Data_Pagamento: null,
+      },
+    });
+    res.json({ faturamentos });
+  } catch (error) {
+    res.status(500).json({ Erro: "Erro ao buscar faturamentos pendentes." });
+  }
+});
 
 // POST /faturamento/registrar-faturamento
 router.post("/registrar-faturamento", async (req, res) => {
@@ -94,6 +76,41 @@ router.post("/registrar-faturamento", async (req, res) => {
       Erro: "Erro ao registrar faturamento.",
       Detalhes: error.message,
     });
+  }
+});
+
+// PATCH /faturamento/registrar-pagamento
+router.patch("/registrar-pagamento", async (req, res) => {
+  try {
+    const { pagamentos } = req.body; // [{ id, Faturamento_Data_Pagamento, Faturamento_Desconto, Faturamento_Motivo }]
+    if (!Array.isArray(pagamentos) || pagamentos.length === 0) {
+      return res.status(400).json({ Erro: "Nenhum pagamento enviado." });
+    }
+    const resultados = [];
+    for (const pag of pagamentos) {
+      const {
+        id,
+        Faturamento_Data_Pagamento,
+        Faturamento_Desconto,
+        Faturamento_Motivo,
+      } = pag;
+      if (!id) continue;
+      const [updated] = await Alunos_Faturamento.update(
+        {
+          Faturamento_Data_Pagamento: Faturamento_Data_Pagamento || null,
+          Faturamento_Desconto: Faturamento_Desconto || null,
+          Faturamento_Motivo: Faturamento_Motivo || null,
+        },
+        { where: { id } }
+      );
+      resultados.push({ id, atualizado: !!updated });
+    }
+    res.json({ Mensagem: "Pagamentos registrados.", resultados });
+  } catch (error) {
+    console.error("Erro ao registrar pagamento:", error);
+    res
+      .status(500)
+      .json({ Erro: "Erro ao registrar pagamento.", Detalhes: error.message });
   }
 });
 

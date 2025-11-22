@@ -10,7 +10,7 @@ const {
 const alunosroutes = require("./routes/alunosroutes"); // Importando as rotas de alunos
 const adminroutes = require("./routes/adminroutes"); // Importando as rotas de administração
 const planosroutes = require("./routes/planosroutes"); // Importando as rotas de planos
-const faturamentoroutes = require("./routes/faturamento");
+const faturamentoroutes = require("./routes/faturamentoroutes");
 const app = express(); // Criando uma variavel constante para iniciar o express
 
 //middlewares basicos

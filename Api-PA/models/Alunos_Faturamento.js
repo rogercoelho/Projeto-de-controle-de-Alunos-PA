@@ -32,6 +32,21 @@ const Alunos_Faturamento = db.sequelizeconnection.define(
       allowNull: true,
       comment: "Valor total do faturamento",
     },
+    Faturamento_Data_Pagamento: {
+      type: db.Sequelize.DATEONLY,
+      allowNull: true,
+      comment: "Data em que o pagamento foi realizado",
+    },
+    Faturamento_Desconto: {
+      type: db.Sequelize.DECIMAL(10, 2),
+      allowNull: true,
+      comment: "Valor do desconto aplicado no pagamento",
+    },
+    Faturamento_Motivo: {
+      type: db.Sequelize.STRING,
+      allowNull: true,
+      comment: "Motivo do desconto ou observação do pagamento",
+    },
   },
   {
     timestamps: false,

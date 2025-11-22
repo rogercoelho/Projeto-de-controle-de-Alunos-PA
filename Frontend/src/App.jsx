@@ -6,6 +6,7 @@ import Classes from "./components/classes";
 import Attendance from "./components/attendance";
 import Financeiro from "./components/Financeiro";
 import Faturamento from "./components/Faturamento";
+import RegistrarPagamento from "./components/RegistrarPagamento";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminDelete from "./components/AdminDelete";
 import MobileMenu from "./components/MobileMenu";
@@ -155,6 +156,10 @@ function App() {
               {activeComponent === "Financeiro" &&
                 activeComponent2 === "Faturamento" && (
                   <Faturamento key="faturamento" />
+                )}
+              {activeComponent === "Financeiro" &&
+                activeComponent2 === "RegistrarPagamento" && (
+                  <RegistrarPagamento key="registrar-pagamento" />
                 )}
               {activeComponent === "Financeiro" &&
                 (!activeComponent2 || activeComponent2 === "Financeiro") && (

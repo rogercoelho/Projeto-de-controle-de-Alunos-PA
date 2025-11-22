@@ -4,11 +4,48 @@ import api from "../services/api";
 function Users() {
   return (
     <>
+      <style>{`
+        .menu-usuarios-branco { color: #fff !important; }
+      `}</style>
       <ul className="flex flex-wrap gap-0">
-        <li className="bg-purple-600 rounded-2xl p-2 border-2 border-gray-300 m-1">
+        <li
+          className="rounded-2xl p-2 border-2 border-gray-300 m-1"
+          style={{
+            background: "#8B0000", // dark red
+            color: "#fff",
+            fontWeight: 700,
+            textShadow: "0 0 2px #000",
+            border: "2px solid #fff",
+            padding: "12px 16px",
+            fontSize: "1.1rem",
+            letterSpacing: "0.5px",
+            filter: "none",
+            WebkitTextFillColor: "#fff",
+            WebkitTextStroke: "0px #fff",
+            mixBlendMode: "normal",
+            opacity: 1,
+          }}
+        >
           Cadastrar Usuário
         </li>
-        <li className="bg-purple-600 rounded-2xl p-2 border-2 border-gray-300 m-1">
+        <li
+          className="rounded-2xl p-2 border-2 border-gray-300 m-1"
+          style={{
+            background: "#8B0000",
+            color: "#fff",
+            fontWeight: 700,
+            textShadow: "0 0 2px #000",
+            border: "2px solid #fff",
+            padding: "12px 16px",
+            fontSize: "1.1rem",
+            letterSpacing: "0.5px",
+            filter: "none",
+            WebkitTextFillColor: "#fff",
+            WebkitTextStroke: "0px #fff",
+            mixBlendMode: "normal",
+            opacity: 1,
+          }}
+        >
           Listar Usuários
         </li>
       </ul>

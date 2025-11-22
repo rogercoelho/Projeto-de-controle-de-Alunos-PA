@@ -559,7 +559,7 @@ function MobileMenu({ onNavigate, ehAdmin }) {
           <div>
             <button
               onClick={() => toggleMenu("usuarios")}
-              className="w-full flex items-center justify-between py-3 text-red-500 font-semibold text-base active:bg-red-900/30 transition-colors rounded-lg px-2"
+              className="w-full flex items-center justify-between py-3 bg-red-900 text-white font-semibold text-base active:bg-red-900/30 transition-colors rounded-lg px-2"
             >
               <div className="flex items-center gap-3">
                 <svg
@@ -575,7 +575,7 @@ function MobileMenu({ onNavigate, ehAdmin }) {
                     d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
                   />
                 </svg>
-                <span>Gerenciar Usuários</span>
+                <span className="text-white">Gerenciar Usuários</span>
               </div>
               <svg
                 className={`w-5 h-5 transition-transform duration-300 ${

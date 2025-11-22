@@ -1,3 +1,37 @@
+// PATCH /faturamento/registrar-pagamento
+router.patch("/registrar-pagamento", async (req, res) => {
+  try {
+    const { pagamentos } = req.body; // [{ id, Faturamento_Data_Pagamento, Faturamento_Desconto, Faturamento_Motivo }]
+    if (!Array.isArray(pagamentos) || pagamentos.length === 0) {
+      return res.status(400).json({ Erro: "Nenhum pagamento enviado." });
+    }
+    const resultados = [];
+    for (const pag of pagamentos) {
+      const {
+        id,
+        Faturamento_Data_Pagamento,
+        Faturamento_Desconto,
+        Faturamento_Motivo,
+      } = pag;
+      if (!id) continue;
+      const [updated] = await Alunos_Faturamento.update(
+        {
+          Faturamento_Data_Pagamento: Faturamento_Data_Pagamento || null,
+          Faturamento_Desconto: Faturamento_Desconto || null,
+          Faturamento_Motivo: Faturamento_Motivo || null,
+        },
+        { where: { id } }
+      );
+      resultados.push({ id, atualizado: !!updated });
+    }
+    res.json({ Mensagem: "Pagamentos registrados.", resultados });
+  } catch (error) {
+    console.error("Erro ao registrar pagamento:", error);
+    res
+      .status(500)
+      .json({ Erro: "Erro ao registrar pagamento.", Detalhes: error.message });
+  }
+});
 const express = require("express");
 const router = express.Router();
 const Planos_Cadastro = require("../models/Planos_Cadastro");

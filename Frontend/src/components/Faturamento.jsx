@@ -160,7 +160,7 @@ function Faturamento() {
   };
 
   return (
-    <div className="w-full h-auto px-2 sm:px-0">
+    <div className="w-full min-h-screen flex flex-col items-center bg-gradient-to-b from-gray-900 to-gray-800 py-2 px-1 sm:px-0">
       <h2 className="text-2xl sm:text-3xl font-bold text-white mb-4 sm:mb-6 text-center">
         Faturamento
       </h2>
@@ -177,7 +177,8 @@ function Faturamento() {
       )}
       <form
         onSubmit={handleSubmit}
-        className="bg-gray-800 rounded-xl p-4 sm:p-6 space-y-4 mx-auto w-full max-w-lg"
+        className="bg-gray-800 rounded-xl p-0 sm:p-6 space-y-4 w-full h-full min-h-[80vh] shadow-lg border-2 border-gray-700"
+        style={{ minWidth: 0, maxWidth: '100vw' }}
       >
         <div>
           <label className="block text-base font-medium text-gray-300 mb-2">
@@ -271,7 +272,7 @@ function Faturamento() {
       </form>
 
       {/* Informações do Aluno e do Plano */}
-      <div className="mt-8 flex flex-col gap-6 w-full max-w-lg mx-auto">
+      <div className="mt-8 flex flex-col gap-6 w-full">
         <div className="bg-gray-800 rounded-xl p-4">
           <h3 className="text-lg sm:text-xl font-bold text-white mb-2 text-center">
             Informações do Aluno

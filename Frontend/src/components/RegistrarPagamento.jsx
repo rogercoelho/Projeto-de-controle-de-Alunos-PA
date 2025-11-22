@@ -112,8 +112,8 @@ function RegistrarPagamento() {
   };
 
   return (
-    <div className="w-full h-auto px-2 sm:px-0">
-      <h2 className="text-2xl sm:text-3xl font-bold text-white mb-4 sm:mb-6 text-center">
+    <div className="w-full min-h-screen flex flex-col items-center bg-gradient-to-b from-gray-900 to-gray-800 py-2 px-1 sm:px-0">
+      <h2 className="text-2xl sm:text-3xl font-bold text-white mb-4 sm:mb-6 text-center tracking-tight">
         Registrar Pagamento
       </h2>
       {message.text && (
@@ -129,18 +129,19 @@ function RegistrarPagamento() {
       )}
       <form
         onSubmit={handleSubmit}
-        className="bg-gray-800 rounded-xl p-4 sm:p-6 space-y-4 mx-auto w-full max-w-lg"
+        className="bg-gray-800 rounded-xl p-0 sm:p-6 space-y-4 w-full h-full min-h-[80vh] shadow-lg border-2 border-gray-700"
+        style={{ minWidth: 0, maxWidth: "100vw" }}
       >
-        <div>
-          <label className="block text-base font-medium text-gray-300 mb-2">
-            Código do Aluno *
+        <div className="flex flex-col gap-1">
+          <label className="block text-base font-medium text-gray-300 mb-1">
+            Código do Aluno <span className="text-red-400">*</span>
           </label>
           <select
             name="codigoAluno"
             value={codigoAluno}
             onChange={(e) => setCodigoAluno(e.target.value)}
             required
-            className="w-full px-4 py-2 bg-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="">Selecione o código do aluno</option>
             {alunos.map((aluno) => (
@@ -150,20 +151,20 @@ function RegistrarPagamento() {
             ))}
           </select>
         </div>
-        <div>
-          <label className="block text-base font-medium text-gray-300 mb-2 mt-4">
+        <div className="flex flex-col gap-1">
+          <label className="block text-base font-medium text-gray-300 mb-1 mt-2">
             Nome do Aluno
           </label>
           <input
             type="text"
             value={alunoInfo?.Alunos_Nome || ""}
             readOnly
-            className="w-full px-4 py-2 bg-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
         {/* Informações do Aluno e Plano */}
         {alunoInfo && (
-          <div className="bg-gray-800 rounded-xl p-4 mt-6 mb-2">
+          <div className="bg-gray-900 rounded-xl p-3 mt-4 mb-2 border border-gray-700">
             <h3 className="text-lg sm:text-xl font-bold text-white mb-2 text-center">
               Informações do Aluno
             </h3>
@@ -196,22 +197,22 @@ function RegistrarPagamento() {
             <label className="block text-base font-medium text-gray-300 mb-2">
               Faturamentos Pendentes
             </label>
-            <ul className="bg-gray-700 rounded-md p-2 text-white text-sm space-y-2">
+            <ul className="bg-gray-700 rounded-lg p-2 text-white text-sm space-y-3">
               {faturamentos.map((fat) => {
                 const fatId = fat.id || fat.Faturamento_ID;
                 return (
                   <li
                     key={fatId}
-                    className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-gray-600 pb-2 last:border-b-0 last:pb-0"
+                    className="flex flex-col gap-2 border-b border-gray-600 pb-2 last:border-b-0 last:pb-0"
                   >
-                    <span>
+                    <span className="text-xs sm:text-sm">
                       <b>Plano:</b> {fat.Plano_Codigo} | <b>Início:</b>{" "}
                       {fat.Faturamento_Inicio} | <b>Fim:</b>{" "}
                       {fat.Faturamento_Fim} | <b>Valor:</b> R${" "}
                       {fat.Faturamento_Valor_Total}
                     </span>
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
-                      <div className="flex items-center gap-2">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center w-full">
+                      <div className="flex items-center gap-2 w-full sm:w-auto min-w-0">
                         <label className="text-gray-300 text-xs">
                           Data Pagamento:
                         </label>
@@ -224,10 +225,11 @@ function RegistrarPagamento() {
                               [fatId]: e.target.value,
                             }))
                           }
-                          className="px-2 py-1 rounded bg-gray-600 text-white text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="px-2 py-1 rounded bg-gray-600 text-white text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-auto"
+                          style={{ minWidth: 0 }}
                         />
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 w-full sm:w-auto min-w-0">
                         <label className="text-gray-300 text-xs">
                           Desconto:
                         </label>
@@ -243,10 +245,11 @@ function RegistrarPagamento() {
                               [fatId]: e.target.value,
                             }))
                           }
-                          className="px-2 py-1 rounded bg-gray-600 text-white text-xs w-20 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="px-2 py-1 rounded bg-gray-600 text-white text-xs w-full sm:w-20 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          style={{ minWidth: 0 }}
                         />
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 w-full sm:w-auto min-w-0">
                         <label className="text-gray-300 text-xs">Motivo:</label>
                         <input
                           type="text"
@@ -258,11 +261,12 @@ function RegistrarPagamento() {
                               [fatId]: e.target.value,
                             }))
                           }
-                          className={`px-2 py-1 rounded bg-gray-600 text-white text-xs w-32 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                          className={`px-2 py-1 rounded bg-gray-600 text-white text-xs w-full sm:w-32 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                             descontos[fatId] && !motivosDesconto[fatId]
                               ? "border-2 border-red-500"
                               : ""
                           }`}
+                          style={{ minWidth: 0 }}
                           required={!!descontos[fatId]}
                           disabled={!descontos[fatId]}
                         />
@@ -278,7 +282,7 @@ function RegistrarPagamento() {
           <button
             type="submit"
             disabled={loading}
-            className="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed w-full sm:w-auto"
+            className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed w-full sm:w-auto font-semibold text-base tracking-tight shadow"
           >
             {loading ? "Salvando..." : "Registrar Pagamento"}
           </button>

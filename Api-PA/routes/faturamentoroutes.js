@@ -4,6 +4,34 @@ const Planos_Cadastro = require("../models/Planos_Cadastro");
 const Alunos_Cadastros = require("../models/Alunos_Cadastro");
 const Alunos_Faturamento = require("../models/Alunos_Faturamento");
 
+// Rota para buscar todos os alunos com faturamentos pendentes
+router.get("/pendentes", async (req, res) => {
+  try {
+    // Busca todos os Aluno_Codigo distintos com Faturamento_Data_Pagamento nulo
+    const pendentes = await Alunos_Faturamento.findAll({
+      where: { Faturamento_Data_Pagamento: null },
+      attributes: ["Aluno_Codigo"],
+      group: ["Aluno_Codigo"],
+      raw: true,
+    });
+
+    // Busca os dados dos alunos na tabela Alunos_Cadastros
+    const codigos = pendentes.map((p) => p.Aluno_Codigo);
+    let alunos = [];
+    if (codigos.length > 0) {
+      alunos = await Alunos_Cadastros.findAll({
+        where: { Alunos_Codigo: codigos },
+        attributes: ["Alunos_Codigo", "Alunos_Nome"],
+        raw: true,
+      });
+    }
+
+    res.json({ alunos });
+  } catch (error) {
+    res.status(500).json({ Erro: "Erro ao buscar alunos com pendências." });
+  }
+});
+
 // Rota para buscar faturamentos pendentes de um aluno
 router.get("/pendentes/:Aluno_Codigo", async (req, res) => {
   try {

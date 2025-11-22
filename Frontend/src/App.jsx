@@ -18,6 +18,7 @@ function App() {
   const [showAdminDelete, setShowAdminDelete] = useState(false);
   const [userListKey, setUserListKey] = useState(0);
   const [studentSearchKey, setStudentSearchKey] = useState(0);
+  const [registrarPagamentoKey, setRegistrarPagamentoKey] = useState(0);
   // eslint-disable-next-line no-unused-vars
   const [usuario, setUsuario] = useState(() => getUsuario());
   // eslint-disable-next-line no-unused-vars
@@ -40,6 +41,10 @@ function App() {
     // Incrementa a key quando StudentSearch é selecionado para forçar remontagem
     if (subComponent === "StudentSearch") {
       setStudentSearchKey((prev) => prev + 1);
+    }
+    // Incrementa a key quando RegistrarPagamento é selecionado para forçar remontagem
+    if (component === "Financeiro" && subComponent === "RegistrarPagamento") {
+      setRegistrarPagamentoKey((prev) => prev + 1);
     }
   };
 
@@ -159,7 +164,9 @@ function App() {
                 )}
               {activeComponent === "Financeiro" &&
                 activeComponent2 === "RegistrarPagamento" && (
-                  <RegistrarPagamento key="registrar-pagamento" />
+                  <RegistrarPagamento
+                    key={`registrar-pagamento-${registrarPagamentoKey}`}
+                  />
                 )}
               {activeComponent === "Financeiro" &&
                 (!activeComponent2 || activeComponent2 === "Financeiro") && (

@@ -19,20 +19,19 @@ function RegistrarPagamento() {
   const [descontos, setDescontos] = useState({});
   const [motivosDesconto, setMotivosDesconto] = useState({});
 
+  // Função para buscar alunos com pendências
+  const fetchAlunosComPendencia = async () => {
+    try {
+      const res = await api.get("/faturamento/pendentes");
+      setAlunos(res.data.alunos || []);
+    } catch {
+      setAlunos([]);
+    }
+  };
+
+  // Busca inicial ao montar
   useEffect(() => {
-    const fetchAlunosEPlanos = async () => {
-      try {
-        const res = await api.get("/alunos/");
-        const ativos = (res.data.Listagem_de_Alunos || []).filter(
-          (aluno) => aluno.Alunos_Situacao === "Ativo"
-        );
-        setAlunos(ativos);
-      } catch {
-        setAlunos([]);
-      }
-      // Removido: busca de planos e setPlanos, pois não é mais utilizado
-    };
-    fetchAlunosEPlanos();
+    fetchAlunosComPendencia();
   }, []);
 
   useEffect(() => {
@@ -43,14 +42,12 @@ function RegistrarPagamento() {
         return;
       }
       try {
-        // Busca info do aluno
         const resAluno = await api.get(`/alunos/search/${codigoAluno}`);
         setAlunoInfo(resAluno.data);
       } catch {
         setAlunoInfo(null);
       }
       try {
-        // Busca faturamentos SEM data de pagamento
         const resFat = await api.get(`/faturamento/pendentes/${codigoAluno}`);
         setFaturamentos(resFat.data.faturamentos || []);
       } catch {
@@ -79,7 +76,8 @@ function RegistrarPagamento() {
         return;
       }
     }
-    // Monta array de pagamentos a registrar
+
+    // Monta array de pagamentos conforme esperado pelo backend
     const pagamentos = faturamentos.map((fat) => {
       const fatId = fat.id || fat.Faturamento_ID;
       return {
@@ -89,33 +87,35 @@ function RegistrarPagamento() {
         Faturamento_Motivo: motivosDesconto[fatId] || null,
       };
     });
+
     try {
-      await api.patch("/faturamento/registrar-pagamento", { pagamentos });
+      await api.patch("/faturamento/registrar-pagamento", {
+        pagamentos,
+      });
       setMessage({
         type: "success",
         text: "Pagamento registrado com sucesso!",
       });
-      setCodigoAluno("");
-      setAlunoInfo(null);
+      // Limpa campos e atualiza listas
       setDatasPagamento({});
       setDescontos({});
       setMotivosDesconto({});
-    } catch (error) {
-      setMessage({
-        type: "error",
-        text: error?.response?.data?.Erro || "Erro ao registrar pagamento.",
-      });
+      setCodigoAluno("");
+      setAlunoInfo(null);
+      setFaturamentos([]);
+      await fetchAlunosComPendencia();
+      setTimeout(() => setMessage({ type: "", text: "" }), 1500);
+    } catch {
+      setMessage({ type: "error", text: "Erro ao registrar pagamento." });
+      setTimeout(() => setMessage({ type: "", text: "" }), 1500);
     } finally {
       setLoading(false);
-      setTimeout(() => setMessage({ type: "", text: "" }), 1500);
     }
   };
 
   return (
-    <div className="w-full min-h-screen flex flex-col items-center bg-gradient-to-b from-gray-900 to-gray-800 py-2 px-1 sm:px-0">
-      <h2 className="text-2xl sm:text-3xl font-bold text-white mb-4 sm:mb-6 text-center tracking-tight">
-        Registrar Pagamento
-      </h2>
+    <div className="w-full h-auto">
+      {/* Mensagem de feedback - Float no rodapé à direita */}
       {message.text && (
         <div
           className={`fixed bottom-4 right-4 z-50 p-4 rounded-md shadow-lg max-w-md w-auto ${
@@ -140,13 +140,20 @@ function RegistrarPagamento() {
             name="codigoAluno"
             value={codigoAluno}
             onChange={(e) => setCodigoAluno(e.target.value)}
+            onFocus={fetchAlunosComPendencia}
             required
-            className="w-full px-4 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            disabled={alunos.length === 0}
+            className={`w-full px-4 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              alunos.length === 0 ? "opacity-60 cursor-not-allowed" : ""
+            }`}
           >
             <option value="">Selecione o código do aluno</option>
             {alunos.map((aluno) => (
-              <option key={aluno.Alunos_Codigo} value={aluno.Alunos_Codigo}>
-                {aluno.Alunos_Codigo}
+              <option
+                key={aluno.Alunos_Codigo || aluno.Aluno_Codigo}
+                value={aluno.Alunos_Codigo || aluno.Aluno_Codigo}
+              >
+                {aluno.Alunos_Codigo || aluno.Aluno_Codigo}
               </option>
             ))}
           </select>
@@ -157,136 +164,161 @@ function RegistrarPagamento() {
           </label>
           <input
             type="text"
-            value={alunoInfo?.Alunos_Nome || ""}
+            value={alunos.length === 0 ? "" : alunoInfo?.Alunos_Nome || ""}
             readOnly
-            className="w-full px-4 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            disabled={alunos.length === 0}
+            className={`w-full px-4 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              alunos.length === 0 ? "opacity-60 cursor-not-allowed" : ""
+            }`}
           />
         </div>
-        {/* Informações do Aluno e Plano */}
-        {alunoInfo && (
-          <div className="bg-gray-900 rounded-xl p-3 mt-4 mb-2 border border-gray-700">
+        {alunos.length === 0 ? (
+          <div className="bg-gray-900 rounded-xl p-3 mt-4 mb-2 border border-gray-700 min-h-20">
+            <div className="flex items-center justify-center min-h-20">
+              <span className="text-green-400 text-base font-semibold flex items-center gap-2 justify-center">
+                <span style={{ fontSize: "1.5em" }}>✔️</span> Não existe planos
+                de alunos pendentes!
+              </span>
+            </div>
+          </div>
+        ) : codigoAluno && codigoAluno !== "" ? (
+          <div className="bg-gray-900 rounded-xl p-3 mt-4 mb-2 border border-gray-700 min-h-20">
             <h3 className="text-lg sm:text-xl font-bold text-white mb-2 text-center">
               Informações do Aluno
             </h3>
             <ul className="text-gray-200 text-sm space-y-1">
               <li>
-                <b>Código:</b> {alunoInfo.Alunos_Codigo}
+                <b>Código:</b> {alunoInfo?.Alunos_Codigo || codigoAluno}
               </li>
               <li>
-                <b>Nome:</b> {alunoInfo.Alunos_Nome}
+                <b>Nome:</b> {alunoInfo?.Alunos_Nome || ""}
               </li>
               <li>
-                <b>CPF:</b> {alunoInfo.Alunos_CPF}
+                <b>CPF:</b> {alunoInfo?.Alunos_CPF || ""}
               </li>
               <li>
-                <b>Email:</b> {alunoInfo.Alunos_Email}
+                <b>Email:</b> {alunoInfo?.Alunos_Email || ""}
               </li>
               <li>
-                <b>Telefone:</b> {alunoInfo.Alunos_Telefone}
+                <b>Telefone:</b> {alunoInfo?.Alunos_Telefone || ""}
               </li>
               <li>
                 <b>Data Matrícula:</b>{" "}
-                {formatarDataBR(alunoInfo.Alunos_Data_Matricula)}
+                {alunoInfo?.Alunos_Data_Matricula
+                  ? formatarDataBR(alunoInfo.Alunos_Data_Matricula)
+                  : ""}
               </li>
             </ul>
+            {/* Mensagem de nenhum plano pendente, no mesmo frame */}
+            {faturamentos.length === 0 && (
+              <div className="mt-4 text-center flex items-center justify-center min-h-20">
+                {/* Nenhuma mensagem quando um aluno está selecionado e não há planos pendentes */}
+              </div>
+            )}
           </div>
-        )}
-        {/* Lista de faturamentos pendentes */}
-        {faturamentos.length > 0 && (
-          <div className="mt-4">
-            <label className="block text-base font-medium text-gray-300 mb-2">
-              Faturamentos Pendentes
-            </label>
-            <ul className="bg-gray-700 rounded-lg p-2 text-white text-sm space-y-3">
-              {faturamentos.map((fat) => {
-                const fatId = fat.id || fat.Faturamento_ID;
-                return (
-                  <li
-                    key={fatId}
-                    className="flex flex-col gap-2 border-b border-gray-600 pb-2 last:border-b-0 last:pb-0"
-                  >
-                    <span className="text-xs sm:text-sm">
-                      <b>Plano:</b> {fat.Plano_Codigo} | <b>Início:</b>{" "}
-                      {fat.Faturamento_Inicio} | <b>Fim:</b>{" "}
-                      {fat.Faturamento_Fim} | <b>Valor:</b> R${" "}
-                      {fat.Faturamento_Valor_Total}
-                    </span>
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center w-full">
-                      <div className="flex items-center gap-2 w-full sm:w-auto min-w-0">
-                        <label className="text-gray-300 text-xs">
-                          Data Pagamento:
-                        </label>
-                        <input
-                          type="date"
-                          value={datasPagamento[fatId] || ""}
-                          onChange={(e) =>
-                            setDatasPagamento((prev) => ({
-                              ...prev,
-                              [fatId]: e.target.value,
-                            }))
-                          }
-                          className="px-2 py-1 rounded bg-gray-600 text-white text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-auto"
-                          style={{ minWidth: 0 }}
-                        />
-                      </div>
-                      <div className="flex items-center gap-2 w-full sm:w-auto min-w-0">
-                        <label className="text-gray-300 text-xs">
-                          Desconto:
-                        </label>
-                        <input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          placeholder="R$"
-                          value={descontos[fatId] || ""}
-                          onChange={(e) =>
-                            setDescontos((prev) => ({
-                              ...prev,
-                              [fatId]: e.target.value,
-                            }))
-                          }
-                          className="px-2 py-1 rounded bg-gray-600 text-white text-xs w-full sm:w-20 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          style={{ minWidth: 0 }}
-                        />
-                      </div>
-                      <div className="flex items-center gap-2 w-full sm:w-auto min-w-0">
-                        <label className="text-gray-300 text-xs">Motivo:</label>
-                        <input
-                          type="text"
-                          placeholder="Motivo do desconto"
-                          value={motivosDesconto[fatId] || ""}
-                          onChange={(e) =>
-                            setMotivosDesconto((prev) => ({
-                              ...prev,
-                              [fatId]: e.target.value,
-                            }))
-                          }
-                          className={`px-2 py-1 rounded bg-gray-600 text-white text-xs w-full sm:w-32 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                            descontos[fatId] && !motivosDesconto[fatId]
-                              ? "border-2 border-red-500"
-                              : ""
-                          }`}
-                          style={{ minWidth: 0 }}
-                          required={!!descontos[fatId]}
-                          disabled={!descontos[fatId]}
-                        />
-                      </div>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        )}
-        <div className="flex flex-col sm:flex-row justify-center gap-4 pt-4">
-          <button
-            type="submit"
-            disabled={loading}
-            className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed w-full sm:w-auto font-semibold text-base tracking-tight shadow"
-          >
-            {loading ? "Salvando..." : "Registrar Pagamento"}
-          </button>
-        </div>
+        ) : null}
+        {alunos.length > 0 &&
+          codigoAluno &&
+          codigoAluno !== "" &&
+          faturamentos.length > 0 && (
+            <>
+              <div className="mt-4">
+                <label className="block text-base font-medium text-gray-300 mb-2">
+                  Faturamentos Pendentes
+                </label>
+                <ul className="bg-gray-700 rounded-lg p-2 text-white text-sm space-y-3">
+                  {faturamentos.map((fat) => {
+                    const fatId = fat.id || fat.Faturamento_ID;
+                    return (
+                      <li
+                        key={fatId}
+                        className="flex flex-col gap-2 border-b border-gray-600 pb-2 last:border-b-0 last:pb-0"
+                      >
+                        <span className="text-xs sm:text-sm">
+                          <b>Plano:</b> {fat.Plano_Codigo} | <b>Início:</b>{" "}
+                          {fat.Faturamento_Inicio} | <b>Fim:</b>{" "}
+                          {fat.Faturamento_Fim} | <b>Valor:</b> R${" "}
+                          {fat.Faturamento_Valor_Total}
+                        </span>
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center w-full">
+                          <div className="flex items-center gap-2 w-full sm:w-auto min-w-0">
+                            <label className="text-gray-300 text-xs">
+                              Data Pagamento:
+                            </label>
+                            <input
+                              type="date"
+                              value={datasPagamento[fatId] || ""}
+                              onChange={(e) =>
+                                setDatasPagamento((prev) => ({
+                                  ...prev,
+                                  [fatId]: e.target.value,
+                                }))
+                              }
+                              className="px-2 py-1 rounded bg-gray-600 text-white text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-auto"
+                              style={{ minWidth: 0 }}
+                            />
+                          </div>
+                          <div className="flex items-center gap-2 w-full sm:w-auto min-w-0">
+                            <label className="text-gray-300 text-xs">
+                              Desconto:
+                            </label>
+                            <input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              placeholder="R$"
+                              value={descontos[fatId] || ""}
+                              onChange={(e) =>
+                                setDescontos((prev) => ({
+                                  ...prev,
+                                  [fatId]: e.target.value,
+                                }))
+                              }
+                              className="px-2 py-1 rounded bg-gray-600 text-white text-xs w-full sm:w-20 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              style={{ minWidth: 0 }}
+                            />
+                          </div>
+                          <div className="flex items-center gap-2 w-full sm:w-auto min-w-0">
+                            <label className="text-gray-300 text-xs">
+                              Motivo:
+                            </label>
+                            <input
+                              type="text"
+                              placeholder="Motivo do desconto"
+                              value={motivosDesconto[fatId] || ""}
+                              onChange={(e) =>
+                                setMotivosDesconto((prev) => ({
+                                  ...prev,
+                                  [fatId]: e.target.value,
+                                }))
+                              }
+                              className={`px-2 py-1 rounded bg-gray-600 text-white text-xs w-full sm:w-32 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                descontos[fatId] && !motivosDesconto[fatId]
+                                  ? "border-2 border-red-500"
+                                  : ""
+                              }`}
+                              style={{ minWidth: 0 }}
+                              required={!!descontos[fatId]}
+                              disabled={!descontos[fatId]}
+                            />
+                          </div>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+              <div className="flex flex-col sm:flex-row justify-center gap-4 pt-4">
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed w-full sm:w-auto font-semibold text-base tracking-tight shadow"
+                >
+                  {loading ? "Salvando..." : "Registrar Pagamento"}
+                </button>
+              </div>
+            </>
+          )}
       </form>
     </div>
   );

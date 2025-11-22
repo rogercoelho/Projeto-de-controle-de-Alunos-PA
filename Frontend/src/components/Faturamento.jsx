@@ -160,7 +160,7 @@ function Faturamento() {
   };
 
   return (
-    <div className="w-full min-h-screen flex flex-col items-center bg-gradient-to-b from-gray-900 to-gray-800 py-2 px-1 sm:px-0">
+    <div className="w-full min-h-screen flex flex-col items-center bg-linear-to-b from-gray-900 to-gray-800 py-2 px-1 sm:px-0">
       <h2 className="text-2xl sm:text-3xl font-bold text-white mb-4 sm:mb-6 text-center">
         Faturamento
       </h2>
@@ -178,7 +178,7 @@ function Faturamento() {
       <form
         onSubmit={handleSubmit}
         className="bg-gray-800 rounded-xl p-0 sm:p-6 space-y-4 w-full h-full min-h-[80vh] shadow-lg border-2 border-gray-700"
-        style={{ minWidth: 0, maxWidth: '100vw' }}
+        style={{ minWidth: 0, maxWidth: "100vw" }}
       >
         <div>
           <label className="block text-base font-medium text-gray-300 mb-2">

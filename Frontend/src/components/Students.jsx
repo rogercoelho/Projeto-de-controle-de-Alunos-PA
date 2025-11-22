@@ -258,10 +258,13 @@ function StudentForm() {
       );
       formDataToSend.append("Alunos_Nome", formData.Alunos_Nome);
       formDataToSend.append("Alunos_CPF", formData.Alunos_CPF);
-      formDataToSend.append(
-        "Alunos_Nome_Responsavel",
-        formData.Alunos_Nome_Responsavel || "Aluno Maior de Idade"
-      );
+      // Se o campo estiver vazio ou só espaços, envia 'Aluno Maior de Idade'
+      const nomeResponsavel =
+        formData.Alunos_Nome_Responsavel &&
+        formData.Alunos_Nome_Responsavel.trim() !== ""
+          ? formData.Alunos_Nome_Responsavel
+          : "Aluno Maior de Idade";
+      formDataToSend.append("Alunos_Nome_Responsavel", nomeResponsavel);
       formDataToSend.append(
         "Alunos_Endereco_CEP",
         formData.Alunos_Endereco_CEP
@@ -365,6 +368,7 @@ function StudentForm() {
           Alunos_Contato_Emergencia: "",
           Alunos_Telefone_Emergencia_1: "",
           Alunos_Telefone_Emergencia_2: "",
+          Alunos_Data_Matricula: "",
         });
         setArquivos({ foto: null, contrato: null });
 

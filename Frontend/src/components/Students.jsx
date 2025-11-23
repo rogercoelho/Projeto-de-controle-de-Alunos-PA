@@ -1267,12 +1267,17 @@ function StudentSearch() {
     }
 
     try {
-      const formDataToSend = new FormData();
 
+      const formDataToSend = new FormData();
+      // Corrige Nome do Responsável vazio
+      const editData = { ...editFormData };
+      if (!editData.Alunos_Nome_Responsavel || editData.Alunos_Nome_Responsavel.trim() === "") {
+        editData.Alunos_Nome_Responsavel = "Aluno Maior de Idade";
+      }
       // Adiciona todos os campos do formulário
-      Object.keys(editFormData).forEach((key) => {
+      Object.keys(editData).forEach((key) => {
         if (key !== "Alunos_Foto" && key !== "Alunos_Contrato") {
-          formDataToSend.append(key, editFormData[key]);
+          formDataToSend.append(key, editData[key]);
         }
       });
 

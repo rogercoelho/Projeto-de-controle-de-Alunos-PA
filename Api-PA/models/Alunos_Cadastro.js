@@ -34,6 +34,14 @@ const Alunos_Cadastros = db.sequelizeconnection.define(
       type: db.Sequelize.STRING,
       allowNull: false,
     },
+    Alunos_CPF_Responsavel: {
+      type: db.Sequelize.STRING,
+      allowNull: true,
+    },
+    Alunos_Data_Nascimento: {
+      type: db.Sequelize.STRING,
+      allowNull: false,
+    },
     Alunos_Endereco_CEP: {
       type: db.Sequelize.STRING(9),
       allowNull: false,

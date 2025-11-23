@@ -26,12 +26,29 @@ function Students() {
   );
 }
 
+// Função utilitária para calcular idade a partir da data de nascimento
+function calcularIdade(dataNascimento) {
+  if (!dataNascimento) return 0;
+  const hoje = new Date();
+  const partes = dataNascimento.split("-");
+  if (partes.length !== 3) return 0;
+  const nascimento = new Date(partes[0], partes[1] - 1, partes[2]);
+  let idade = hoje.getFullYear() - nascimento.getFullYear();
+  const m = hoje.getMonth() - nascimento.getMonth();
+  if (m < 0 || (m === 0 && hoje.getDate() < nascimento.getDate())) {
+    idade--;
+  }
+  return idade;
+}
+
 function StudentForm() {
   const [formData, setFormData] = useState({
     Alunos_Codigo: "",
     Alunos_Nome: "",
     Alunos_CPF: "",
+    Alunos_Data_Nascimento: "",
     Alunos_Nome_Responsavel: "",
+    Alunos_CPF_Responsavel: "",
     Alunos_Endereco_CEP: "",
     Alunos_Endereco: "",
     Alunos_Endereco_Complemento: "",
@@ -266,6 +283,10 @@ function StudentForm() {
           : "Aluno Maior de Idade";
       formDataToSend.append("Alunos_Nome_Responsavel", nomeResponsavel);
       formDataToSend.append(
+        "Alunos_CPF_Responsavel",
+        formData.Alunos_CPF_Responsavel
+      );
+      formDataToSend.append(
         "Alunos_Endereco_CEP",
         formData.Alunos_Endereco_CEP
       );
@@ -303,6 +324,10 @@ function StudentForm() {
       formDataToSend.append(
         "Alunos_Telefone_Emergencia_2",
         formData.Alunos_Telefone_Emergencia_2
+      );
+      formDataToSend.append(
+        "Alunos_Data_Nascimento",
+        formData.Alunos_Data_Nascimento
       );
 
       // Adiciona situação padrão como "Ativo"
@@ -355,7 +380,9 @@ function StudentForm() {
           Alunos_Codigo: "",
           Alunos_Nome: "",
           Alunos_CPF: "",
+          Alunos_Data_Nascimento: "",
           Alunos_Nome_Responsavel: "",
+          Alunos_CPF_Responsavel: "",
           Alunos_Endereco_CEP: "",
           Alunos_Endereco: "",
           Alunos_Endereco_Complemento: "",
@@ -407,7 +434,9 @@ function StudentForm() {
       Alunos_Codigo: "",
       Alunos_Nome: "",
       Alunos_CPF: "",
+      Alunos_Data_Nascimento: "",
       Alunos_Nome_Responsavel: "",
+      Alunos_CPF_Responsavel: "",
       Alunos_Endereco_CEP: "",
       Alunos_Endereco: "",
       Alunos_Endereco_Complemento: "",
@@ -504,6 +533,20 @@ function StudentForm() {
             className="w-full px-4 py-2 bg-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
+        {/* Data de Nascimento */}
+        <div>
+          <label className="block text-sm font-medium text-gray-300 mb-2">
+            Data de Nascimento *
+          </label>
+          <input
+            type="date"
+            name="Alunos_Data_Nascimento"
+            value={formData.Alunos_Data_Nascimento}
+            onChange={handleChange}
+            className="w-full px-4 py-2 bg-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            required
+          />
+        </div>
         {/* CPF */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -532,6 +575,23 @@ function StudentForm() {
             onChange={handleChange}
             className="w-full px-4 py-2 bg-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="Deixe em branco se for maior de idade"
+            required={calcularIdade(formData.Alunos_Data_Nascimento) < 18}
+          />
+        </div>
+        {/* CPF do Responsável */}
+        <div>
+          <label className="block text-sm font-medium text-gray-300 mb-2">
+            CPF do Responsável
+          </label>
+          <input
+            type="text"
+            name="Alunos_CPF_Responsavel"
+            value={formData.Alunos_CPF_Responsavel}
+            onChange={handleCPFChange}
+            className="w-full px-4 py-2 bg-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="000.000.000-00"
+            maxLength="14"
+            required={calcularIdade(formData.Alunos_Data_Nascimento) < 18}
           />
         </div>
         {/* Endereço - CEP */}
@@ -1267,11 +1327,13 @@ function StudentSearch() {
     }
 
     try {
-
       const formDataToSend = new FormData();
       // Corrige Nome do Responsável vazio
       const editData = { ...editFormData };
-      if (!editData.Alunos_Nome_Responsavel || editData.Alunos_Nome_Responsavel.trim() === "") {
+      if (
+        !editData.Alunos_Nome_Responsavel ||
+        editData.Alunos_Nome_Responsavel.trim() === ""
+      ) {
         editData.Alunos_Nome_Responsavel = "Aluno Maior de Idade";
       }
       // Adiciona todos os campos do formulário
@@ -1499,6 +1561,20 @@ function StudentSearch() {
                   required
                 />
               </div>
+              {/* Data de Nascimento */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Data de Nascimento *
+                </label>
+                <input
+                  type="date"
+                  name="Alunos_Data_Nascimento"
+                  value={editFormData.Alunos_Data_Nascimento || ""}
+                  onChange={handleEditChange}
+                  className="w-full px-4 py-2 bg-gray-700 text-white rounded-md"
+                  required
+                />
+              </div>
               {/* CPF */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -1526,6 +1602,21 @@ function StudentSearch() {
                   value={editFormData.Alunos_Nome_Responsavel || ""}
                   onChange={handleEditChange}
                   className="w-full px-4 py-2 bg-gray-700 text-white rounded-md"
+                />
+              </div>
+              {/* CPF do Responsável */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  CPF do Responsável
+                </label>
+                <input
+                  type="text"
+                  name="Alunos_CPF_Responsavel"
+                  value={editFormData.Alunos_CPF_Responsavel || ""}
+                  onChange={handleCPFEditChange}
+                  className="w-full px-4 py-2 bg-gray-700 text-white rounded-md"
+                  placeholder="000.000.000-00"
+                  maxLength="14"
                 />
               </div>
               {/* CEP */}

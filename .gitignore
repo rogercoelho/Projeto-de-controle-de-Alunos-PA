@@ -1,6 +1,7 @@
 # Upload de arquivos
 Api-PA/uploads/
-
+# Pasta de scripts
+Api-PA/scripts/
 
 # Dependências
 node_modules/

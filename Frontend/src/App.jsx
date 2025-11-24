@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { StudentsComponents } from "./components/Students";
+import { StudentForm, StudentSearch, StudentPlan } from "./components/Students";
 import { UsersComponents } from "./components/Users";
 import PlanosComponents from "./components/Planos";
 import Classes from "./components/classes";
@@ -138,15 +138,13 @@ function App() {
           <div className="flex justify-center w-full">
             <div className="w-full border-2 rounded-xl border-b-gray-500 p-3 m-3">
               {activeComponent2 === "StudentForm" && (
-                <StudentsComponents.StudentForm key="student-form" />
+                <StudentForm key="student-form" />
               )}
               {activeComponent2 === "StudentSearch" && (
-                <StudentsComponents.StudentSearch
-                  key={`student-search-${studentSearchKey}`}
-                />
+                <StudentSearch key={`student-search-${studentSearchKey}`} />
               )}
               {activeComponent2 === "StudentPlan" && (
-                <StudentsComponents.StudentPlan key="student-plan" />
+                <StudentPlan key="student-plan" />
               )}
               {activeComponent2 === "UserForm" && (
                 <UsersComponents.UserForm key="user-form" />

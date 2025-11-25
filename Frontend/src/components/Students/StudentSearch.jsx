@@ -1,3 +1,4 @@
+import React from "react";
 import { useState } from "react";
 import { formatarCPF } from "./studentUtils";
 import api from "../../services/api";
@@ -95,27 +96,115 @@ function StudentSearch() {
     setLoading(true);
     setMessage({ type: "", text: "" });
     try {
-      // Monta os filtros como query params
-      const params = {};
-      if (searchData.codigo) params.Alunos_Codigo = searchData.codigo;
-      if (searchData.cpf) params.Alunos_CPF = searchData.cpf.replace(/\D/g, "");
-      if (searchData.nome) params.Alunos_Nome = searchData.nome;
-      // Chama a API de alunos
-      const response = await api.get("/alunos", { params });
-      let alunos = response.data.Listagem_de_Alunos || [];
-      if (!Array.isArray(alunos)) alunos = [];
-      if (alunos.length === 0) {
-        setMessage({ type: "error", text: "Nenhum aluno encontrado." });
+      const { codigo, cpf, nome } = searchData;
+      let alunos = [];
+      // Busca por prioridade: Código > CPF > Nome
+      if (codigo && !cpf && !nome) {
+        // Busca por código
+        const response = await api.get(`/alunos/search/${codigo}`);
+        if (response.data && response.data.Alunos_Codigo) {
+          alunos = [response.data];
+        } else if (response.data && response.data.statusCode === 404) {
+          setMessage({ type: "error", text: "Aluno não encontrado." });
+        } else {
+          setMessage({ type: "error", text: "Aluno não encontrado." });
+        }
+      } else if (!codigo && cpf && !nome) {
+        // Busca por CPF
+        const cpfLimpo = cpf.replace(/\D/g, "");
+        try {
+          const response = await api.get(`/alunos/search/cpf/${cpfLimpo}`);
+          if (response.data) {
+            if (response.data.Aluno) {
+              alunos = [response.data.Aluno];
+            } else if (response.data.Alunos_Codigo) {
+              alunos = [response.data];
+            } else if (response.data.statusCode === 404) {
+              setMessage({ type: "error", text: "Aluno não encontrado." });
+            } else {
+              setMessage({ type: "error", text: "Aluno não encontrado." });
+            }
+          } else {
+            setMessage({ type: "error", text: "Aluno não encontrado." });
+          }
+        } catch (err) {
+          setMessage({ type: "error", text: "Aluno não encontrado." });
+        }
+      } else if (!codigo && !cpf && nome) {
+        // Busca por nome
+        const response = await api.get(
+          `/alunos/search/nome/${encodeURIComponent(nome)}`
+        );
+        if (response.data && response.data.Listagem_de_Alunos) {
+          alunos = response.data.Listagem_de_Alunos;
+        } else if (response.data && response.data.statusCode === 404) {
+          setMessage({ type: "error", text: "Nenhum aluno encontrado." });
+        } else {
+          setMessage({ type: "error", text: "Nenhum aluno encontrado." });
+        }
+      } else if (
+        (codigo && cpf) ||
+        (codigo && nome) ||
+        (cpf && nome) ||
+        (codigo && cpf && nome)
+      ) {
+        // Busca combinada: OU (retorna todos que batem com qualquer critério)
+        let promises = [];
+        if (codigo) promises.push(api.get(`/alunos/search/${codigo}`));
+        if (cpf)
+          promises.push(
+            api.get(`/alunos/search/cpf/${cpf.replace(/\D/g, "")}`)
+          );
+        if (nome)
+          promises.push(
+            api.get(`/alunos/search/nome/${encodeURIComponent(nome)}`)
+          );
+        const responses = await Promise.allSettled(promises);
+        let tempAlunos = [];
+        responses.forEach((res, idx) => {
+          if (res.status === "fulfilled" && res.value.data) {
+            if (res.value.data.Alunos_Codigo) {
+              tempAlunos.push(res.value.data);
+            } else if (res.value.data.Aluno) {
+              tempAlunos.push(res.value.data.Aluno);
+            } else if (Array.isArray(res.value.data.Listagem_de_Alunos)) {
+              tempAlunos = tempAlunos.concat(res.value.data.Listagem_de_Alunos);
+            }
+          }
+        });
+        // Remove duplicados pelo código do aluno
+        const unique = {};
+        tempAlunos.forEach((a) => {
+          if (a.Alunos_Codigo) unique[a.Alunos_Codigo] = a;
+        });
+        alunos = Object.values(unique);
+        if (alunos.length === 0) {
+          setMessage({ type: "error", text: "Nenhum aluno encontrado." });
+        }
+      } else {
+        // Nenhum campo: busca todos, paginado
+        const response = await api.get("/alunos");
+        alunos = response.data.Listagem_de_Alunos || [];
+        // Paginação já é feita no front, mas limita exibição a 10 por página
       }
       setResults(ordenarResultados(alunos, sortBy));
+      setCurrentPage(1);
     } catch (error) {
       setMessage({ type: "error", text: "Erro ao buscar alunos." + error });
       setResults([]);
     } finally {
       setLoading(false);
-      setCurrentPage(1);
     }
   };
+  // Esconde a mensagem após 1,5s
+  React.useEffect(() => {
+    if (message.text) {
+      const timer = setTimeout(() => {
+        setMessage({ type: "", text: "" });
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [message.text]);
 
   return (
     <div className="w-full h-auto">

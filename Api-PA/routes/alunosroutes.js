@@ -124,6 +124,7 @@ router.post(
         Alunos_Codigo,
         Alunos_Nome,
         Alunos_CPF,
+        Alunos_Data_Nascimento,
         Alunos_Nome_Responsavel,
         Alunos_Endereco_CEP,
         Alunos_Endereco,
@@ -153,10 +154,10 @@ router.post(
 
       //usando o método create do Sequelize para inserir os dados na tabela Alunos_Cadastro
       const novoAluno = await Alunos_Cadastros.create({
-        // Criando uma constante para o novo registro na tabela Alunos_Cadastro o await espera a conclusão da operação antes de prosseguir
         Alunos_Codigo,
         Alunos_Nome,
         Alunos_CPF,
+        Alunos_Data_Nascimento,
         Alunos_Nome_Responsavel,
         Alunos_Endereco_CEP,
         Alunos_Endereco,
@@ -352,6 +353,70 @@ router.get("/search/:aluno_codigo", async (req, res) => {
     });
   }
 });
+
+// ✅ Rota para pesquisar aluno por nome (parcial ou completo)
+router.get("/search/nome/:nome", async (req, res) => {
+  try {
+    const nome = req.params.nome;
+    if (!nome || nome.trim() === "") {
+      return res.status(400).json({ Mensagem: "Nome não informado" });
+    }
+    // Busca alunos cujo nome contenha o termo (case-insensitive)
+    const alunos = await Alunos_Cadastros.findAll({
+      where: {
+        Alunos_Nome: { $like: `%${nome}%` },
+      },
+    });
+    if (!alunos || alunos.length === 0) {
+      return res
+        .status(404)
+        .json({ Mensagem: "Nenhum aluno encontrado com esse nome" });
+    }
+    res.json({
+      statusCode: 200,
+      Mensagem: `Alunos encontrados com nome contendo: ${nome}`,
+      Listagem_de_Alunos: alunos,
+    });
+  } catch (error) {
+    res.status(500).json({
+      statusCode: error.original?.code || 500,
+      Mensagem: "Erro ao buscar aluno por nome",
+      Erro: error.message,
+    });
+  }
+});
+
+// ✅ Rota para pesquisar aluno por CPF (exato)
+router.get("/search/cpf/:cpf", async (req, res) => {
+  try {
+    let cpf = req.params.cpf;
+    if (!cpf || cpf.trim() === "") {
+      return res.status(400).json({ Mensagem: "CPF não informado" });
+    }
+    // Remove caracteres não numéricos
+    cpf = cpf.replace(/\D/g, "");
+    const aluno = await Alunos_Cadastros.findOne({
+      where: { Alunos_CPF: cpf },
+    });
+    if (!aluno) {
+      return res
+        .status(404)
+        .json({ Mensagem: "Aluno não encontrado com esse CPF" });
+    }
+    res.json({
+      statusCode: 200,
+      Mensagem: `Aluno encontrado com CPF: ${cpf}`,
+      Aluno: aluno,
+    });
+  } catch (error) {
+    res.status(500).json({
+      statusCode: error.original?.code || 500,
+      Mensagem: "Erro ao buscar aluno por CPF",
+      Erro: error.message,
+    });
+  }
+});
+
 // ✅ Fim - Rota para obter um aluno específico
 
 // Rota para excluir um aluno

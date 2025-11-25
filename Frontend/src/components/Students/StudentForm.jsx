@@ -328,7 +328,7 @@ function StudentForm() {
         {/* CPF */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
-            CPF *
+            CPF{calcularIdade(formData.Alunos_Data_Nascimento) >= 18 ? ' *' : ''}
           </label>
           <input
             type="text"
@@ -338,14 +338,14 @@ function StudentForm() {
             className="w-full px-4 py-2 bg-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="000.000.000-00"
             maxLength="14"
-            required
+            required={calcularIdade(formData.Alunos_Data_Nascimento) >= 18}
           />
         </div>
 
         {/* Nome do Responsável */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
-            Nome do Responsável
+            Nome do Responsável{calcularIdade(formData.Alunos_Data_Nascimento) < 18 ? ' *' : ''}
           </label>
           <input
             type="text"
@@ -361,7 +361,7 @@ function StudentForm() {
         {/* CPF do Responsável */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
-            CPF do Responsável
+            CPF do Responsável{calcularIdade(formData.Alunos_Data_Nascimento) < 18 ? ' *' : ''}
           </label>
           <input
             type="text"

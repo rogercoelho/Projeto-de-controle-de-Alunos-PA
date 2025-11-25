@@ -1,6 +1,6 @@
 const express = require("express"); // Importando o módulo express e o modelo Alunos_Cadastro
 const Alunos_Cadastros = require("../models/Alunos_Cadastro"); // Importando o modelo Alunos_Cadastro para interagir com a tabela no banco de dados
-const { Error } = require("sequelize"); // Importando o objeto Error do Sequelize para manipulação de erros
+const { Error, Op } = require("sequelize"); // Importando o objeto Error e Op do Sequelize para manipulação de erros e operadores
 const multer = require("multer"); // Importando multer para upload de arquivos
 const path = require("path"); // Importando path para manipular caminhos de arquivos
 const fs = require("fs"); // Importando fs para manipular arquivos
@@ -328,7 +328,7 @@ router.patch(
 // ✅ Fim - Rota para atualizar parcialmente um aluno
 
 // ✅ Inicio -Rota para obter um aluno específico
-router.get("/search/:aluno_codigo", async (req, res) => {
+router.get("/codigo/:aluno_codigo", async (req, res) => {
   // Definindo a rota GET para obter um aluno específico pelo código
   try {
     // Iniciando o bloco try para capturar erros "tentar".
@@ -355,7 +355,7 @@ router.get("/search/:aluno_codigo", async (req, res) => {
 });
 
 // ✅ Rota para pesquisar aluno por nome (parcial ou completo)
-router.get("/search/nome/:nome", async (req, res) => {
+router.get("/nome/:nome", async (req, res) => {
   try {
     const nome = req.params.nome;
     if (!nome || nome.trim() === "") {
@@ -364,7 +364,7 @@ router.get("/search/nome/:nome", async (req, res) => {
     // Busca alunos cujo nome contenha o termo (case-insensitive)
     const alunos = await Alunos_Cadastros.findAll({
       where: {
-        Alunos_Nome: { $like: `%${nome}%` },
+        Alunos_Nome: { [Op.like]: `%${nome}%` },
       },
     });
     if (!alunos || alunos.length === 0) {
@@ -387,14 +387,13 @@ router.get("/search/nome/:nome", async (req, res) => {
 });
 
 // ✅ Rota para pesquisar aluno por CPF (exato)
-router.get("/search/cpf/:cpf", async (req, res) => {
+router.get("/cpf/:cpf", async (req, res) => {
   try {
     let cpf = req.params.cpf;
     if (!cpf || cpf.trim() === "") {
       return res.status(400).json({ Mensagem: "CPF não informado" });
     }
-    // Remove caracteres não numéricos
-    cpf = cpf.replace(/\D/g, "");
+    // Busca exatamente o valor recebido (com máscara)
     const aluno = await Alunos_Cadastros.findOne({
       where: { Alunos_CPF: cpf },
     });

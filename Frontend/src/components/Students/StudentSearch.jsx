@@ -101,7 +101,7 @@ function StudentSearch() {
       // Busca por prioridade: Código > CPF > Nome
       if (codigo && !cpf && !nome) {
         // Busca por código
-        const response = await api.get(`/alunos/search/${codigo}`);
+        const response = await api.get(`/alunos/codigo/${codigo}`);
         if (response.data && response.data.Alunos_Codigo) {
           alunos = [response.data];
         } else if (response.data && response.data.statusCode === 404) {
@@ -110,10 +110,10 @@ function StudentSearch() {
           setMessage({ type: "error", text: "Aluno não encontrado." });
         }
       } else if (!codigo && cpf && !nome) {
-        // Busca por CPF
-        const cpfLimpo = cpf.replace(/\D/g, "");
         try {
-          const response = await api.get(`/alunos/search/cpf/${cpfLimpo}`);
+          const response = await api.get(
+            `/alunos/cpf/${encodeURIComponent(cpf)}`
+          );
           if (response.data) {
             if (response.data.Aluno) {
               alunos = [response.data.Aluno];
@@ -127,13 +127,17 @@ function StudentSearch() {
           } else {
             setMessage({ type: "error", text: "Aluno não encontrado." });
           }
-        } catch (err) {
-          setMessage({ type: "error", text: "Aluno não encontrado." });
+        } catch (error) {
+          if (error?.response?.status === 404) {
+            setMessage({ type: "error", text: "Aluno não encontrado." });
+          } else {
+            setMessage({ type: "error", text: "Erro ao buscar alunos." });
+          }
         }
       } else if (!codigo && !cpf && nome) {
         // Busca por nome
         const response = await api.get(
-          `/alunos/search/nome/${encodeURIComponent(nome)}`
+          `/alunos/nome/${encodeURIComponent(nome)}`
         );
         if (response.data && response.data.Listagem_de_Alunos) {
           alunos = response.data.Listagem_de_Alunos;
@@ -150,15 +154,12 @@ function StudentSearch() {
       ) {
         // Busca combinada: OU (retorna todos que batem com qualquer critério)
         let promises = [];
-        if (codigo) promises.push(api.get(`/alunos/search/${codigo}`));
-        if (cpf)
-          promises.push(
-            api.get(`/alunos/search/cpf/${cpf.replace(/\D/g, "")}`)
-          );
+        if (codigo) promises.push(api.get(`/alunos/codigo/${codigo}`));
+        if (cpf) {
+          promises.push(api.get(`/alunos/cpf/${encodeURIComponent(cpf)}`));
+        }
         if (nome)
-          promises.push(
-            api.get(`/alunos/search/nome/${encodeURIComponent(nome)}`)
-          );
+          promises.push(api.get(`/alunos/nome/${encodeURIComponent(nome)}`));
         const responses = await Promise.allSettled(promises);
         let tempAlunos = [];
         responses.forEach((res, idx) => {
@@ -190,7 +191,11 @@ function StudentSearch() {
       setResults(ordenarResultados(alunos, sortBy));
       setCurrentPage(1);
     } catch (error) {
-      setMessage({ type: "error", text: "Erro ao buscar alunos." + error });
+      if (error?.response?.status === 404) {
+        setMessage({ type: "error", text: "Aluno Não encontrado" });
+      } else {
+        setMessage({ type: "error", text: "Erro ao buscar alunos." });
+      }
       setResults([]);
     } finally {
       setLoading(false);

@@ -68,13 +68,25 @@ function StudentSearch() {
   };
 
   const handleToggleSituacao = async () => {
-    // Aqui ficaria a chamada para ativar/desativar aluno na API
-    setMessage({ type: "success", text: "Situação do aluno alterada!" });
-    // Atualização local simulada
-    setSelectedAluno((prev) => ({
-      ...prev,
-      Alunos_Situacao: prev.Alunos_Situacao === "Ativo" ? "Inativo" : "Ativo",
-    }));
+    if (!selectedAluno) return;
+    const novoStatus = selectedAluno.Alunos_Situacao === "Ativo" ? "Inativo" : "Ativo";
+    try {
+      const response = await api.patch(`/alunos/update/${selectedAluno.Alunos_Codigo}`, {
+        Alunos_Situacao: novoStatus,
+        usuario: localStorage.getItem("usuario") || "Sistema"
+      });
+      if (response.data && response.data.statusCode === 200) {
+        setMessage({ type: "success", text: `Aluno ${novoStatus === "Inativo" ? "desativado" : "ativado"} com sucesso!` });
+        setSelectedAluno((prev) => ({
+          ...prev,
+          Alunos_Situacao: novoStatus,
+        }));
+      } else {
+        setMessage({ type: "error", text: response.data?.Mensagem || "Erro ao atualizar situação." });
+      }
+    } catch (error) {
+      setMessage({ type: "error", text: "Erro ao atualizar situação do aluno." });
+    }
   };
 
   const handlePageChange = (pageNumber) => {
@@ -162,7 +174,7 @@ function StudentSearch() {
           promises.push(api.get(`/alunos/nome/${encodeURIComponent(nome)}`));
         const responses = await Promise.allSettled(promises);
         let tempAlunos = [];
-        responses.forEach((res, idx) => {
+        responses.forEach((res) => {
           if (res.status === "fulfilled" && res.value.data) {
             if (res.value.data.Alunos_Codigo) {
               tempAlunos.push(res.value.data);
@@ -190,12 +202,8 @@ function StudentSearch() {
       }
       setResults(ordenarResultados(alunos, sortBy));
       setCurrentPage(1);
-    } catch (error) {
-      if (error?.response?.status === 404) {
-        setMessage({ type: "error", text: "Aluno Não encontrado" });
-      } else {
-        setMessage({ type: "error", text: "Erro ao buscar alunos." });
-      }
+    } catch {
+      setMessage({ type: "error", text: "Erro ao buscar alunos." });
       setResults([]);
     } finally {
       setLoading(false);

@@ -69,23 +69,42 @@ function StudentSearch() {
 
   const handleToggleSituacao = async () => {
     if (!selectedAluno) return;
-    const novoStatus = selectedAluno.Alunos_Situacao === "Ativo" ? "Inativo" : "Ativo";
+    const novoStatus =
+      selectedAluno.Alunos_Situacao === "Ativo" ? "Inativo" : "Ativo";
     try {
-      const response = await api.patch(`/alunos/update/${selectedAluno.Alunos_Codigo}`, {
-        Alunos_Situacao: novoStatus,
-        usuario: localStorage.getItem("usuario") || "Sistema"
-      });
+      const response = await api.patch(
+        `/alunos/update/${selectedAluno.Alunos_Codigo}`,
+        {
+          Alunos_Situacao: novoStatus,
+          usuario: localStorage.getItem("usuario") || "Sistema",
+        }
+      );
       if (response.data && response.data.statusCode === 200) {
-        setMessage({ type: "success", text: `Aluno ${novoStatus === "Inativo" ? "desativado" : "ativado"} com sucesso!` });
         setSelectedAluno((prev) => ({
           ...prev,
           Alunos_Situacao: novoStatus,
         }));
+        // Garante que a mensagem toast apareça mesmo se já houver uma mensagem anterior
+        setMessage({});
+        setTimeout(() => {
+          setMessage({
+            type: "success",
+            text: `Aluno ${
+              novoStatus === "Inativo" ? "desativado" : "ativado"
+            } com sucesso!`,
+          });
+        }, 50);
       } else {
-        setMessage({ type: "error", text: response.data?.Mensagem || "Erro ao atualizar situação." });
+        setMessage({
+          type: "error",
+          text: response.data?.Mensagem || "Erro ao atualizar situação.",
+        });
       }
     } catch (error) {
-      setMessage({ type: "error", text: "Erro ao atualizar situação do aluno." });
+      setMessage({
+        type: "error",
+        text: "Erro ao atualizar situação do aluno.",
+      });
     }
   };
 
@@ -200,6 +219,25 @@ function StudentSearch() {
         alunos = response.data.Listagem_de_Alunos || [];
         // Paginação já é feita no front, mas limita exibição a 10 por página
       }
+
+      // FILTRO DE SITUAÇÃO
+      alunos = alunos.filter((a) => {
+        if (mostrarInativos) {
+          return a.Alunos_Situacao === "Inativo";
+        } else {
+          return a.Alunos_Situacao === "Ativo";
+        }
+      });
+
+      if (alunos.length === 0) {
+        setMessage({
+          type: "error",
+          text: mostrarInativos
+            ? "Nenhum aluno inativo encontrado."
+            : "Nenhum aluno ativo encontrado.",
+        });
+      }
+
       setResults(ordenarResultados(alunos, sortBy));
       setCurrentPage(1);
     } catch {
@@ -221,6 +259,20 @@ function StudentSearch() {
 
   return (
     <div className="w-full h-auto">
+      {message.text && (
+        <div
+          className={`fixed bottom-4 right-4 z-50 p-4 rounded-md shadow-lg max-w-md w-auto
+            ${message.type === "success" && message.text.includes("desativado")
+              ? "bg-orange-100 text-orange-700 border-2 border-orange-500"
+              : message.type === "success"
+                ? "bg-green-100 text-green-700 border-2 border-green-500"
+                : "bg-red-100 text-red-700 border-2 border-red-500"
+            }
+          `}
+        >
+          {message.text}
+        </div>
+      )}
       {selectedAluno ? (
         <StudentDetails
           aluno={selectedAluno}
@@ -230,17 +282,6 @@ function StudentSearch() {
         />
       ) : (
         <div className="w-full">
-          {message.text && (
-            <div
-              className={`fixed bottom-4 right-4 z-50 p-4 rounded-md shadow-lg max-w-md w-auto ${
-                message.type === "success"
-                  ? "bg-green-100 text-green-700 border-2 border-green-500"
-                  : "bg-red-100 text-red-700 border-2 border-red-500"
-              }`}
-            >
-              {message.text}
-            </div>
-          )}
           <form
             onSubmit={handleSearch}
             className="w-full h-auto p-2 sm:p-4 space-y-2 sm:space-y-4 mx-auto"

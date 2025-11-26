@@ -237,17 +237,23 @@ router.patch(
       // Guarda dados antigos para o log
       const dadosAntigos = atualizaaluno.toJSON();
 
-      // Se novos arquivos foram enviados, atualiza os caminhos
+      // Se novos arquivos foram enviados, atualiza os caminhos com nomes únicos
       if (req.files?.foto) {
-        // Remove foto antiga se existir (busca por qualquer arquivo que comece com ID_foto)
         const baseDir =
           process.env.NODE_ENV === "production"
             ? "/home2/goutechc/wwwplantandoalegria_API/uploads"
             : path.join(__dirname, "../uploads");
         const pastaFotos = path.join(baseDir, "fotos");
+        const ext = path.extname(req.files.foto[0].originalname);
+        const novoNomeFoto = `${codigo}_foto_${Date.now()}${ext}`;
+        const novoCaminhoFoto = path.join(pastaFotos, novoNomeFoto);
+        // Renomeia o arquivo salvo pelo multer para o novo nome único
+        fs.renameSync(req.files.foto[0].path, novoCaminhoFoto);
+        // Remove foto antiga se existir e for diferente do novo nome
         const arquivosFotos = fs.readdirSync(pastaFotos);
-        const fotoAntiga = arquivosFotos.find((arquivo) =>
-          arquivo.startsWith(`${codigo}_foto`)
+        const fotoAntiga = arquivosFotos.find(
+          (arquivo) =>
+            arquivo.startsWith(`${codigo}_foto`) && arquivo !== novoNomeFoto
         );
         if (fotoAntiga) {
           const caminhoFotoAntiga = path.join(pastaFotos, fotoAntiga);
@@ -255,15 +261,25 @@ router.patch(
             fs.unlinkSync(caminhoFotoAntiga);
           }
         }
-        dadosAtualizacao.Alunos_Foto = req.files.foto[0].filename;
+        dadosAtualizacao.Alunos_Foto = novoNomeFoto;
       }
 
       if (req.files?.contrato) {
-        // Remove contrato antigo se existir (busca por qualquer arquivo que comece com ID_contrato)
-        const pastaContratos = path.join(__dirname, "../uploads/contratos");
+        const baseDir =
+          process.env.NODE_ENV === "production"
+            ? "/home2/goutechc/wwwplantandoalegria_API/uploads"
+            : path.join(__dirname, "../uploads");
+        const pastaContratos = path.join(baseDir, "contratos");
+        const ext = path.extname(req.files.contrato[0].originalname);
+        const novoNomeContrato = `${codigo}_contrato_${Date.now()}${ext}`;
+        const novoCaminhoContrato = path.join(pastaContratos, novoNomeContrato);
+        fs.renameSync(req.files.contrato[0].path, novoCaminhoContrato);
+        // Remove contrato antigo se existir e for diferente do novo nome
         const arquivosContratos = fs.readdirSync(pastaContratos);
-        const contratoAntigo = arquivosContratos.find((arquivo) =>
-          arquivo.startsWith(`${codigo}_contrato`)
+        const contratoAntigo = arquivosContratos.find(
+          (arquivo) =>
+            arquivo.startsWith(`${codigo}_contrato`) &&
+            arquivo !== novoNomeContrato
         );
         if (contratoAntigo) {
           const caminhoContratoAntigo = path.join(
@@ -274,7 +290,7 @@ router.patch(
             fs.unlinkSync(caminhoContratoAntigo);
           }
         }
-        dadosAtualizacao.Alunos_Contrato = req.files.contrato[0].filename;
+        dadosAtualizacao.Alunos_Contrato = novoNomeContrato;
       }
 
       await atualizaaluno.update(dadosAtualizacao, {

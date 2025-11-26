@@ -306,9 +306,21 @@ function StudentSearch() {
         <StudentForm
           aluno={selectedAluno}
           onCancel={() => setIsEditing(false)}
-          onSaveSuccess={(updatedAluno) => {
+          onSaveSuccess={async (updatedAluno) => {
             setIsEditing(false);
-            setSelectedAluno((prev) => ({ ...prev, ...updatedAluno }));
+            // Busca o aluno atualizado na API para garantir que a foto/contrato estejam atualizados
+            try {
+              const response = await api.get(
+                `/alunos/codigo/${updatedAluno.Alunos_Codigo}`
+              );
+              if (response.data && response.data.Alunos_Codigo) {
+                setSelectedAluno(response.data);
+              } else {
+                setSelectedAluno((prev) => ({ ...prev, ...updatedAluno }));
+              }
+            } catch {
+              setSelectedAluno((prev) => ({ ...prev, ...updatedAluno }));
+            }
             setMessage({
               type: "success",
               text: "Alterações salvas com sucesso!",

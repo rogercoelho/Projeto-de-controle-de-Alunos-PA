@@ -146,26 +146,6 @@ function MobileMenu({ onNavigate, ehAdmin }) {
                 </svg>
                 <span className="font-medium">Pesquisar Alunos</span>
               </button>
-
-              <button
-                onClick={() => handleNavigation("Students", "StudentPlan")}
-                className="w-full flex items-center gap-3 px-4 py-3 bg-red-900/30 hover:bg-red-800/40 active:bg-red-700/50 rounded-lg text-white text-left transition-all border border-red-800/50"
-              >
-                <svg
-                  className="w-5 h-5 shrink-0"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M13 10V3L4 14h7v7l9-11h-7z"
-                  />
-                </svg>
-                <span className="font-medium">Vincular Plano</span>
-              </button>
             </div>
           </div>
         </div>

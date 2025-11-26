@@ -1,6 +1,6 @@
 import { useState } from "react";
-import api from "../services/api";
-import { getUsuario } from "../services/auth";
+import api from "../../services/api";
+import { getUsuario } from "../../services/auth";
 
 function AdminDelete() {
   const [tabela, setTabela] = useState("");

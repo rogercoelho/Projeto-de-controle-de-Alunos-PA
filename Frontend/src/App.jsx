@@ -1,15 +1,15 @@
 import { useState } from "react";
-import { StudentForm, StudentSearch, StudentPlan } from "./components/Students";
-import { UsersComponents } from "./components/Users";
-import PlanosComponents from "./components/Planos";
-import Classes from "./components/classes";
-import Attendance from "./components/attendance";
+import { StudentForm, StudentSearch } from "./components/students";
+import { UsersComponents } from "./components/Security/Users";
+import PlanosComponents from "./components/classes/Planos";
+import Classes from "./components/classes/Classes";
+import Attendance from "./components/classes/Attendance";
 import Financeiro from "./components/Financeiro";
 import Faturamento from "./components/Faturamento";
 import RegistrarPagamento from "./components/RegistrarPagamento";
-import ProtectedRoute from "./components/ProtectedRoute";
-import AdminDelete from "./components/AdminDelete";
-import MobileMenu from "./components/MobileMenu";
+import ProtectedRoute from "./components/Security/ProtectedRoute";
+import AdminDelete from "./components/Security/AdminDelete";
+import MobileMenu from "./components/miscellaneous/MobileMenu";
 import { logout, getUsuario, isAdmin } from "./services/auth";
 
 function App() {
@@ -142,9 +142,6 @@ function App() {
               )}
               {activeComponent2 === "StudentSearch" && (
                 <StudentSearch key={`student-search-${studentSearchKey}`} />
-              )}
-              {activeComponent2 === "StudentPlan" && (
-                <StudentPlan key="student-plan" />
               )}
               {activeComponent2 === "UserForm" && (
                 <UsersComponents.UserForm key="user-form" />

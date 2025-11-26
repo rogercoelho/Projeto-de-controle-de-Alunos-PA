@@ -1,11 +1,3 @@
-import React from "react";
-import {
-  calcularIdade,
-  formatarTelefone,
-  formatarCPF,
-  formatarCEP,
-} from "./studentUtils";
-
 function StudentEditForm({
   editFormData,
   onChange,
@@ -372,3 +364,24 @@ function StudentEditForm({
 }
 
 export default StudentEditForm;
+
+import PropTypes from "prop-types";
+
+StudentEditForm.propTypes = {
+  editFormData: PropTypes.object.isRequired,
+  onChange: PropTypes.func.isRequired,
+  onSubmit: PropTypes.func.isRequired,
+  onCancel: PropTypes.func.isRequired,
+  arquivosEdit: PropTypes.shape({
+    foto: PropTypes.any,
+    contrato: PropTypes.any,
+  }).isRequired,
+  onFileChange: PropTypes.func.isRequired,
+  loading: PropTypes.bool,
+  loadingCep: PropTypes.bool,
+  selectedAluno: PropTypes.shape({
+    Alunos_Foto: PropTypes.string,
+    Alunos_Nome: PropTypes.string,
+    Alunos_Contrato: PropTypes.string,
+  }),
+};

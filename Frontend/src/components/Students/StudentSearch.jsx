@@ -1,6 +1,6 @@
 import React from "react";
 import { useState } from "react";
-import { formatarCPF } from "./studentUtils";
+import { formatarCPF } from "../../utils/utils";
 import api from "../../services/api";
 import StudentDetails from "./StudentDetails";
 import StudentForm from "./StudentForm";
@@ -112,7 +112,7 @@ function StudentSearch() {
     } catch (error) {
       setMessage({
         type: "error",
-        text: "Erro ao atualizar situação do aluno.",
+        text: "Erro ao atualizar situação do aluno." + error,
       });
     }
   };

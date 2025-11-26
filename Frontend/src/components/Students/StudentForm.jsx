@@ -16,7 +16,7 @@ import {
   formatarTelefone,
   formatarCPF,
   formatarCEP,
-} from "./studentUtils";
+} from "../../utils/utils";
 import api from "../../services/api";
 
 function StudentForm({ aluno, onCancel, onSaveSuccess }) {
@@ -721,3 +721,11 @@ function StudentForm({ aluno, onCancel, onSaveSuccess }) {
 }
 
 export default StudentForm;
+
+import PropTypes from "prop-types";
+
+StudentForm.propTypes = {
+  aluno: PropTypes.object,
+  onCancel: PropTypes.func,
+  onSaveSuccess: PropTypes.func,
+};

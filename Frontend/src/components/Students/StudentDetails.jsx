@@ -28,10 +28,7 @@ function StudentPhotoSkeleton({ foto, nome }) {
         style={{ zIndex: 1, position: "relative", background: "transparent" }}
       />
       {!loaded && (
-        <div
-          className="absolute inset-0 flex items-center justify-center bg-gray-200 rounded-md animate-pulse z-10"
-          style={{ background: "transparent" }}
-        >
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-200 rounded-md animate-pulse z-10">
           <img
             src="/logo.png"
             alt="Logo placeholder"

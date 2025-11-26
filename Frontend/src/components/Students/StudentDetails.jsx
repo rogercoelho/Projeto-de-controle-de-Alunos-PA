@@ -7,7 +7,7 @@ function StudentPhotoSkeleton({ foto, nome }) {
   const [error, setError] = useState(false);
   if (!foto || error) {
     return (
-      <div className="w-48 h-48 flex items-center justify-center bg-gray-200 rounded-md border-2 border-gray-300">
+      <div className="w-48 h-48 flex items-center justify-center bg-transparent rounded-md border-2 border-gray-300">
         <img
           src="/logo.png"
           alt="Logo placeholder"
@@ -16,19 +16,32 @@ function StudentPhotoSkeleton({ foto, nome }) {
       </div>
     );
   }
+
+  // Pré-carregamento em segundo plano
+  // Cache busting para garantir recarregamento da imagem
+  const cacheBuster = React.useRef(Date.now());
+  React.useEffect(() => {
+    cacheBuster.current = Date.now();
+    if (!foto) return;
+    const img = new window.Image();
+    img.src = `https://api2.plantandoalegria.com.br/uploads/fotos/${foto}?t=${cacheBuster.current}`;
+    img.onload = () => setLoaded(true);
+    img.onerror = () => setError(true);
+    // eslint-disable-next-line
+  }, [foto]);
+
   return (
     <div className="w-48 h-48 relative" style={{ background: "transparent" }}>
-      <img
-        src={`https://api2.plantandoalegria.com.br/uploads/fotos/${foto}`}
-        alt={nome}
-        className="w-48 h-48 object-contain rounded-md border-2 border-gray-300"
-        onLoad={() => setLoaded(true)}
-        onError={() => setError(true)}
-        loading="lazy"
-        style={{ zIndex: 1, position: "relative", background: "transparent" }}
-      />
+      {loaded && !error && (
+        <img
+          src={`https://api2.plantandoalegria.com.br/uploads/fotos/${foto}?t=${cacheBuster.current}`}
+          alt={nome}
+          className="w-48 h-48 object-contain rounded-md border-2 border-gray-300"
+          style={{ zIndex: 1, position: "relative", background: "transparent" }}
+        />
+      )}
       {!loaded && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-200 rounded-md animate-pulse z-10">
+        <div className="absolute inset-0 flex items-center justify-center bg-black rounded-md z-10 animate-pulse">
           <img
             src="/logo.png"
             alt="Logo placeholder"
@@ -84,7 +97,11 @@ function StudentDetails({ aluno, onEdit, onToggleSituacao, onBack }) {
         </div>
       </div>
 
-      {aluno.Alunos_Contrato && (
+      {aluno.Alunos_Contrato &&
+      typeof aluno.Alunos_Contrato === "string" &&
+      aluno.Alunos_Contrato.trim() !== "" &&
+      aluno.Alunos_Contrato.trim().toLowerCase() !== "null" &&
+      aluno.Alunos_Contrato.trim().toLowerCase() !== "undefined" ? (
         <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-2 items-center">
           <label className="font-bold">Contrato:</label>
           <a
@@ -96,7 +113,7 @@ function StudentDetails({ aluno, onEdit, onToggleSituacao, onBack }) {
             📄 Ver Contrato
           </a>
         </div>
-      )}
+      ) : null}
 
       <div className="bg-gray-800 rounded-xl p-4 space-y-3">
         <div className="text-sm md:text-base">

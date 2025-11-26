@@ -1,4 +1,48 @@
+import React, { useState } from "react";
 import PropTypes from "prop-types";
+
+// Skeleton/placeholder para foto do aluno
+function StudentPhotoSkeleton({ foto, nome }) {
+  const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState(false);
+  if (!foto || error) {
+    return (
+      <div className="w-48 h-48 flex items-center justify-center bg-gray-200 rounded-md border-2 border-gray-300">
+        <img
+          src="/logo.png"
+          alt="Logo placeholder"
+          className="w-24 h-24 object-contain opacity-60"
+        />
+      </div>
+    );
+  }
+  return (
+    <div className="w-48 h-48 relative" style={{ background: "transparent" }}>
+      <img
+        src={`https://api2.plantandoalegria.com.br/uploads/fotos/${foto}`}
+        alt={nome}
+        className="w-48 h-48 object-contain rounded-md border-2 border-gray-300"
+        onLoad={() => setLoaded(true)}
+        onError={() => setError(true)}
+        loading="lazy"
+        style={{ zIndex: 1, position: "relative", background: "transparent" }}
+      />
+      {!loaded && (
+        <div
+          className="absolute inset-0 flex items-center justify-center bg-gray-200 rounded-md animate-pulse z-10"
+          style={{ background: "transparent" }}
+        >
+          <img
+            src="/logo.png"
+            alt="Logo placeholder"
+            className="w-24 h-24 object-contain opacity-60"
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
 function StudentDetails({ aluno, onEdit, onToggleSituacao, onBack }) {
   if (!aluno) return null;
   return (
@@ -28,27 +72,20 @@ function StudentDetails({ aluno, onEdit, onToggleSituacao, onBack }) {
         </button>
       </div>
 
-      {aluno.Alunos_Foto ? (
-        <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-2 items-center">
-          <label className="font-bold">Foto:</label>
-          <div className="flex flex-col gap-2">
-            <img
-              src={`https://api2.plantandoalegria.com.br/uploads/fotos/${aluno.Alunos_Foto}`}
-              alt={aluno.Alunos_Nome}
-              className="w-48 h-48 object-cover rounded-md border-2 border-gray-300"
-              onError={(e) => (e.target.style.display = "none")}
-            />
+      <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-2 items-center">
+        <label className="font-bold">Foto:</label>
+        <div className="flex flex-col gap-2">
+          <StudentPhotoSkeleton
+            foto={aluno.Alunos_Foto}
+            nome={aluno.Alunos_Nome}
+          />
+          {aluno.Alunos_Foto && (
             <span className="text-xs text-gray-500">
               Arquivo: {aluno.Alunos_Foto}
             </span>
-          </div>
+          )}
         </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-2 items-center">
-          <label className="font-bold">Foto:</label>
-          <span className="text-gray-500 italic">Nenhuma foto cadastrada</span>
-        </div>
-      )}
+      </div>
 
       {aluno.Alunos_Contrato && (
         <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-2 items-center">

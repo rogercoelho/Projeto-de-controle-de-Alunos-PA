@@ -1,3 +1,4 @@
+import PropTypes from "prop-types";
 function StudentDetails({ aluno, onEdit, onToggleSituacao, onBack }) {
   if (!aluno) return null;
   return (
@@ -162,3 +163,33 @@ function StudentDetails({ aluno, onEdit, onToggleSituacao, onBack }) {
 }
 
 export default StudentDetails;
+
+StudentDetails.propTypes = {
+  aluno: PropTypes.shape({
+    Alunos_Codigo: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    Alunos_Nome: PropTypes.string,
+    Alunos_CPF: PropTypes.string,
+    Alunos_Data_Nascimento: PropTypes.string,
+    Alunos_Nome_Responsavel: PropTypes.string,
+    Alunos_CPF_Responsavel: PropTypes.string,
+    Alunos_Endereco_CEP: PropTypes.string,
+    Alunos_Endereco: PropTypes.string,
+    Alunos_Endereco_Complemento: PropTypes.string,
+    Alunos_Endereco_Bairro: PropTypes.string,
+    Alunos_Endereco_Localidade: PropTypes.string,
+    Alunos_Endereco_Cidade: PropTypes.string,
+    Alunos_Endereco_Estado: PropTypes.string,
+    Alunos_Telefone: PropTypes.string,
+    Alunos_Email: PropTypes.string,
+    Alunos_Contato_Emergencia: PropTypes.string,
+    Alunos_Telefone_Emergencia_1: PropTypes.string,
+    Alunos_Telefone_Emergencia_2: PropTypes.string,
+    Alunos_Data_Matricula: PropTypes.string,
+    Alunos_Situacao: PropTypes.string,
+    Alunos_Foto: PropTypes.string,
+    Alunos_Contrato: PropTypes.string,
+  }),
+  onEdit: PropTypes.func,
+  onToggleSituacao: PropTypes.func,
+  onBack: PropTypes.func,
+};

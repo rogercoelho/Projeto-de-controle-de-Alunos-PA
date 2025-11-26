@@ -1,4 +1,16 @@
 import React, { useState, useRef } from "react";
+
+// Adiciona Material Icons via CDN se não estiver presente
+if (
+  typeof document !== "undefined" &&
+  !document.getElementById("material-icons-cdn")
+) {
+  const link = document.createElement("link");
+  link.id = "material-icons-cdn";
+  link.rel = "stylesheet";
+  link.href = "https://fonts.googleapis.com/icon?family=Material+Icons";
+  document.head.appendChild(link);
+}
 import {
   calcularIdade,
   formatarTelefone,
@@ -266,15 +278,6 @@ function StudentForm({ aluno, onCancel }) {
         onSubmit={handleSubmit}
         className="bg-gray-800 rounded-xl p-6 space-y-4 mx-auto"
       >
-        {onCancel && (
-          <button
-            type="button"
-            onClick={onCancel}
-            className="mb-4 bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700"
-          >
-            Cancelar edição
-          </button>
-        )}
         <div className="w-full mb-8 flex">
           <span
             style={{
@@ -647,22 +650,35 @@ function StudentForm({ aluno, onCancel }) {
           />
         </div>
 
-        <div className="flex justify-center gap-4 pt-4">
+        <div className="flex justify-center gap-6 pt-4">
           <button
             type="submit"
             disabled={loading}
-            className="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+            className="flex items-center bg-green-600 text-white px-3.5 py-1.5 rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all text-[15px]"
+            style={{ fontWeight: 400, boxShadow: "none" }}
           >
-            {loading ? "Cadastrando..." : "Cadastrar"}
+            <span className="align-middle mr-1" style={{ fontSize: 17 }}>
+              💾
+            </span>
+            {loading ? "Salvando..." : "Salvar Alterações"}
           </button>
-          <button
-            type="button"
-            onClick={handleReset}
-            disabled={loading}
-            className="bg-gray-600 text-white px-6 py-2 rounded-md hover:bg-gray-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
-          >
-            Limpar
-          </button>
+          {onCancel && (
+            <button
+              type="button"
+              onClick={onCancel}
+              disabled={loading}
+              className="flex items-center bg-gray-600 text-white px-3.5 py-1.5 rounded-md hover:bg-gray-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all text-[15px]"
+              style={{ fontWeight: 400, boxShadow: "none" }}
+            >
+              <span
+                className="align-middle mr-1"
+                style={{ fontSize: 17, color: "#fb7185" }}
+              >
+                ❌
+              </span>
+              Cancelar
+            </button>
+          )}
         </div>
       </form>
     </div>

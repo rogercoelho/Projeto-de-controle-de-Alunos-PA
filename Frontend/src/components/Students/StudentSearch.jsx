@@ -51,8 +51,18 @@ function StudentSearch() {
     setCurrentPage(1);
   };
 
-  const handleSelectAluno = (aluno) => {
-    setSelectedAluno(aluno);
+  const handleSelectAluno = async (aluno) => {
+    // Sempre buscar os dados mais atualizados do aluno ao selecionar
+    try {
+      const response = await api.get(`/alunos/codigo/${aluno.Alunos_Codigo}`);
+      if (response.data && response.data.Alunos_Codigo) {
+        setSelectedAluno(response.data);
+      } else {
+        setSelectedAluno(aluno); // fallback
+      }
+    } catch (error) {
+      setSelectedAluno(aluno); // fallback em caso de erro
+    }
     //setIsEditing(false);
     // setEditFormData(aluno);
     // setArquivosEdit({ foto: null, contrato: null });
@@ -171,20 +181,24 @@ function StudentSearch() {
           if (error?.response?.status === 404) {
             setMessage({ type: "error", text: "Aluno não encontrado." });
           } else {
-            setMessage({ type: "error", text: "Erro ao buscar alunos." });
+            setMessage({ type: "error", text: "Aluno não encontrado." });
           }
         }
       } else if (!codigo && !cpf && nome) {
         // Busca por nome
-        const response = await api.get(
-          `/alunos/nome/${encodeURIComponent(nome)}`
-        );
-        if (response.data && response.data.Listagem_de_Alunos) {
-          alunos = response.data.Listagem_de_Alunos;
-        } else if (response.data && response.data.statusCode === 404) {
-          setMessage({ type: "error", text: "Nenhum aluno encontrado." });
-        } else {
-          setMessage({ type: "error", text: "Nenhum aluno encontrado." });
+        try {
+          const response = await api.get(
+            `/alunos/nome/${encodeURIComponent(nome)}`
+          );
+          if (response.data && response.data.Listagem_de_Alunos) {
+            alunos = response.data.Listagem_de_Alunos;
+          } else if (response.data && response.data.statusCode === 404) {
+            setMessage({ type: "error", text: "Aluno não encontrado." });
+          } else {
+            setMessage({ type: "error", text: "Aluno não encontrado." });
+          }
+        } catch (error) {
+          setMessage({ type: "error", text: "Aluno não encontrado." });
         }
       } else if (
         (codigo && cpf) ||
@@ -255,7 +269,7 @@ function StudentSearch() {
       setResults(ordenarResultados(alunos, sortBy));
       setCurrentPage(1);
     } catch {
-      setMessage({ type: "error", text: "Erro ao buscar alunos." });
+      setMessage({ type: "error", text: "Aluno não encontrado." });
       setResults([]);
     } finally {
       setLoading(false);
@@ -378,8 +392,12 @@ function StudentSearch() {
                 type="button"
                 onClick={handleClearSearch}
                 disabled={loading}
-                className="bg-gray-600 text-white px-6 py-2 rounded-md hover:bg-gray-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                className="flex items-center bg-gray-600 text-white px-6 py-2 rounded-md hover:bg-gray-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all text-[15px]"
+                style={{ fontWeight: 400, boxShadow: "none" }}
               >
+                <span className="align-middle mr-1" style={{ fontSize: 17 }}>
+                  🧹
+                </span>
                 Limpar
               </button>
             </div>

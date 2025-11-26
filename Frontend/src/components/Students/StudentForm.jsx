@@ -697,6 +697,18 @@ function StudentForm({ aluno, onCancel, onSaveSuccess }) {
             </span>
             {loading ? "Salvando..." : "Salvar Alterações"}
           </button>
+          <button
+            type="button"
+            onClick={handleReset}
+            disabled={loading}
+            className="flex items-center bg-gray-600 text-white px-3.5 py-1.5 rounded-md hover:bg-gray-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all text-[15px]"
+            style={{ fontWeight: 400, boxShadow: "none" }}
+          >
+            <span className="align-middle mr-1" style={{ fontSize: 17 }}>
+              🧹
+            </span>
+            Limpar
+          </button>
           {onCancel && (
             <button
               type="button"

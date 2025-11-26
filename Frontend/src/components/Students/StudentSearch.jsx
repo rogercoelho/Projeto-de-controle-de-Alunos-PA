@@ -292,6 +292,14 @@ function StudentSearch() {
         <StudentForm
           aluno={selectedAluno}
           onCancel={() => setIsEditing(false)}
+          onSaveSuccess={(updatedAluno) => {
+            setIsEditing(false);
+            setSelectedAluno((prev) => ({ ...prev, ...updatedAluno }));
+            setMessage({
+              type: "success",
+              text: "Alterações salvas com sucesso!",
+            });
+          }}
         />
       ) : selectedAluno ? (
         <StudentDetails

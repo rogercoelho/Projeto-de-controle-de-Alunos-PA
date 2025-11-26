@@ -19,7 +19,7 @@ import {
 } from "./studentUtils";
 import api from "../../services/api";
 
-function StudentForm({ aluno, onCancel }) {
+function StudentForm({ aluno, onCancel, onSaveSuccess }) {
   const [formData, setFormData] = useState(
     aluno
       ? { ...aluno }
@@ -178,20 +178,44 @@ function StudentForm({ aluno, onCancel }) {
     }
 
     try {
-      // Se houver arquivos, usa FormData
       let response;
-      if (arquivos.foto || arquivos.contrato) {
-        const data = new FormData();
-        Object.entries(formData).forEach(([key, value]) => {
-          data.append(key, value);
-        });
-        if (arquivos.foto) data.append("foto", arquivos.foto);
-        if (arquivos.contrato) data.append("contrato", arquivos.contrato);
-        response = await api.post("/alunos/create/", data, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
+      // Se for edição (aluno existe), faz PATCH
+      if (aluno && aluno.Alunos_Codigo) {
+        if (arquivos.foto || arquivos.contrato) {
+          const data = new FormData();
+          Object.entries(formData).forEach(([key, value]) => {
+            data.append(key, value);
+          });
+          if (arquivos.foto) data.append("foto", arquivos.foto);
+          if (arquivos.contrato) data.append("contrato", arquivos.contrato);
+          response = await api.patch(
+            `/alunos/update/${aluno.Alunos_Codigo}`,
+            data,
+            {
+              headers: { "Content-Type": "multipart/form-data" },
+            }
+          );
+        } else {
+          response = await api.patch(
+            `/alunos/update/${aluno.Alunos_Codigo}`,
+            formData
+          );
+        }
       } else {
-        response = await api.post("/alunos/create/", formData);
+        // Cadastro novo
+        if (arquivos.foto || arquivos.contrato) {
+          const data = new FormData();
+          Object.entries(formData).forEach(([key, value]) => {
+            data.append(key, value);
+          });
+          if (arquivos.foto) data.append("foto", arquivos.foto);
+          if (arquivos.contrato) data.append("contrato", arquivos.contrato);
+          response = await api.post("/alunos/create/", data, {
+            headers: { "Content-Type": "multipart/form-data" },
+          });
+        } else {
+          response = await api.post("/alunos/create/", formData);
+        }
       }
       const resData = response.data;
       const isSuccess =
@@ -199,17 +223,28 @@ function StudentForm({ aluno, onCancel }) {
       if (isSuccess) {
         setMessage({
           type: "success",
-          text: resData.Mensagem || "Aluno cadastrado com sucesso!",
+          text:
+            (aluno && aluno.Alunos_Codigo
+              ? "Alterações salvas com sucesso!"
+              : resData.Mensagem) || "Aluno cadastrado com sucesso!",
         });
-        handleReset();
+        if (aluno && typeof onSaveSuccess === "function") {
+          onSaveSuccess({ ...formData });
+        }
+        if (!aluno) handleReset();
       } else {
         setMessage({
           type: "error",
-          text: resData.Erro || resData.Mensagem || "Erro ao cadastrar aluno.",
+          text:
+            resData.Erro ||
+            resData.Mensagem ||
+            (aluno ? "Erro ao salvar alterações." : "Erro ao cadastrar aluno."),
         });
       }
     } catch (error) {
-      let msg = "Erro ao cadastrar aluno.";
+      let msg = aluno
+        ? "Erro ao salvar alterações."
+        : "Erro ao cadastrar aluno.";
       if (error.response && error.response.data) {
         const errData = error.response.data;
         msg = errData.Erro || errData.Mensagem || msg;

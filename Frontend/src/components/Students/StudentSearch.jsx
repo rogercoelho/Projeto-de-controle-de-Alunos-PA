@@ -262,9 +262,10 @@ function StudentSearch() {
       {message.text && (
         <div
           className={`fixed bottom-4 right-4 z-50 p-4 rounded-md shadow-lg max-w-md w-auto
-            ${message.type === "success" && message.text.includes("desativado")
-              ? "bg-orange-100 text-orange-700 border-2 border-orange-500"
-              : message.type === "success"
+            ${
+              message.type === "success" && message.text.includes("desativado")
+                ? "bg-orange-100 text-orange-700 border-2 border-orange-500"
+                : message.type === "success"
                 ? "bg-green-100 text-green-700 border-2 border-green-500"
                 : "bg-red-100 text-red-700 border-2 border-red-500"
             }

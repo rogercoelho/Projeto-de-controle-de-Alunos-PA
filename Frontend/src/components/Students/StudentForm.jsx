@@ -7,28 +7,32 @@ import {
 } from "./studentUtils";
 import api from "../../services/api";
 
-function StudentForm() {
-  const [formData, setFormData] = useState({
-    Alunos_Codigo: "",
-    Alunos_Nome: "",
-    Alunos_CPF: "",
-    Alunos_Data_Nascimento: "",
-    Alunos_Nome_Responsavel: "",
-    Alunos_CPF_Responsavel: "",
-    Alunos_Endereco_CEP: "",
-    Alunos_Endereco: "",
-    Alunos_Endereco_Complemento: "",
-    Alunos_Endereco_Bairro: "",
-    Alunos_Endereco_Localidade: "",
-    Alunos_Endereco_Cidade: "",
-    Alunos_Endereco_Estado: "",
-    Alunos_Telefone: "",
-    Alunos_Email: "",
-    Alunos_Contato_Emergencia: "",
-    Alunos_Telefone_Emergencia_1: "",
-    Alunos_Telefone_Emergencia_2: "",
-    Alunos_Data_Matricula: "",
-  });
+function StudentForm({ aluno, onCancel }) {
+  const [formData, setFormData] = useState(
+    aluno
+      ? { ...aluno }
+      : {
+          Alunos_Codigo: "",
+          Alunos_Nome: "",
+          Alunos_CPF: "",
+          Alunos_Data_Nascimento: "",
+          Alunos_Nome_Responsavel: "",
+          Alunos_CPF_Responsavel: "",
+          Alunos_Endereco_CEP: "",
+          Alunos_Endereco: "",
+          Alunos_Endereco_Complemento: "",
+          Alunos_Endereco_Bairro: "",
+          Alunos_Endereco_Localidade: "",
+          Alunos_Endereco_Cidade: "",
+          Alunos_Endereco_Estado: "",
+          Alunos_Telefone: "",
+          Alunos_Email: "",
+          Alunos_Contato_Emergencia: "",
+          Alunos_Telefone_Emergencia_1: "",
+          Alunos_Telefone_Emergencia_2: "",
+          Alunos_Data_Matricula: "",
+        }
+  );
 
   const [arquivos, setArquivos] = useState({
     foto: null,
@@ -262,6 +266,15 @@ function StudentForm() {
         onSubmit={handleSubmit}
         className="bg-gray-800 rounded-xl p-6 space-y-4 mx-auto"
       >
+        {onCancel && (
+          <button
+            type="button"
+            onClick={onCancel}
+            className="mb-4 bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700"
+          >
+            Cancelar edição
+          </button>
+        )}
         <div className="w-full mb-8 flex">
           <span
             style={{

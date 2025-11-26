@@ -3,6 +3,7 @@ import { useState } from "react";
 import { formatarCPF } from "./studentUtils";
 import api from "../../services/api";
 import StudentDetails from "./StudentDetails";
+import StudentForm from "./StudentForm";
 
 function StudentSearch() {
   const [searchData, setSearchData] = useState({
@@ -15,6 +16,7 @@ function StudentSearch() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
   const [selectedAluno, setSelectedAluno] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
   const [sortBy, setSortBy] = useState("codigo");
   const [currentPage, setCurrentPage] = useState(1);
   const alunosPerPage = 10;
@@ -64,7 +66,14 @@ function StudentSearch() {
   };
 
   const handleEdit = () => {
-    //setIsEditing(true);
+    if (selectedAluno && selectedAluno.Alunos_Situacao === "Inativo") {
+      setMessage({
+        type: "error",
+        text: "Editar aluno inativo nao é permitido",
+      });
+      return;
+    }
+    setIsEditing(true);
   };
 
   const handleToggleSituacao = async () => {
@@ -236,6 +245,11 @@ function StudentSearch() {
             ? "Nenhum aluno inativo encontrado."
             : "Nenhum aluno ativo encontrado.",
         });
+      } else {
+        setMessage({
+          type: "success",
+          text: `Encontrado ${alunos.length} aluno(s) cadastrado(s)`,
+        });
       }
 
       setResults(ordenarResultados(alunos, sortBy));
@@ -274,7 +288,12 @@ function StudentSearch() {
           {message.text}
         </div>
       )}
-      {selectedAluno ? (
+      {isEditing && selectedAluno ? (
+        <StudentForm
+          aluno={selectedAluno}
+          onCancel={() => setIsEditing(false)}
+        />
+      ) : selectedAluno ? (
         <StudentDetails
           aluno={selectedAluno}
           onEdit={handleEdit}

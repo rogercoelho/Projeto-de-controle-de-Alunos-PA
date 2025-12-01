@@ -26,6 +26,9 @@ export function formatarTelefone(valor) {
       .replace(/-$/, "");
   }
 }
+export function validarTelefone(telefone) {
+  return telefone.replace(/\D/g, "").length === 11;
+}
 
 export function formatarCPF(valor) {
   const apenasNumeros = valor.replace(/\D/g, "");
@@ -36,7 +39,59 @@ export function formatarCPF(valor) {
     .slice(0, 14);
 }
 
+// Validação de CPF (algoritmo oficial)
+export function validarCPF(cpf) {
+  const strCPF = cpf.replace(/\D/g, "");
+  if (strCPF.length !== 11 || /^([0-9])\1+$/.test(strCPF)) return false;
+  let soma = 0;
+  for (let i = 0; i < 9; i++) soma += parseInt(strCPF.charAt(i)) * (10 - i);
+  let resto = (soma * 10) % 11;
+  if (resto === 10 || resto === 11) resto = 0;
+  if (resto !== parseInt(strCPF.charAt(9))) return false;
+  soma = 0;
+  for (let i = 0; i < 10; i++) soma += parseInt(strCPF.charAt(i)) * (11 - i);
+  resto = (soma * 10) % 11;
+  if (resto === 10 || resto === 11) resto = 0;
+  return resto === parseInt(strCPF.charAt(10));
+}
+
 export function formatarCEP(valor) {
   const apenasNumeros = valor.replace(/\D/g, "");
   return apenasNumeros.replace(/^(\d{5})(\d)/, "$1-$2").slice(0, 9);
+}
+
+export function validarEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+export function converterData(dataBR) {
+  // de 'DD/MM/AAAA' para 'AAAA-MM-DD'
+  if (!dataBR) return "";
+  const [dia, mes, ano] = dataBR.split("/");
+  if (!dia || !mes || !ano) return dataBR;
+  return `${ano}-${mes.padStart(2, "0")}-${dia.padStart(2, "0")}`;
+}
+
+export function limparFormData() {
+  return {
+    Alunos_Codigo: "",
+    Alunos_Nome: "",
+    Alunos_CPF: "",
+    Alunos_Data_Nascimento: "",
+    Alunos_Nome_Responsavel: "",
+    Alunos_CPF_Responsavel: "",
+    Alunos_Endereco_CEP: "",
+    Alunos_Endereco: "",
+    Alunos_Endereco_Complemento: "",
+    Alunos_Endereco_Bairro: "",
+    Alunos_Endereco_Localidade: "",
+    Alunos_Endereco_Cidade: "",
+    Alunos_Endereco_Estado: "",
+    Alunos_Telefone: "",
+    Alunos_Email: "",
+    Alunos_Contato_Emergencia: "",
+    Alunos_Telefone_Emergencia_1: "",
+    Alunos_Telefone_Emergencia_2: "",
+    Alunos_Data_Matricula: "",
+  };
 }

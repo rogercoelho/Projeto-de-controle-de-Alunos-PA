@@ -107,7 +107,7 @@ function MobileMenu({ onNavigate, ehAdmin }) {
             <div className="pb-3 space-y-2 pl-2">
               {ehAdmin && (
                 <button
-                  onClick={() => handleNavigation("Students", "StudentForm")}
+                  onClick={() => handleNavigation("students", "StudentForm")}
                   className="w-full flex items-center gap-3 px-4 py-3 bg-red-900/30 hover:bg-red-800/40 active:bg-red-700/50 rounded-lg text-white text-left transition-all border border-red-800/50"
                 >
                   <svg
@@ -128,7 +128,7 @@ function MobileMenu({ onNavigate, ehAdmin }) {
               )}
 
               <button
-                onClick={() => handleNavigation("Students", "StudentSearch")}
+                onClick={() => handleNavigation("students", "StudentSearch")}
                 className="w-full flex items-center gap-3 px-4 py-3 bg-red-900/30 hover:bg-red-800/40 active:bg-red-700/50 rounded-lg text-white text-left transition-all border border-red-800/50"
               >
                 <svg

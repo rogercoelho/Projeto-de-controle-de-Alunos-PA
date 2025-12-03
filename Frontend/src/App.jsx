@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { StudentForm, StudentSearch } from "./components/students";
+import StudentForm from "./components/students/StudentForm";
+import StudentSearch from "./components/students/StudentSearch";
 import { UsersComponents } from "./components/Security/Users";
 import PlanosComponents from "./components/classes/Planos";
 import Classes from "./components/classes/Classes";

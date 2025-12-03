@@ -38,7 +38,7 @@ const storage = multer.diskStorage({
     const codigo = req.body.Alunos_Codigo || Date.now();
     const ext = path.extname(file.originalname);
     const tipo = file.fieldname === "foto" ? "foto" : "contrato";
-    const filename = `${codigo}_${tipo}${ext}`;
+    const filename = `${codigo}_${tipo}_${Date.now()}${ext}`;
     cb(null, filename);
   },
 });

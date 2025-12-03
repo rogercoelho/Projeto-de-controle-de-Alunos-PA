@@ -1,6 +1,27 @@
+/* Importa os hooks do react usestate e useref */
 import React, { useState, useRef } from "react";
-
-// Adiciona Material Icons via CDN se não estiver presente
+/* Importa a tratativa de mensagens do toast */
+import MessageToast from "../miscellaneous/MessageToast";
+/* Importa os botoes */
+import Buttons from "../miscellaneous/Buttons";
+/* Importa as configurações da API */
+import api from "../../services/api";
+/* Importa o hook para buscar o CEP */
+import useBuscarCEP from "../../hooks/BuscarCep";
+/* Importa as funções utilitárias (utils) */
+import {
+  limparFormData,
+  formatarTelefone,
+  validarTelefone,
+  formatarCPF,
+  validarCPF,
+  validarEmail,
+  calcularIdade,
+  formatarCEP,
+  converterData,
+} from "../../utils/Utils";
+/* Adiciona o link do CDN do Material Icons se ainda não estiver presente
+Sao apenas para adicionar os icones do material icons */
 if (
   typeof document !== "undefined" &&
   !document.getElementById("material-icons-cdn")
@@ -11,50 +32,59 @@ if (
   link.href = "https://fonts.googleapis.com/icon?family=Material+Icons";
   document.head.appendChild(link);
 }
-import {
-  calcularIdade,
-  formatarTelefone,
-  formatarCPF,
-  formatarCEP,
-} from "../../utils/utils";
-import api from "../../services/api";
+//=====================================================================================
 
-function StudentForm({ aluno, onCancel, onSaveSuccess }) {
+/* ===== INICIO DA FUNÇÃO ===== */
+/* Componente StudentsForm que recebe props: aluno (objeto) e as
+   funções onCancel e onSaveSuccess */
+function StudentForm({ aluno, onSaveSuccess }) {
+  /* Função que cria uma constante para tratar mudança nos campos
+     de telefone usando utilitários formatarTelefone */
+  const handleTelefoneChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: formatarTelefone(value),
+    }));
+  };
+
+  /* Inicialização do estado do formulário usando
+     o utilitario limparFormData para iniciar sem dados */
   const [formData, setFormData] = useState(
-    aluno
-      ? { ...aluno }
-      : {
-          Alunos_Codigo: "",
-          Alunos_Nome: "",
-          Alunos_CPF: "",
-          Alunos_Data_Nascimento: "",
-          Alunos_Nome_Responsavel: "",
-          Alunos_CPF_Responsavel: "",
-          Alunos_Endereco_CEP: "",
-          Alunos_Endereco: "",
-          Alunos_Endereco_Complemento: "",
-          Alunos_Endereco_Bairro: "",
-          Alunos_Endereco_Localidade: "",
-          Alunos_Endereco_Cidade: "",
-          Alunos_Endereco_Estado: "",
-          Alunos_Telefone: "",
-          Alunos_Email: "",
-          Alunos_Contato_Emergencia: "",
-          Alunos_Telefone_Emergencia_1: "",
-          Alunos_Telefone_Emergencia_2: "",
-          Alunos_Data_Matricula: "",
-        }
+    aluno ? { ...aluno } : limparFormData()
   );
 
-  const [arquivos, setArquivos] = useState({
-    foto: null,
-    contrato: null,
-  });
+  /* Chama o hook useBuscarCEP no topo do componente, passando o CEP atual */
+  const { loadingCep, dadosCep, erroCep } = useBuscarCEP(
+    formData.Alunos_Endereco_CEP
+  );
 
+  /* Usa o React useEffect para atualizar o formulário quando dadosCep ou erroCep mudarem
+    Se dadosCep tiver informacao, entao preenche os campos do formulario. Se erroCep tiver
+    informacao, entao exibe a mensagem de erro */
+  React.useEffect(() => {
+    if (dadosCep) {
+      setFormData((prev) => ({
+        ...prev,
+        Alunos_Endereco: dadosCep.logradouro || "",
+        Alunos_Endereco_Bairro: dadosCep.bairro || "",
+        Alunos_Endereco_Localidade: dadosCep.localidade || "",
+        Alunos_Endereco_Cidade: dadosCep.localidade || "",
+        Alunos_Endereco_Estado: dadosCep.uf || "",
+      }));
+    }
+    if (erroCep) {
+      setMessage({ type: "error", text: erroCep });
+    }
+  }, [dadosCep, erroCep]);
+
+  /* Cria variaveis constante de estado para controlar as mensagens
+  de loading e feedback (resultado) do toast */
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
 
-  // Esconde a mensagem após 1,5s
+  /*  Uso do react useEffect para limpar mensagens do toast 
+  após 1.5 segundos */
   React.useEffect(() => {
     if (message.text) {
       const timer = setTimeout(() => {
@@ -63,76 +93,33 @@ function StudentForm({ aluno, onCancel, onSaveSuccess }) {
       return () => clearTimeout(timer);
     }
   }, [message.text]);
-  const [loadingCep, setLoadingCep] = useState(false);
 
-  // Refs para limpar inputs de arquivo
+  /* Cria variavel constante para inicializar o armazenamento dos
+  arquivos (foto e contrato). Ambos sao iniciados sem valor */
+  const [arquivos, setArquivos] = useState({
+    foto: null,
+    contrato: null,
+  });
+
+  /*   Cria uma variável constante de referência para os inputs de
+  foto e contrato, para poder limpar os campos depois, usando useRef
+  que é um hook do react para guardar referencias a elementos do DOM */
   const fotoInputRef = useRef(null);
   const contratoInputRef = useRef(null);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  const buscarCEP = async (cep) => {
-    const cepLimpo = cep.replace(/\D/g, "");
-    if (cepLimpo.length !== 8) return;
-    setLoadingCep(true);
-    try {
-      const response = await fetch(
-        `https://viacep.com.br/ws/${cepLimpo}/json/`
-      );
-      const data = await response.json();
-      if (data.erro) {
-        setMessage({ type: "error", text: "CEP não encontrado." });
-        setFormData((prev) => ({
-          ...prev,
-          Alunos_Endereco: "",
-          Alunos_Endereco_Bairro: "",
-          Alunos_Endereco_Localidade: "",
-          Alunos_Endereco_Cidade: "",
-          Alunos_Endereco_Estado: "",
-        }));
-      } else {
-        setFormData((prev) => ({
-          ...prev,
-          Alunos_Endereco: data.logradouro || "",
-          Alunos_Endereco_Bairro: data.bairro || "",
-          Alunos_Endereco_Localidade: data.localidade || "",
-          Alunos_Endereco_Cidade: data.localidade || "",
-          Alunos_Endereco_Estado: data.uf || "",
-        }));
-      }
-    } catch (error) {
-      setMessage({ type: "error", text: "Erro ao buscar CEP." + error });
-    } finally {
-      setLoadingCep(false);
-    }
-  };
-
-  const handleTelefoneChange = (e) => {
-    const { name, value } = e.target;
-    let apenasNumeros = value.replace(/\D/g, "");
-    if (apenasNumeros.length > 11) apenasNumeros = apenasNumeros.slice(0, 11);
-    const telefoneFormatado = formatarTelefone(apenasNumeros);
-    setFormData((prev) => ({
-      ...prev,
-      [name]: telefoneFormatado,
-    }));
-  };
-
+  /* Função para formatar o CPF usando o utilitario formatarCPF
+  importado do utils */
   const handleCPFChange = (e) => {
     const { name, value } = e.target;
-    const cpfFormatado = formatarCPF(value);
     setFormData((prev) => ({
       ...prev,
-      [name]: cpfFormatado,
+      [name]: formatarCPF(value),
     }));
   };
 
+  /* Função para formatar o CEP usando o utilitario formatarCEP
+      importado do utils e buscar o endereço via API do ViaCEP
+      importado do hook buscarCEP */
   const handleCepChangeFormatado = (e) => {
     const { value } = e.target;
     const cepFormatado = formatarCEP(value);
@@ -141,18 +128,35 @@ function StudentForm({ aluno, onCancel, onSaveSuccess }) {
       Alunos_Endereco_CEP: cepFormatado,
     }));
     setMessage({ type: "", text: "" });
-    const cepLimpo = value.replace(/\D/g, "");
-    if (cepLimpo.length === 8) buscarCEP(cepLimpo);
+  };
+  /* Cria uma variavel constante handleChange que recebe o evento (e)
+     e atualiza o estado do formulário. 
+     Cria as variaveis name e value recebendo o evento (e).target (name e value)
+     O setFormData, atraves da variavel (prev) repassa o conteudo ...prev (o 
+     conteudo anterior) e atualiza o campo [name] com o novo value. */
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
+  /* Cria uma variavel constante que recebe uma funcao asincrona.
+     Passa a subfuncao preventDefault para evitar o envio padrão
+     do formulário.
+     A funcao setLoading para ativar o loading durante o processamento
+     A funcao setMessage para limpar mensagens anteriores */
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setMessage({ type: "", text: "" });
-    const telPrincipal = formData.Alunos_Telefone.replace(/\D/g, "");
-    const telEmerg1 = formData.Alunos_Telefone_Emergencia_1.replace(/\D/g, "");
-    const telEmerg2 = formData.Alunos_Telefone_Emergencia_2.replace(/\D/g, "");
-    if (formData.Alunos_Telefone && telPrincipal.length !== 11) {
+    /* Usa a funcao utilitaria validarTelefone importado do utils
+       para validar os telefones */
+    if (
+      formData.Alunos_Telefone &&
+      !validarTelefone(formData.Alunos_Telefone)
+    ) {
       setMessage({
         type: "error",
         text: "Telefone principal deve ter 11 dígitos.",
@@ -160,7 +164,10 @@ function StudentForm({ aluno, onCancel, onSaveSuccess }) {
       setLoading(false);
       return;
     }
-    if (formData.Alunos_Telefone_Emergencia_1 && telEmerg1.length !== 11) {
+    if (
+      formData.Alunos_Telefone_Emergencia_1 &&
+      !validarTelefone(formData.Alunos_Telefone_Emergencia_1)
+    ) {
       setMessage({
         type: "error",
         text: "Telefone de emergência 1 deve ter 11 dígitos.",
@@ -168,7 +175,10 @@ function StudentForm({ aluno, onCancel, onSaveSuccess }) {
       setLoading(false);
       return;
     }
-    if (formData.Alunos_Telefone_Emergencia_2 && telEmerg2.length !== 11) {
+    if (
+      formData.Alunos_Telefone_Emergencia_2 &&
+      !validarTelefone(formData.Alunos_Telefone_Emergencia_2)
+    ) {
       setMessage({
         type: "error",
         text: "Telefone de emergência 2 deve ter 11 dígitos.",
@@ -177,17 +187,84 @@ function StudentForm({ aluno, onCancel, onSaveSuccess }) {
       return;
     }
 
+    /* Faz a validacao do email usando o utilitario 
+       validarEmail importado do utils */
+
+    if (formData.Alunos_Email && !validarEmail(formData.Alunos_Email)) {
+      setMessage({
+        type: "error",
+        text: "E-mail inválido.",
+      });
+      setLoading(false);
+      return;
+    }
+
+    /* Validação de CPF usando o utilitario validarCPF 
+       importado do utils */
+    if (
+      formData.Alunos_CPF &&
+      calcularIdade(formData.Alunos_Data_Nascimento) >= 18 &&
+      !validarCPF(formData.Alunos_CPF)
+    ) {
+      setMessage({
+        type: "error",
+        text: "CPF do aluno inválido.",
+      });
+      setLoading(false);
+      return;
+    }
+    if (
+      formData.Alunos_CPF_Responsavel &&
+      calcularIdade(formData.Alunos_Data_Nascimento) < 18 &&
+      !validarCPF(formData.Alunos_CPF_Responsavel)
+    ) {
+      setMessage({
+        type: "error",
+        text: "CPF do responsável inválido.",
+      });
+      setLoading(false);
+      return;
+    }
+
+    /* Se estiver tudo ok, tenta enviar os dados para a API
+     Cria a variavel response para armazenar a resposta da API
+     Se aluno e aluno.Alunos_Codigo existirem ele faz a atualizacao (Patch).
+     Se foto ou contrato foram alterados, cria um FormData
+     Cria uma variável constante data que "seta" como um FormData
+     Object.entries transforma o formData em um array de pares [chave, valor]
+     para cada key (chave) e value (valor) do formData, adiciona ao FormData
+     => (arrow function) significa que para cada par chave-valor, executa a função que esta no bloco { }
+     Data.append (variavel data do tipo FormData) append (adiciona) "o proximo". como no começo nao tem nada
+     ele adiciona o primeiro par chave-valor, depois o segundo, e assim por diante*/
     try {
+      /* Converte datas do formato brasileiro para ISO antes de enviar usando 
+         o utilitario converterData importado do utils */
+      const formDataConvertido = {
+        ...formData,
+        Alunos_Data_Nascimento: converterData(formData.Alunos_Data_Nascimento),
+        Alunos_Data_Matricula: converterData(formData.Alunos_Data_Matricula),
+      };
+      /* cria uma variavel do tipo let (response).
+         Se aluno e aluno.Alunos_Codigo existirem ele faz a atualizacao (Patch).
+         Se arquivos.foto ou arquivos.contrato existirem, cria um FormData.
+         Cria uma variável constante data que "seta" como um FormData
+         Object.entries transforma o formData em um array de pares [chave, valor]
+         Ele pega o formDataConvertido (que é o formData com as datas convertidas)
+         Usa o forEach para iterar sobre cada par chave-valor e adiciona ao FormData.
+         Usa a variavel data e faz o append dos dados. */
       let response;
-      // Se for edição (aluno existe), faz PATCH
       if (aluno && aluno.Alunos_Codigo) {
         if (arquivos.foto || arquivos.contrato) {
           const data = new FormData();
-          Object.entries(formData).forEach(([key, value]) => {
+          Object.entries(formDataConvertido).forEach(([key, value]) => {
             data.append(key, value);
           });
+          /* Se arquivos.foto ou arquivos.contrato existirem, adiciona ao FormData */
           if (arquivos.foto) data.append("foto", arquivos.foto);
           if (arquivos.contrato) data.append("contrato", arquivos.contrato);
+          /* Response aguarda o recebimento da resposta da API, que chama o endpoint
+             de atualização do aluno, passando o codigo do aluno e os dados em formato 
+             formData, informando o tipo de conteúdo header como multipart/form-data */
           response = await api.patch(
             `/alunos/update/${aluno.Alunos_Codigo}`,
             data,
@@ -195,17 +272,13 @@ function StudentForm({ aluno, onCancel, onSaveSuccess }) {
               headers: { "Content-Type": "multipart/form-data" },
             }
           );
-        } else {
-          response = await api.patch(
-            `/alunos/update/${aluno.Alunos_Codigo}`,
-            formData
-          );
         }
+        /* (Senao) Se o aluno nao existir, faz o cadastro (Post) e segue o mesmo
+           fluxo descrito acima para foto e contrato */
       } else {
-        // Cadastro novo
         if (arquivos.foto || arquivos.contrato) {
           const data = new FormData();
-          Object.entries(formData).forEach(([key, value]) => {
+          Object.entries(formDataConvertido).forEach(([key, value]) => {
             data.append(key, value);
           });
           if (arquivos.foto) data.append("foto", arquivos.foto);
@@ -213,13 +286,26 @@ function StudentForm({ aluno, onCancel, onSaveSuccess }) {
           response = await api.post("/alunos/create/", data, {
             headers: { "Content-Type": "multipart/form-data" },
           });
+          /* (Senao) Se nao aluno nem foto ou contrato, faz o cadastro (Post)
+             apenas das informações do aluno repassadas no formulario */
         } else {
-          response = await api.post("/alunos/create/", formData);
+          response = await api.post("/alunos/create/", formDataConvertido);
         }
+        /* Resumo:  se tiver o aluno, e se tiver foto e contrato, atualiza, se tiver so 
+           foto ou contrato, atualiza, se nao tiver aluno, e tiver foto ou contrato, faz 
+           o cadastro do aluno com a foto e o contrato, senao tiver foto ou contrato,
+           so faz o cadastro do aluno */
       }
+      /* Cria uma variavel constante (resData) que recebe o resultado da variavel response,
+         criada acima.
+         Cria uma variavel constante (isSuccess) que vai verificar se a mensagem foi de 
+         sucesso ou erro.
+         IsSuccess recebe a mensagem de resData se ela existir E (&&) se tiver "sucesso"
+         (,includes) no conteudo dela, transformando tudo em letra minuscula (toLowerCase) */
       const resData = response.data;
       const isSuccess =
         resData.Mensagem && resData.Mensagem.toLowerCase().includes("sucesso");
+      /* Se isSuccess for verdadeiro (true) exibe a mensagem de sucesso no toast */
       if (isSuccess) {
         setMessage({
           type: "success",
@@ -228,10 +314,21 @@ function StudentForm({ aluno, onCancel, onSaveSuccess }) {
               ? "Alterações salvas com sucesso!"
               : resData.Mensagem) || "Aluno cadastrado com sucesso!",
         });
+        /* Aqui faz uma validacao do tipo de propriedade (props type validation).
+           Se o aluno existir e o tipo de onSaveSuccess for igual a "function"
+           Entao onSaveSuccess recebe a copia do conteudo de formData (...formData)  */
         if (aluno && typeof onSaveSuccess === "function") {
           onSaveSuccess({ ...formData });
         }
+        /* Se aluno nao tiver conteudo (!aluno) chama a funcao handleReset para 
+        limpar o formulario, Signinifica que é um cadastro novo. */
         if (!aluno) handleReset();
+
+        /* Caso nao seja nenhuma das condições acima, trata como erro. Ai define o SetMessage
+           como tipo error e no texto passa o erro do resData OU ("||") passa a mensagem do 
+           resData OU ("||") ve se aluno tem conteudo. Se tiver manda a mensagem de erro para 
+           atualizar o aluno, se nao tiver manda a mensagem de erro para cadastrar um novo aluno.
+            */
       } else {
         setMessage({
           type: "error",
@@ -242,6 +339,19 @@ function StudentForm({ aluno, onCancel, onSaveSuccess }) {
         });
       }
     } catch (error) {
+      /* E ai vem o bloco do catch. O try (tentativa) tentou fazer tudo aquilo acima.
+    Se por algum motivo der erro, ele cai aqui no catch. O Catch usa uma variavel
+    de sistema padrao (error). 
+    let -> cria uma variavel local que recebe o conteudo de aluno. Usa o ternario (? , :)
+    para definir a mensagem. Se aluno tem conteudo entao é atualizacao, se nao tem é 
+    cadastro. 
+    Se dentro da variavel de sistema error tiver "a parte" de response E ("&&") se dentro
+    da parte de response tiver a parte de data" isso quer dizer que tem mensagem de erro
+    especifico dentro do sistema. Entao, cria uma variavel constante (errData) que recebe 
+    essa parte .data da variavel de sistema error. Entao a variavel msg recebe, OU ("||")
+    .erro OU .mensagem OU msg que é a mensagem definida anteriormente. (nessa ordem de 
+    prioridade)) E ai passa para o setMessage o type e o conteudo da variavel msg 
+    como Text */
       let msg = aluno
         ? "Erro ao salvar alterações."
         : "Erro ao cadastrar aluno.";
@@ -250,38 +360,37 @@ function StudentForm({ aluno, onCancel, onSaveSuccess }) {
         msg = errData.Erro || errData.Mensagem || msg;
       }
       setMessage({ type: "error", text: msg });
+
+      /* E o ultimo bloco do try catch é o finally. Esse bloco executa independente
+      se entrou no try ou no catch. Seria a "conclusão". Nesse bloco volta a definir
+      o estado de loading para false, indicando que a operação assíncrona foi concluída, 
+      liberando os botoes. */
     } finally {
       setLoading(false);
     }
   };
 
+  /* Cria a variavel constante handleReset. Ela faz o setFormData chamar o utilitario
+     limparFormData, para as informacoes do formulario, e o setArquivos para limpar
+     os arquivos. Também pergunta se fotoImputRef e contratoImputRef contem referebcias.
+     Se tiver, também limpa as referencias */
   const handleReset = () => {
-    setFormData({
-      Alunos_Codigo: "",
-      Alunos_Nome: "",
-      Alunos_CPF: "",
-      Alunos_Data_Nascimento: "",
-      Alunos_Nome_Responsavel: "",
-      Alunos_CPF_Responsavel: "",
-      Alunos_Endereco_CEP: "",
-      Alunos_Endereco: "",
-      Alunos_Endereco_Complemento: "",
-      Alunos_Endereco_Bairro: "",
-      Alunos_Endereco_Localidade: "",
-      Alunos_Endereco_Cidade: "",
-      Alunos_Endereco_Estado: "",
-      Alunos_Telefone: "",
-      Alunos_Email: "",
-      Alunos_Contato_Emergencia: "",
-      Alunos_Telefone_Emergencia_1: "",
-      Alunos_Telefone_Emergencia_2: "",
-      Alunos_Data_Matricula: "",
-    });
+    setFormData(limparFormData());
     setArquivos({ foto: null, contrato: null });
     if (fotoInputRef.current) fotoInputRef.current.value = "";
     if (contratoInputRef.current) contratoInputRef.current.value = "";
   };
-
+  /*   Cria uma variavel constante handleFileChange que lida com mudanças nos inputs de
+       arquivos. Ele recebe a variavel (e) "event" variavel de sitema. (e) recebe o resultado
+       da funcao (=>). A funcao cria outras 2 variaveis constante {name e files} que recebe
+       o conteudo de (e). Usa a propriedade de sistema target para acessar os valores. No
+       objeto input (campo do formulario) tem por padrao file e name entao quando colocamos
+       name e files entre { } criamos duas variaves constantes que recebem esses valores do
+       input (desestruturacao de objetos). O name recebe o e.target.name e files recebe o
+       e.target.files. 
+       Se files tiver conteudo e for maior que zero chama SetArquivos com o objeto de sistema
+       (prev) que guarda o estado atual. A funcao (=>) passa o conteudo de prev (...prev),
+       e atualiza name e file no indice 0  */
   const handleFileChange = (e) => {
     const { name, files } = e.target;
     if (files && files.length > 0) {
@@ -289,30 +398,23 @@ function StudentForm({ aluno, onCancel, onSaveSuccess }) {
     }
   };
 
+  /* O return é o que vai ser exibido na tela.
+     Essa é a div principal Ela tem como objetico encapsular tudo o que ira aparecer
+     A div Configura a tela e o formulario, o classname chama um "bloco" de  configuracoes de 
+     layout que nesse caso é usado TailwindCSS */
   return (
-    <div className="w-full h-auto">
-      {message.text &&
-        (() => {
-          console.log("DEBUG message:", message);
-          return null;
-        })()}
-      {message.text && (
-        <div
-          className={`fixed bottom-4 right-4 z-50 p-4 rounded-md shadow-lg max-w-md w-auto ${
-            (message.type && message.type.trim().toLowerCase() === "success") ||
-            (message.text && message.text.toLowerCase().includes("sucesso"))
-              ? "bg-green-100 text-green-700 border-2 border-green-500"
-              : "bg-red-100 text-red-700 border-2 border-red-500"
-          }`}
-        >
-          {message.text}
-        </div>
-      )}
+    <div className="w-full max-w-2xl mx-auto h-auto p-6 bg-gray-800 rounded-xl">
+      {/* Aqui fica a mensagem toast (que aparece no canto direito da tela) Ela é 
+        uma props (propriedade) que esta definida em /miscellaneous/Messages.jsx  */}
+      <MessageToast messageToast={message} />
 
-      <form
-        onSubmit={handleSubmit}
-        className="bg-gray-800 rounded-xl p-6 space-y-4 mx-auto"
-      >
+      {/* Aqui começa o Formulario. dentro de form, usamos uma funcao dele (onsubmit)
+        para definir o conportamento ao enviar o formulario. O onsubmit recebe a funcao
+        criada acima handleSubmit */}
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Essas divs internas sao o formulario em si. */}
+
+        {/* INICIO - Informacao de campos obrigatorios */}
         <div className="w-full mb-8 flex">
           <span
             style={{
@@ -330,13 +432,17 @@ function StudentForm({ aluno, onCancel, onSaveSuccess }) {
             Campos com * são obrigatórios.
           </span>
         </div>
+        {/* FIM - Informacao de campos obrigatorios */}
 
-        {/* Código do Aluno */}
+        {/* INICIO - Código do Aluno */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
             Código do Aluno *
           </label>
           <input
+            /* O imput define os valores. name e value sao usados para 
+               identificar e controlar os dados do formulario.
+               onChange faz a atualizacao do estado do formulario */
             type="number"
             name="Alunos_Codigo"
             value={formData.Alunos_Codigo}
@@ -345,8 +451,9 @@ function StudentForm({ aluno, onCancel, onSaveSuccess }) {
             className="w-full px-4 py-2 bg-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
+        {/* FIM - Código do Aluno */}
 
-        {/* Nome Completo */}
+        {/* Inicio - Nome Completo */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
             Nome Completo *
@@ -360,8 +467,9 @@ function StudentForm({ aluno, onCancel, onSaveSuccess }) {
             className="w-full px-4 py-2 bg-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
+        {/* FIM - Nome Completo */}
 
-        {/* Data de Nascimento */}
+        {/* Inicio - Data de Nascimento */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
             Data de Nascimento *
@@ -375,11 +483,13 @@ function StudentForm({ aluno, onCancel, onSaveSuccess }) {
             required
           />
         </div>
+        {/* FIM - Data de Nascimento */}
 
-        {/* CPF */}
+        {/* Inicio - CPF */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
             CPF
+            {/* Chama o utilitario calcularIdade para saber se o aluno é maior de idade */}
             {calcularIdade(formData.Alunos_Data_Nascimento) >= 18 ? " *" : ""}
           </label>
           <input
@@ -390,14 +500,17 @@ function StudentForm({ aluno, onCancel, onSaveSuccess }) {
             className="w-full px-4 py-2 bg-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="000.000.000-00"
             maxLength="14"
+            /* inclui o required para o campo */
             required={calcularIdade(formData.Alunos_Data_Nascimento) >= 18}
           />
         </div>
+        {/* FIM - CPF */}
 
-        {/* Nome do Responsável */}
+        {/* Inicio - Nome do Responsável */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
             Nome do Responsável
+            {/* Chama o utilitario calcularIdade para saber se o aluno é menor de idade */}
             {calcularIdade(formData.Alunos_Data_Nascimento) < 18 ? " *" : ""}
           </label>
           <input
@@ -407,11 +520,13 @@ function StudentForm({ aluno, onCancel, onSaveSuccess }) {
             onChange={handleChange}
             className="w-full px-4 py-2 bg-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="Deixe em branco se for maior de idade"
+            /* inclui o required para o campo */
             required={calcularIdade(formData.Alunos_Data_Nascimento) < 18}
           />
         </div>
+        {/* FIM - Nome do Responsável */}
 
-        {/* CPF do Responsável */}
+        {/* Inicio - CPF do Responsável */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
             CPF do Responsável
@@ -428,6 +543,7 @@ function StudentForm({ aluno, onCancel, onSaveSuccess }) {
             required={calcularIdade(formData.Alunos_Data_Nascimento) < 18}
           />
         </div>
+        {/* FIM - CPF do Responsável */}
 
         {/* CEP */}
         <div>
@@ -439,6 +555,7 @@ function StudentForm({ aluno, onCancel, onSaveSuccess }) {
               type="text"
               name="Alunos_Endereco_CEP"
               value={formData.Alunos_Endereco_CEP}
+              /* onChange chama o utilitario para formatar o CEP */
               onChange={handleCepChangeFormatado}
               className="w-full px-4 py-2 bg-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="00000-000"
@@ -452,8 +569,9 @@ function StudentForm({ aluno, onCancel, onSaveSuccess }) {
             )}
           </div>
         </div>
+        {/* FIM - CEP */}
 
-        {/* Endereço */}
+        {/* Inicio - Endereço */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
             Endereço *
@@ -468,8 +586,9 @@ function StudentForm({ aluno, onCancel, onSaveSuccess }) {
             required
           />
         </div>
+        {/* FIM - Endereço */}
 
-        {/* Complemento */}
+        {/* Inicio - Complemento */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
             Complemento
@@ -482,8 +601,9 @@ function StudentForm({ aluno, onCancel, onSaveSuccess }) {
             className="w-full px-4 py-2 bg-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
+        {/* FIM - Complemento */}
 
-        {/* Bairro */}
+        {/* Inicio - Bairro */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
             Bairro *
@@ -498,8 +618,9 @@ function StudentForm({ aluno, onCancel, onSaveSuccess }) {
             required
           />
         </div>
+        {/* FIM - Bairro */}
 
-        {/* Localidade */}
+        {/* Inicio - Localidade */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
             Localidade *
@@ -514,8 +635,9 @@ function StudentForm({ aluno, onCancel, onSaveSuccess }) {
             required
           />
         </div>
+        {/* FIM - Localidade */}
 
-        {/* Cidade */}
+        {/* Inicio - Cidade */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
             Cidade *
@@ -530,8 +652,9 @@ function StudentForm({ aluno, onCancel, onSaveSuccess }) {
             required
           />
         </div>
+        {/* FIM - Cidade */}
 
-        {/* Estado */}
+        {/* Inicio - Estado */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
             Estado *
@@ -547,8 +670,9 @@ function StudentForm({ aluno, onCancel, onSaveSuccess }) {
             required
           />
         </div>
+        {/* FIM - Estado */}
 
-        {/* Telefone */}
+        {/* Inicio - Telefone */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
             Telefone *
@@ -564,8 +688,9 @@ function StudentForm({ aluno, onCancel, onSaveSuccess }) {
             required
           />
         </div>
+        {/* FIM - Telefone */}
 
-        {/* Email */}
+        {/* Inicio - Email */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
             Email *
@@ -579,8 +704,9 @@ function StudentForm({ aluno, onCancel, onSaveSuccess }) {
             required
           />
         </div>
+        {/* FIM - Email */}
 
-        {/* Contato de Emergência */}
+        {/* Inicio - Nome do Contato de Emergência */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
             Nome do Contato de Emergência *
@@ -594,8 +720,9 @@ function StudentForm({ aluno, onCancel, onSaveSuccess }) {
             required
           />
         </div>
+        {/* FIM - Nome do Contato de Emergência */}
 
-        {/* Telefone Emergência 1 */}
+        {/* Inicio - Telefone Emergência 1 */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
             Telefone Emergência 1 *
@@ -611,8 +738,9 @@ function StudentForm({ aluno, onCancel, onSaveSuccess }) {
             required
           />
         </div>
+        {/* FIM - Telefone Emergência 1 */}
 
-        {/* Telefone Emergência 2 */}
+        {/* Inicio - Telefone Emergência 2 */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
             Telefone Emergência 2
@@ -627,8 +755,9 @@ function StudentForm({ aluno, onCancel, onSaveSuccess }) {
             maxLength="15"
           />
         </div>
+        {/* FIM - Telefone Emergência 2 */}
 
-        {/* Foto do Aluno */}
+        {/* Inicio - Foto do Aluno */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
             Foto do Aluno
@@ -648,8 +777,9 @@ function StudentForm({ aluno, onCancel, onSaveSuccess }) {
             </span>
           )}
         </div>
+        {/* FIM - Foto do Aluno */}
 
-        {/* Contrato do Aluno */}
+        {/* Inicio - Contrato do Aluno */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
             Contrato do Aluno
@@ -669,8 +799,9 @@ function StudentForm({ aluno, onCancel, onSaveSuccess }) {
             </span>
           )}
         </div>
+        {/* FIM - Contrato do Aluno */}
 
-        {/* Data de Matrícula */}
+        {/* Inicio - Data de Matrícula */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
             Data de Matrícula *
@@ -680,64 +811,31 @@ function StudentForm({ aluno, onCancel, onSaveSuccess }) {
             name="Alunos_Data_Matricula"
             value={formData.Alunos_Data_Matricula}
             onChange={handleChange}
-            required
             className="w-full px-4 py-2 bg-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            required
           />
         </div>
-
-        <div className="flex justify-center gap-6 pt-4">
-          <button
-            type="submit"
-            disabled={loading}
-            className="flex items-center bg-green-600 text-white px-3.5 py-1.5 rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all text-[15px]"
-            style={{ fontWeight: 400, boxShadow: "none" }}
-          >
-            <span className="align-middle mr-1" style={{ fontSize: 17 }}>
-              💾
-            </span>
-            {loading ? "Salvando..." : "Salvar Alterações"}
-          </button>
-          <button
-            type="button"
-            onClick={handleReset}
-            disabled={loading}
-            className="flex items-center bg-gray-600 text-white px-3.5 py-1.5 rounded-md hover:bg-gray-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all text-[15px]"
-            style={{ fontWeight: 400, boxShadow: "none" }}
-          >
-            <span className="align-middle mr-1" style={{ fontSize: 17 }}>
-              🧹
-            </span>
-            Limpar
-          </button>
-          {onCancel && (
-            <button
-              type="button"
-              onClick={onCancel}
-              disabled={loading}
-              className="flex items-center bg-gray-600 text-white px-3.5 py-1.5 rounded-md hover:bg-gray-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all text-[15px]"
-              style={{ fontWeight: 400, boxShadow: "none" }}
-            >
-              <span
-                className="align-middle mr-1"
-                style={{ fontSize: 17, color: "#fb7185" }}
-              >
-                ❌
-              </span>
-              Cancelar
-            </button>
-          )}
-        </div>
+        {/* FIM - Data de Matrícula */}
       </form>
+      {/* Inicio - Botoes de Ação: Cadastrar e Limpar */}
+      <div className="flex justify-center gap-6 pt-4">
+        <Buttons.CadastrarAluno disabled={loading} loading={loading} />
+        <Buttons.Limpar
+          type="button"
+          onClick={handleReset}
+          disabled={loading}
+        />
+      </div>
+      {/* FIM - Botoes de Ação: Cadastrar e Limpar */}
     </div>
   );
 }
-
-export default StudentForm;
 
 import PropTypes from "prop-types";
 
 StudentForm.propTypes = {
   aluno: PropTypes.object,
-  onCancel: PropTypes.func,
   onSaveSuccess: PropTypes.func,
 };
+
+export default StudentForm;

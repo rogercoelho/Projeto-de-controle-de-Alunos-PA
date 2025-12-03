@@ -1,6 +1,6 @@
 import React from "react";
 import { useState } from "react";
-import { formatarCPF } from "../../utils/utils";
+import { formatarCPF } from "../../utils/Utils";
 import api from "../../services/api";
 import StudentDetails from "./StudentDetails";
 import StudentForm from "./StudentForm";

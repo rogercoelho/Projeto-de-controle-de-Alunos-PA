@@ -1,40 +1,48 @@
-// Hook/função utilitária para buscar CEP e atualizar estados
-const buscarCEP = async (cep, setFormData, setMessage, setLoadingCep) => {
-  const cepLimpo = cep.replace(/\D/g, "");
-  if (cepLimpo.length !== 8) return;
-  if (setLoadingCep) setLoadingCep(true);
-  try {
-    const response = await fetch(`https://viacep.com.br/ws/${cepLimpo}/json/`);
-    const data = await response.json();
-    if (data.erro) {
-      if (setMessage)
-        setMessage({ type: "error", text: "CEP não encontrado." });
-      if (setFormData)
-        setFormData((prev) => ({
-          ...prev,
-          Alunos_Endereco: "",
-          Alunos_Endereco_Bairro: "",
-          Alunos_Endereco_Localidade: "",
-          Alunos_Endereco_Cidade: "",
-          Alunos_Endereco_Estado: "",
-        }));
-    } else {
-      if (setFormData)
-        setFormData((prev) => ({
-          ...prev,
-          Alunos_Endereco: data.logradouro || "",
-          Alunos_Endereco_Bairro: data.bairro || "",
-          Alunos_Endereco_Localidade: data.localidade || "",
-          Alunos_Endereco_Cidade: data.localidade || "",
-          Alunos_Endereco_Estado: data.uf || "",
-        }));
-    }
-  } catch (error) {
-    if (setMessage)
-      setMessage({ type: "error", text: "Erro ao buscar CEP. " + error });
-  } finally {
-    if (setLoadingCep) setLoadingCep(false);
-  }
-};
+import { useState, useEffect } from "react";
 
-export default buscarCEP;
+function useBuscarCEP(cep) {
+  const [loadingCep, setLoadingCep] = useState(false);
+  const [dadosCep, setDadosCep] = useState(null);
+  const [erroCep, setErroCep] = useState("");
+
+  useEffect(() => {
+    const cepLimpo = cep ? cep.replace(/\D/g, "") : "";
+    if (cepLimpo.length !== 8) {
+      setDadosCep(null);
+      setErroCep("");
+      setLoadingCep(false);
+      return;
+    }
+
+    const controller = new AbortController();
+    setLoadingCep(true);
+    setErroCep("");
+
+    fetch(`https://viacep.com.br/ws/${cepLimpo}/json/`, {
+      signal: controller.signal,
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.erro) {
+          setDadosCep(null);
+          setErroCep("CEP não encontrado.");
+        } else {
+          setDadosCep(data);
+        }
+      })
+      .catch((error) => {
+        if (error.name !== "AbortError") {
+          setDadosCep(null);
+          setErroCep("Erro ao buscar CEP. " + error.message);
+        }
+      })
+      .finally(() => setLoadingCep(false));
+
+    // Cleanup para abortar requisições antigas
+    return () => controller.abort();
+  }, [cep]);
+
+  return { loadingCep, dadosCep, erroCep };
+}
+
+export default useBuscarCEP;

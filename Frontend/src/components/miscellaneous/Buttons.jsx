@@ -1,4 +1,4 @@
-import React from "react";
+import PropTypes from "prop-types";
 
 function ControleAluno({ onClick }) {
   return (
@@ -11,6 +11,10 @@ function ControleAluno({ onClick }) {
   );
 }
 
+ControleAluno.propTypes = {
+  onClick: PropTypes.func,
+};
+
 function CadastrarAluno({ onClick }) {
   return (
     <button
@@ -22,6 +26,10 @@ function CadastrarAluno({ onClick }) {
   );
 }
 
+CadastrarAluno.propTypes = {
+  onClick: PropTypes.func,
+};
+
 function EditarAluno({ onClick }) {
   return (
     <button
@@ -32,6 +40,10 @@ function EditarAluno({ onClick }) {
     </button>
   );
 }
+
+EditarAluno.propTypes = {
+  onClick: PropTypes.func,
+};
 function DeletarAluno({ onClick }) {
   return (
     <button
@@ -43,6 +55,10 @@ function DeletarAluno({ onClick }) {
   );
 }
 
+DeletarAluno.propTypes = {
+  onClick: PropTypes.func,
+};
+
 function PesquisarAluno({ onClick }) {
   return (
     <button
@@ -53,6 +69,10 @@ function PesquisarAluno({ onClick }) {
     </button>
   );
 }
+
+PesquisarAluno.propTypes = {
+  onClick: PropTypes.func,
+};
 function ControleAulas({ onClick }) {
   return (
     <button
@@ -63,6 +83,10 @@ function ControleAulas({ onClick }) {
     </button>
   );
 }
+
+ControleAulas.propTypes = {
+  onClick: PropTypes.func,
+};
 
 function ControlePresenca({ onClick }) {
   return (
@@ -75,6 +99,10 @@ function ControlePresenca({ onClick }) {
   );
 }
 
+ControlePresenca.propTypes = {
+  onClick: PropTypes.func,
+};
+
 function ControleUsuarios({ onClick }) {
   return (
     <button
@@ -85,6 +113,10 @@ function ControleUsuarios({ onClick }) {
     </button>
   );
 }
+
+ControleUsuarios.propTypes = {
+  onClick: PropTypes.func,
+};
 
 function CadastrarUsuario({ onClick }) {
   return (
@@ -97,6 +129,10 @@ function CadastrarUsuario({ onClick }) {
   );
 }
 
+CadastrarUsuario.propTypes = {
+  onClick: PropTypes.func,
+};
+
 function ListarUsuarios({ onClick }) {
   return (
     <button
@@ -107,6 +143,26 @@ function ListarUsuarios({ onClick }) {
     </button>
   );
 }
+
+ListarUsuarios.propTypes = {
+  onClick: PropTypes.func,
+};
+
+function Limpar({ onClick, disabled }) {
+  return (
+    <button
+      className="bg-gray-500 rounded-2xl p-2 border-2 border-gray-300 font-bold"
+      onClick={onClick}
+      disabled={disabled}
+    >
+      Limpar
+    </button>
+  );
+}
+Limpar.propTypes = {
+  onClick: PropTypes.func,
+  disabled: PropTypes.bool,
+};
 
 export const Buttons = {
   ControleAluno,
@@ -119,4 +175,7 @@ export const Buttons = {
   ControleUsuarios,
   CadastrarUsuario,
   ListarUsuarios,
+  Limpar,
 };
+
+export default Buttons;

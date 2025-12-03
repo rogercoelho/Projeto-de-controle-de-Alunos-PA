@@ -816,17 +816,25 @@ function StudentForm({ aluno, onSaveSuccess }) {
           />
         </div>
         {/* FIM - Data de Matrícula */}
+
+        {/* Inicio - Botoes de Ação: Cadastrar e Limpar */}
+        <div className="flex justify-center gap-6 pt-4">
+          <Buttons.CadastrarAluno
+            type="submit"
+            disabled={loading}
+            loading={loading}
+          />
+          <Buttons.Limpar
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              handleReset();
+            }}
+            disabled={loading}
+          />
+        </div>
+        {/* FIM - Botoes de Ação: Cadastrar e Limpar */}
       </form>
-      {/* Inicio - Botoes de Ação: Cadastrar e Limpar */}
-      <div className="flex justify-center gap-6 pt-4">
-        <Buttons.CadastrarAluno disabled={loading} loading={loading} />
-        <Buttons.Limpar
-          type="button"
-          onClick={handleReset}
-          disabled={loading}
-        />
-      </div>
-      {/* FIM - Botoes de Ação: Cadastrar e Limpar */}
     </div>
   );
 }

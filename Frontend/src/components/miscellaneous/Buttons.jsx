@@ -1,5 +1,44 @@
 import PropTypes from "prop-types";
 
+/* Inicio - Botao Cadastrar Aluno */
+function CadastrarAluno({ onClick, type = "submit", disabled, loading }) {
+  return (
+    <button
+      type={type || "submit"}
+      className="bg-emerald-600 rounded-md p-2 border-2 border-gray-300 font-bold hover:bg-emerald-700"
+      onClick={onClick}
+      disabled={disabled}
+    >
+      {loading ? "Cadastrando..." : "Cadastrar Aluno"}
+    </button>
+  );
+}
+CadastrarAluno.propTypes = {
+  onClick: PropTypes.func,
+  type: PropTypes.string,
+  disabled: PropTypes.bool,
+  loading: PropTypes.bool,
+};
+/* Fim - Botao Cadastrar Aluno */
+
+/* Inicio - Botao Limpar */
+function Limpar({ onClick, disabled }) {
+  return (
+    <button
+      className="bg-gray-500 rounded-md p-2 border-2 border-gray-300 font-bold hover:bg-gray-600"
+      onClick={onClick}
+      disabled={disabled}
+    >
+      Limpar
+    </button>
+  );
+}
+Limpar.propTypes = {
+  onClick: PropTypes.func,
+  disabled: PropTypes.bool,
+};
+/* Fim - Botao Limpar */
+
 function ControleAluno({ onClick }) {
   return (
     <button
@@ -12,21 +51,6 @@ function ControleAluno({ onClick }) {
 }
 
 ControleAluno.propTypes = {
-  onClick: PropTypes.func,
-};
-
-function CadastrarAluno({ onClick }) {
-  return (
-    <button
-      className="bg-emerald-600 rounded-2xl p-2 border-2 border-gray-300 font-bold"
-      onClick={onClick}
-    >
-      Cadastrar Aluno
-    </button>
-  );
-}
-
-CadastrarAluno.propTypes = {
   onClick: PropTypes.func,
 };
 
@@ -146,22 +170,6 @@ function ListarUsuarios({ onClick }) {
 
 ListarUsuarios.propTypes = {
   onClick: PropTypes.func,
-};
-
-function Limpar({ onClick, disabled }) {
-  return (
-    <button
-      className="bg-gray-500 rounded-2xl p-2 border-2 border-gray-300 font-bold"
-      onClick={onClick}
-      disabled={disabled}
-    >
-      Limpar
-    </button>
-  );
-}
-Limpar.propTypes = {
-  onClick: PropTypes.func,
-  disabled: PropTypes.bool,
 };
 
 export const Buttons = {

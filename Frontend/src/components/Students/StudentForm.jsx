@@ -771,9 +771,21 @@ function StudentForm({ aluno, onSaveSuccess }) {
             className="w-full px-4 py-2 bg-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           {arquivos.foto && (
-            <span className="text-sm text-green-600">
+            <span className="text-sm text-green-600 flex items-center gap-2">
               📷 {arquivos.foto.name} ({(arquivos.foto.size / 1024).toFixed(1)}{" "}
               KB)
+              <button
+                type="button"
+                className="ml-0.5 text-red-500 font-bold rounded hover:bg-red-700 hover:text-white"
+                style={{ padding: "5px" }}
+                onClick={() => {
+                  setArquivos((prev) => ({ ...prev, foto: null }));
+                  if (fotoInputRef.current) fotoInputRef.current.value = "";
+                }}
+                aria-label="Remover foto"
+              >
+                X
+              </button>
             </span>
           )}
         </div>
@@ -793,9 +805,22 @@ function StudentForm({ aluno, onSaveSuccess }) {
             className="w-full px-4 py-2 bg-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           {arquivos.contrato && (
-            <span className="text-sm text-green-600">
+            <span className="text-sm text-green-600 flex items-center gap-2">
               📄 {arquivos.contrato.name} (
               {(arquivos.contrato.size / 1024).toFixed(1)} KB)
+              <button
+                type="button"
+                className="ml-0.5 text-red-500 font-bold rounded hover:bg-red-700 hover:text-white"
+                style={{ padding: "5px" }}
+                onClick={() => {
+                  setArquivos((prev) => ({ ...prev, contrato: null }));
+                  if (contratoInputRef.current)
+                    contratoInputRef.current.value = "";
+                }}
+                aria-label="Remover contrato"
+              >
+                X
+              </button>
             </span>
           )}
         </div>

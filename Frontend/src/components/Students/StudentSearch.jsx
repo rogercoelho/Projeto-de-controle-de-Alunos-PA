@@ -528,31 +528,14 @@ function StudentSearch() {
                   </span>
                   {/* Inicio - Botoes de controle de ordenacao - codigo e nome */}
                   <div className="flex gap-2 justify-center">
-                    <button
+                    <Buttons.OrdenarPorCodigo
                       onClick={() => handleSortChange("codigo")}
-                      className={`flex gap-4 border-2 rounded-md font-bold transition-colors text-sm ${
-                        sortBy === "codigo"
-                          ? "bg-blue-500 border-gray-300 hover:bg-blue-600"
-                          : "bg-gray-700 text-gray-300 active:bg-gray-600"
-                      }`}
-                    >
-                      🧩 Código
-                    </button>
-                    <button
+                      isActive={sortBy === "codigo"}
+                    ></Buttons.OrdenarPorCodigo>
+                    <Buttons.OrdenarPorNome
                       onClick={() => handleSortChange("nome")}
-                      className={`flex gap-4 items-center border-2 rounded-md font-bold transition-colors text-sm ${
-                        sortBy === "nome"
-                          ? "bg-blue-500 border-gray-300 hover:bg-blue-600"
-                          : "bg-gray-700 text-gray-300 active:bg-gray-600"
-                      }`}
-                    >
-                      <img
-                        src="/controle_pa/user.png"
-                        alt="Nome"
-                        className="w-6 h-6 flex"
-                      />
-                      Nome
-                    </button>
+                      isActive={sortBy === "nome"}
+                    ></Buttons.OrdenarPorNome>
                   </div>
                   {/* Fim - Botoes de controle de ordenacao - codigo e nome */}
                 </div>

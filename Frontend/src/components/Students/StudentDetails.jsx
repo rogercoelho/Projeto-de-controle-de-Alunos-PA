@@ -1,69 +1,13 @@
-import React, { useState } from "react";
 import PropTypes from "prop-types";
-
-// Skeleton/placeholder para foto do aluno
-function StudentPhotoSkeleton({ foto, nome }) {
-  const [loaded, setLoaded] = useState(false);
-  const [error, setError] = useState(false);
-  if (!foto || error) {
-    return (
-      <div className="w-48 h-48 flex items-center justify-center bg-transparent rounded-md border-2 border-gray-300">
-        <img
-          src="/controle_pa/logo.png"
-          alt="Logo placeholder"
-          className="w-24 h-24 object-contain opacity-60"
-        />
-      </div>
-    );
-  }
-
-  // Pré-carregamento em segundo plano
-  // Cache busting para garantir recarregamento da imagem
-  const cacheBuster = React.useRef(Date.now());
-  React.useEffect(() => {
-    cacheBuster.current = Date.now();
-    if (!foto) return;
-    const img = new window.Image();
-    img.src = `https://api2.plantandoalegria.com.br/uploads/fotos/${foto}?t=${cacheBuster.current}`;
-    img.onload = () => setLoaded(true);
-    img.onerror = () => setError(true);
-    // eslint-disable-next-line
-  }, [foto]);
-
-  return (
-    <div className="w-48 h-48 relative" style={{ background: "transparent" }}>
-      {loaded && !error && (
-        <img
-          src={`https://api2.plantandoalegria.com.br/uploads/fotos/${foto}?t=${cacheBuster.current}`}
-          alt={nome}
-          className="w-48 h-48 object-contain rounded-md border-2 border-gray-300"
-          style={{ zIndex: 1, position: "relative", background: "transparent" }}
-        />
-      )}
-      {!loaded && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black rounded-md z-10 animate-pulse">
-          <img
-            src="/controle_pa/logo.png"
-            alt="Logo placeholder"
-            className="w-24 h-24 object-contain opacity-60"
-          />
-        </div>
-      )}
-    </div>
-  );
-}
+import StudentPhotoSkeleton from "../miscellaneous/PhotoSkeleton";
+import Buttons from "../miscellaneous/Buttons";
 
 function StudentDetails({ aluno, onEdit, onToggleSituacao, onBack }) {
   if (!aluno) return null;
   return (
     <div className="w-full h-auto space-y-2 mx-auto">
       <div className="flex gap-2 mb-4">
-        <button
-          onClick={onBack}
-          className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700"
-        >
-          ← Voltar para Pesquisa
-        </button>
+        <Buttons.VoltarPesquisa onBack={onBack} />
         <button
           onClick={onEdit}
           className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"

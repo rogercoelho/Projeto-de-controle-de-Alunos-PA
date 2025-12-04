@@ -1,4 +1,4 @@
-import PropTypes from "prop-types";
+import PropTypes, { func } from "prop-types";
 
 /* Inicio - Botao Cadastrar Aluno */
 function CadastrarAluno({ onClick, type = "submit", disabled, loading }) {
@@ -63,11 +63,16 @@ PesquisarAluno.propTypes = {
 };
 /* Fim - Botao Pesquisar Aluno */
 
-function OrdenarPorCodigo({ onClick }) {
+/* Inicio - Botao Ordenar por Código */
+function OrdenarPorCodigo({ onClick, isActive }) {
   return (
     <button
-      className="bg-blue-500 rounded-md p-2 border-2 border-gray-300 font-bold hover:bg-blue-600"
       onClick={onClick}
+      className={`flex gap-4 border-2 p-2 rounded-md font-bold transition-colors text-sm ${
+        isActive
+          ? "bg-blue-500 border-gray-300 hover:bg-blue-600"
+          : "bg-gray-700 text-gray-300 active:bg-gray-600"
+      }`}
     >
       🧩 Código
     </button>
@@ -75,7 +80,49 @@ function OrdenarPorCodigo({ onClick }) {
 }
 OrdenarPorCodigo.propTypes = {
   onClick: PropTypes.func,
+  isActive: PropTypes.bool,
 };
+/* Fim - Botao Ordenar por Código */
+
+/* Inicio - Botao Ordenar por Nome */
+function OrdenarPorNome({ onClick, isActive }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex gap-4 border-2 p-2 rounded-md font-bold transition-colors text-sm ${
+        isActive
+          ? "bg-blue-500 border-gray-300 hover:bg-blue-600"
+          : "bg-gray-700 text-gray-300 active:bg-gray-600"
+      }`}
+    >
+      <img src="/controle_pa/user.png" alt="Nome" className="w-6 h-6 flex" />
+      Nome
+    </button>
+  );
+}
+OrdenarPorNome.propTypes = {
+  onClick: PropTypes.func,
+  isActive: PropTypes.bool,
+};
+/* Fim - Botao Ordenar por Nome */
+
+/* Inicio - Botao Voltar para a Pesquisa */
+
+/* Inicio - Botao Voltar para a Pesquisa */
+function VoltarPesquisa({ onBack }) {
+  return (
+    <button
+      onClick={onBack}
+      className="bg-gray-500 rounded-md p-2 border-2 border-gray-300 font-bold hover:bg-gray-600"
+    >
+      🠔 Voltar
+    </button>
+  );
+}
+VoltarPesquisa.propTypes = {
+  onBack: PropTypes.func,
+};
+/* Fim - Botao Voltar para a Pesquisa */
 
 function EditarAluno({ onClick }) {
   return (
@@ -183,6 +230,8 @@ ListarUsuarios.propTypes = {
 
 export const Buttons = {
   OrdenarPorCodigo,
+  OrdenarPorNome,
+  VoltarPesquisa,
   CadastrarAluno,
   EditarAluno,
   DeletarAluno,

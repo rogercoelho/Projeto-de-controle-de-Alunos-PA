@@ -1,16 +1,35 @@
 import React from "react";
 import { useState } from "react";
-import { formatarCPF } from "../../utils/Utils";
 import api from "../../services/api";
+import { formatarCPF } from "../../utils/Utils";
 import StudentDetails from "./StudentDetails";
-import StudentForm from "./StudentForm";
+//import StudentForm from "./StudentForm";
+import StudentEditForm from "./StudentEditForm";
+import MessageToast from "../miscellaneous/MessageToast";
+import { Buttons } from "../miscellaneous/Buttons";
+import emojiname from "../../../public/user.png";
 
+/* ===== Inicio da Função StudentSearch */
+
+/* Cria variavel constante do objeto searchData e a função setSearchData, recebe o useState
+   setando codigo, cpf e nome como vazios */
 function StudentSearch() {
   const [searchData, setSearchData] = useState({
     codigo: "",
     cpf: "",
     nome: "",
   });
+
+  /* Cria as variaveis constantes para controlar o estado do componente. 
+     mostrarInativos para controlar se alunos inativos devem ser exibidos.
+     results para armazenar os resultados da busca
+     loading para indicar se a busca está em andamento
+     message para armazenar mensagens de feedback
+     selectedAluno para armazenar o aluno selecionado
+     isEditing para controlar se o modo de edição está ativo
+     sortBy para controlar o critério de ordenação
+     currentPage para controlar a página atual na paginação
+     alunosPerPage para controlar a quantidade de alunos por página */
   const [mostrarInativos, setMostrarInativos] = useState(false);
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -21,7 +40,13 @@ function StudentSearch() {
   const [currentPage, setCurrentPage] = useState(1);
   const alunosPerPage = 10;
 
-  // Ordenação
+  /* Função para ordenar os resultados com base no critério selecionado
+     Cria uma variavel constante (ordenarResultados) que recebe 2 parametros:
+     alunos e criterio. Se o criterio for igual a "codigo" entao retorna o 
+     conteudo de parametro alunos ordenado pelo codigo. Se o codigo do aluno A
+     for menor que o codigo do aluno B, entao A vem antes de B na ordenação e vice versa.
+     Senao retorna o conteudo do parametro alunos ordenado pelo nome usando a funcao
+     localeCompare */
   const ordenarResultados = (alunos, criterio) => {
     if (criterio === "codigo") {
       return [...alunos].sort((a, b) => a.Alunos_Codigo - b.Alunos_Codigo);
@@ -32,18 +57,35 @@ function StudentSearch() {
     }
   };
 
-  // Paginação
+  /* Função para calcular os índices para paginação e os alunos atuais a serem exibidos
+     Cria uma variavel constante (indexOfLastAluno) que representa o índice do último
+     aluno a ser exibido na página atual. Ele recebe currentPage multiplicado por alunosPerPage.
+     A variavel indexOfFirstAluno representa o índice do primeiro aluno a ser exibido na 
+     página atual. Ele recebe indexOfLastAluno menos alunosPerPage.
+     A variavel currentAlunos representa os alunos que serão exibidos na página atual,
+     obtidos a partir do array results usando slice para dividir o array, utilizando os
+     indices indexOfFirstAluno e indexOfLastAluno.
+      A variavel totalPages representa o número total de páginas, calculado dividindo. Ele
+      recebe o tamanho do array results dividido por alunosPerPage e arredondando para cima.
+  */
   const indexOfLastAluno = currentPage * alunosPerPage;
   const indexOfFirstAluno = indexOfLastAluno - alunosPerPage;
   const currentAlunos = results.slice(indexOfFirstAluno, indexOfLastAluno);
   const totalPages = Math.ceil(results.length / alunosPerPage);
 
-  // Handlers
+  /* Funcao que cotrola a mudança do critério de ordenação. 
+     Cria uma variavel constante (handleSortChange) que recebe um parametro novoCriterio.
+     Ele usa a função setSortBy para atualizar o estado de sortBy com o novo critério.
+     O setResults usa a função ordenarResultados para atualizar os resultados com base no
+     results e novoCriterio */
   const handleSortChange = (novoCriterio) => {
     setSortBy(novoCriterio);
     setResults(ordenarResultados(results, novoCriterio));
   };
 
+  /* Funcao para limpar os campos de busca e resultados
+     Cria uma variavel constante (handleClearSearch) que limpa os dados de busca,
+     resultados, mensagens e reseta a pagina atual */
   const handleClearSearch = () => {
     setSearchData({ codigo: "", cpf: "", nome: "" });
     setResults([]);
@@ -51,6 +93,16 @@ function StudentSearch() {
     setCurrentPage(1);
   };
 
+  /* Funcao para selecionar um aluno e buscar seus dados mais atualizados
+     Cria uma variavel constante (handleSelectAluno) que recebe um parametro assincrono aluno.
+     Ele faz uma requisição usando o try. Cria uma variavel constante (response) que aguarda o
+     recebimento da resposta da API, buscando o aluno pelo código.
+     Se os dados de response.data e response.data.Alunos_Codigo existirem, ele usa a função
+     setSelectedAluno trazendo os dados de response.data.
+     Caso contrário, usa os dados do aluno que estava em memoria como alternativa caso a
+     requisição falhe.
+     Em caso de erro na requisição, também usa os dados do aluno passado como fallback e mais
+     a mensagem de erro. */
   const handleSelectAluno = async (aluno) => {
     // Sempre buscar os dados mais atualizados do aluno ao selecionar
     try {
@@ -61,20 +113,20 @@ function StudentSearch() {
         setSelectedAluno(aluno); // fallback
       }
     } catch (error) {
-      setSelectedAluno(aluno); // fallback em caso de erro
+      setSelectedAluno(aluno + error); // fallback em caso de erro
     }
-    //setIsEditing(false);
-    // setEditFormData(aluno);
-    // setArquivosEdit({ foto: null, contrato: null });
   };
 
+  /* Funcao para voltar para a tela de busca
+     Cria a variavel constante (handleBackToSearch) que reseta o estado 
+     selectedAluno para null */
   const handleBackToSearch = () => {
     setSelectedAluno(null);
-    //setIsEditing(false);
-    // setArquivosEdit({ foto: null, contrato: null });
-    // setEditFormData({});
   };
 
+  /* Funcao para iniciar a edição de um aluno
+     Cria a variavel constante (handleEdit) que verifica se o aluno selecionado está inativo.
+     Se estiver, exibe uma mensagem de erro. Caso contrário, ativa o modo de edição (true). */
   const handleEdit = () => {
     if (selectedAluno && selectedAluno.Alunos_Situacao === "Inativo") {
       setMessage({
@@ -86,6 +138,13 @@ function StudentSearch() {
     setIsEditing(true);
   };
 
+  /* Funcao para alternar a situação do aluno entre Ativo e Inativo.
+     Cria uma variavel constante (handleToggleSituacao) que verifica se há um aluno selecionado.
+     Se nao tiver retorna. Se tiver, cria a variavel constante novoStatus que recebe o aluno
+     selecionado e alterna o campo Alunos_Situacao entre "Ativo" e "Inativo".
+     Em seguida faz um try, criando uma variavel constante (response) que aguarda a resposta
+     da atualizacao da API. O novoStatus é repassado para Alunos_Situacao. O usuario é
+     registrado na atualização. */
   const handleToggleSituacao = async () => {
     if (!selectedAluno) return;
     const novoStatus =
@@ -98,6 +157,10 @@ function StudentSearch() {
           usuario: localStorage.getItem("usuario") || "Sistema",
         }
       );
+      /* Se response.data tiver dados e response.data.statusCode for 200, entao traz o conteudo
+         de response.data e usa o setSelectedAluno para atualizar o estado repassando o 
+         conteudo de prev e atualizando o campo Alunos_Situacao com o novoStatus. Em seguida
+         exibe uma mensagem de sucesso mostrando o status atualizado. */
       if (response.data && response.data.statusCode === 200) {
         setSelectedAluno((prev) => ({
           ...prev,
@@ -113,12 +176,16 @@ function StudentSearch() {
             } com sucesso!`,
           });
         }, 50);
+        /* Caso contrário, exibe uma mensagem de erro com a mensagem retornada pela API ou 
+           uma mensagem padrão */
       } else {
         setMessage({
           type: "error",
           text: response.data?.Mensagem || "Erro ao atualizar situação.",
         });
       }
+      /* A mesma coisa com o Catch. Mostra a mensagem de erro caso ocorra um problema na 
+        requisição */
     } catch (error) {
       setMessage({
         type: "error",
@@ -127,30 +194,39 @@ function StudentSearch() {
     }
   };
 
+  /* Funcao para mudar a página atual na paginação */
   const handlePageChange = (pageNumber) => {
     setCurrentPage(pageNumber);
   };
 
+  /* Funcao para atualizar os dados de busca conforme o usuário digita. Burca pelo nome */
   const handleSearchChange = (e) => {
     const { name, value } = e.target;
     setSearchData((prev) => ({ ...prev, [name]: value }));
   };
 
+  /* Funcao para atualizar os dados de busca conforme o usuário digita. Burca pelo CPF */
   const handleCPFSearchChange = (e) => {
     const { value } = e.target;
     setSearchData((prev) => ({ ...prev, cpf: formatarCPF(value) }));
   };
 
+  /* Função assíncrona para realizar a busca dos alunos com base nos critérios fornecidos.
+     faz o preventDefault para evitar o comportamento padrão do formulário
+     coloca o setLoading como true para indicar que a busca está em andamento
+     limpa a mensagem de status do setMessage */
   const handleSearch = async (e) => {
     e.preventDefault();
     setLoading(true);
     setMessage({ type: "", text: "" });
+
+    /* Faz a tentativa de buscar os alunos com base nos critérios fornecidos. */
     try {
       const { codigo, cpf, nome } = searchData;
       let alunos = [];
-      // Busca por prioridade: Código > CPF > Nome
+      /* Busca por prioridade: Código > CPF > Nome */
       if (codigo && !cpf && !nome) {
-        // Busca por código
+        /* Busca por código */
         const response = await api.get(`/alunos/codigo/${codigo}`);
         if (response.data && response.data.Alunos_Codigo) {
           alunos = [response.data];
@@ -159,6 +235,7 @@ function StudentSearch() {
         } else {
           setMessage({ type: "error", text: "Aluno não encontrado." });
         }
+        /* busca por CPF */
       } else if (!codigo && cpf && !nome) {
         try {
           const response = await api.get(
@@ -184,6 +261,7 @@ function StudentSearch() {
             setMessage({ type: "error", text: "Aluno não encontrado." });
           }
         }
+        /* busca por nome */
       } else if (!codigo && !cpf && nome) {
         // Busca por nome
         try {
@@ -198,15 +276,15 @@ function StudentSearch() {
             setMessage({ type: "error", text: "Aluno não encontrado." });
           }
         } catch (error) {
-          setMessage({ type: "error", text: "Aluno não encontrado." });
+          setMessage({ type: "error", text: "Aluno não encontrado." + error });
         }
+        /* Busca combinada: E (retorna apenas os que batem com todos os critérios) */
       } else if (
         (codigo && cpf) ||
         (codigo && nome) ||
         (cpf && nome) ||
         (codigo && cpf && nome)
       ) {
-        // Busca combinada: OU (retorna todos que batem com qualquer critério)
         let promises = [];
         if (codigo) promises.push(api.get(`/alunos/codigo/${codigo}`));
         if (cpf) {
@@ -227,7 +305,7 @@ function StudentSearch() {
             }
           }
         });
-        // Remove duplicados pelo código do aluno
+        /* Remove duplicados pelo código do aluno */
         const unique = {};
         tempAlunos.forEach((a) => {
           if (a.Alunos_Codigo) unique[a.Alunos_Codigo] = a;
@@ -236,14 +314,13 @@ function StudentSearch() {
         if (alunos.length === 0) {
           setMessage({ type: "error", text: "Nenhum aluno encontrado." });
         }
+        /* Caso nenhum critério seja fornecido, busca todos os alunos, paginado */
       } else {
-        // Nenhum campo: busca todos, paginado
         const response = await api.get("/alunos");
         alunos = response.data.Listagem_de_Alunos || [];
-        // Paginação já é feita no front, mas limita exibição a 10 por página
       }
 
-      // FILTRO DE SITUAÇÃO
+      /* Filtra por situação Apenas alunos ativos ou inativos */
       alunos = alunos.filter((a) => {
         if (mostrarInativos) {
           return a.Alunos_Situacao === "Inativo";
@@ -252,6 +329,7 @@ function StudentSearch() {
         }
       });
 
+      /* Se nao tiver aluno inativo ou ativo mostra a mensagem */
       if (alunos.length === 0) {
         setMessage({
           type: "error",
@@ -259,23 +337,25 @@ function StudentSearch() {
             ? "Nenhum aluno inativo encontrado."
             : "Nenhum aluno ativo encontrado.",
         });
+        /* Caso contrario mostra a mensagem de quantos alunos encontrou */
       } else {
         setMessage({
           type: "success",
           text: `Encontrado ${alunos.length} aluno(s) cadastrado(s)`,
         });
       }
-
       setResults(ordenarResultados(alunos, sortBy));
       setCurrentPage(1);
     } catch {
+      /* Caso de erro na busca mostra a mensagem */
       setMessage({ type: "error", text: "Aluno não encontrado." });
       setResults([]);
     } finally {
+      /* e o bloco finally coloca o setLoading(false) para finalizar a busca */
       setLoading(false);
     }
   };
-  // Esconde a mensagem após 1,5s
+  /* Esconde a mensagem após 1,5s */
   React.useEffect(() => {
     if (message.text) {
       const timer = setTimeout(() => {
@@ -287,23 +367,9 @@ function StudentSearch() {
 
   return (
     <div className="w-full h-auto">
-      {message.text && (
-        <div
-          className={`fixed bottom-4 right-4 z-50 p-4 rounded-md shadow-lg max-w-md w-auto
-            ${
-              message.type === "success" && message.text.includes("desativado")
-                ? "bg-orange-100 text-orange-700 border-2 border-orange-500"
-                : message.type === "success"
-                ? "bg-green-100 text-green-700 border-2 border-green-500"
-                : "bg-red-100 text-red-700 border-2 border-red-500"
-            }
-          `}
-        >
-          {message.text}
-        </div>
-      )}
+      <MessageToast messageToast={message} />
       {isEditing && selectedAluno ? (
-        <StudentForm
+        <StudentEditForm
           aluno={selectedAluno}
           onCancel={() => setIsEditing(false)}
           onSaveSuccess={async (updatedAluno) => {
@@ -392,60 +458,23 @@ function StudentSearch() {
                 Mostrar apenas alunos inativos
               </label>
             </div>
-            <div className="flex justify-center gap-4 pt-4">
-              <button
-                type="submit"
-                disabled={loading}
-                className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
-              >
-                {loading ? "Pesquisando..." : "Pesquisar"}
-              </button>
-              <button
-                type="button"
-                onClick={handleClearSearch}
-                disabled={loading}
-                className="flex items-center bg-gray-600 text-white px-6 py-2 rounded-md hover:bg-gray-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all text-[15px]"
-                style={{ fontWeight: 400, boxShadow: "none" }}
-              >
-                <span className="align-middle mr-1" style={{ fontSize: 17 }}>
-                  🧹
-                </span>
-                Limpar
-              </button>
-            </div>
           </form>
+          <div className="flex justify-center gap-4 pt-4">
+            <Buttons.PesquisarAluno
+              onClick={handleSearch}
+              type="button"
+              disabled={loading}
+            >
+              {loading ? "Pesquisando..." : "Pesquisar"}
+            </Buttons.PesquisarAluno>
+            <Buttons.Limpar
+              type="button"
+              onClick={handleClearSearch}
+              disabled={loading}
+            />
+          </div>
           {results.length > 0 && (
             <div className="w-full mt-6">
-              <div className="hidden md:flex justify-between items-center mb-4">
-                <h3 className="text-xl font-bold text-white">
-                  Resultados ({results.length} alunos)
-                </h3>
-                <div className="flex gap-2">
-                  <span className="text-white self-center mr-2">
-                    Ordenar por:
-                  </span>
-                  <button
-                    onClick={() => handleSortChange("codigo")}
-                    className={`px-4 py-2 rounded-md transition-colors ${
-                      sortBy === "codigo"
-                        ? "bg-blue-600 text-white"
-                        : "bg-gray-700 text-gray-300 hover:bg-gray-600"
-                    }`}
-                  >
-                    🔢 Código
-                  </button>
-                  <button
-                    onClick={() => handleSortChange("nome")}
-                    className={`px-4 py-2 rounded-md transition-colors ${
-                      sortBy === "nome"
-                        ? "bg-blue-600 text-white"
-                        : "bg-gray-700 text-gray-300 hover:bg-gray-600"
-                    }`}
-                  >
-                    🔤 Nome
-                  </button>
-                </div>
-              </div>
               <div className="md:hidden mb-4 space-y-3">
                 <h3 className="text-lg font-bold text-white text-center">
                   Resultados ({results.length} alunos)
@@ -454,26 +483,27 @@ function StudentSearch() {
                   <span className="text-white text-sm text-center">
                     Ordenar por:
                   </span>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 justify-center">
                     <button
                       onClick={() => handleSortChange("codigo")}
-                      className={`flex-1 px-4 py-2 rounded-md transition-colors text-sm ${
+                      className={`flex gap-4 border-2 rounded-md font-bold transition-colors text-sm ${
                         sortBy === "codigo"
-                          ? "bg-blue-600 text-white"
+                          ? "bg-blue-500 border-gray-300 hover:bg-blue-600"
                           : "bg-gray-700 text-gray-300 active:bg-gray-600"
                       }`}
                     >
-                      🔢 Código
+                      🧩 Código
                     </button>
                     <button
                       onClick={() => handleSortChange("nome")}
-                      className={`flex-1 px-4 py-2 rounded-md transition-colors text-sm ${
+                      className={`flex gap-4 items-center border-2 rounded-md font-bold transition-colors text-sm ${
                         sortBy === "nome"
-                          ? "bg-blue-600 text-white"
+                          ? "bg-blue-500 border-gray-300 hover:bg-blue-600"
                           : "bg-gray-700 text-gray-300 active:bg-gray-600"
                       }`}
                     >
-                      🔤 Nome
+                      <img src="user.png" alt="Nome" className="w-6 h-6 flex" />
+                      Nome
                     </button>
                   </div>
                 </div>

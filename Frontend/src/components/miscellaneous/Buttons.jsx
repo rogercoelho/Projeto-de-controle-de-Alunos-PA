@@ -29,7 +29,7 @@ function Limpar({ onClick, disabled }) {
       onClick={onClick}
       disabled={disabled}
     >
-      Limpar
+      🧹Limpar
     </button>
   );
 }
@@ -39,18 +39,33 @@ Limpar.propTypes = {
 };
 /* Fim - Botao Limpar */
 
-function ControleAluno({ onClick }) {
+/* Inicio - Botao Pesquisar Aluno */
+function PesquisarAluno({ onClick }) {
   return (
     <button
       className="bg-emerald-600 rounded-2xl p-2 border-2 border-gray-300 font-bold"
       onClick={onClick}
     >
-      Controle de Alunos
+      🔎 Pesquisar Aluno
     </button>
   );
 }
+PesquisarAluno.propTypes = {
+  onClick: PropTypes.func,
+};
+/* Fim - Botao Pesquisar Aluno */
 
-ControleAluno.propTypes = {
+function OrdenarPorCodigo({ onClick }) {
+  return (
+    <button
+      className="bg-blue-500 rounded-md p-2 border-2 border-gray-300 font-bold hover:bg-blue-600"
+      onClick={onClick}
+    >
+      🧩 Código
+    </button>
+  );
+}
+OrdenarPorCodigo.propTypes = {
   onClick: PropTypes.func,
 };
 
@@ -83,20 +98,6 @@ DeletarAluno.propTypes = {
   onClick: PropTypes.func,
 };
 
-function PesquisarAluno({ onClick }) {
-  return (
-    <button
-      className="bg-emerald-600 rounded-2xl p-2 border-2 border-gray-300 font-bold"
-      onClick={onClick}
-    >
-      Pesquisar Aluno
-    </button>
-  );
-}
-
-PesquisarAluno.propTypes = {
-  onClick: PropTypes.func,
-};
 function ControleAulas({ onClick }) {
   return (
     <button
@@ -173,7 +174,7 @@ ListarUsuarios.propTypes = {
 };
 
 export const Buttons = {
-  ControleAluno,
+  OrdenarPorCodigo,
   CadastrarAluno,
   EditarAluno,
   DeletarAluno,

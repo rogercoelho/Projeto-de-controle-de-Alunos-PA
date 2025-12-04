@@ -7,7 +7,6 @@ import StudentDetails from "./StudentDetails";
 import StudentEditForm from "./StudentEditForm";
 import MessageToast from "../miscellaneous/MessageToast";
 import { Buttons } from "../miscellaneous/Buttons";
-import emojiname from "../../../public/user.png";
 
 /* ===== Inicio da Função StudentSearch */
 
@@ -365,25 +364,40 @@ function StudentSearch() {
     }
   }, [message.text]);
 
+  /* Inicio - Retorna as informacoes na tela. */
   return (
     <div className="w-full h-auto">
+      {/* Chama a função MessageToast para exibir mensagens padronizadas */}
       <MessageToast messageToast={message} />
+      {/* Se isEditing for verdadeiro e selectedAluno existir, mostra o formulário
+       de edição do aluno. Repassa as informacoes, aluno que recebe de
+       selectedAluno, onCancel recebe o valor de setIsEditing(false) e 
+       onSaveSuccess recebe a função para atualizar o aluno e setIsEditing(false) */}
       {isEditing && selectedAluno ? (
         <StudentEditForm
           aluno={selectedAluno}
           onCancel={() => setIsEditing(false)}
           onSaveSuccess={async (updatedAluno) => {
             setIsEditing(false);
-            // Busca o aluno atualizado na API para garantir que a foto/contrato estejam atualizados
+            /* Tenta buscar o aluno atualizado na API para garantir que a 
+               foto/contrato estejam atualizados
+               Cria a variavel constante response que aguarda a resposta da API,
+               repassando o código do aluno armazenado no updatedAluno.Alunos_Codigo */
             try {
               const response = await api.get(
                 `/alunos/codigo/${updatedAluno.Alunos_Codigo}`
               );
+              /* Se a resposta da API contiver dados e o código do aluno entao setSelectedAluno
+                 recebe os dados atualizados de response.data
+                 Senao, setSelectedAluno usa o parametro prev repassando seu conteúdo e 
+                 atualizando com o conteudo de updatedAluno */
               if (response.data && response.data.Alunos_Codigo) {
                 setSelectedAluno(response.data);
               } else {
                 setSelectedAluno((prev) => ({ ...prev, ...updatedAluno }));
               }
+              /* Se der erro na requisição, setSelectedAluno usa o parametro prev repassando seu
+               conteúdo e atualizando com o conteudo de updatedAluno. Depois seta a mensagem de sucesso */
             } catch {
               setSelectedAluno((prev) => ({ ...prev, ...updatedAluno }));
             }
@@ -393,7 +407,11 @@ function StudentSearch() {
             });
           }}
         />
-      ) : selectedAluno ? (
+      ) : /* Se isEditing for falso e selectedAluno existir, mostra os detalhes do aluno. A variavel
+           selectedAluno chama a funcao StudentDetails e repassa as informacoes aluno de selectedAluno,
+           onEdit, de HandleEdit, onToggleSituacao, de HandleToggleSituacao e onBack, de 
+           HandleBackToSearch */
+      selectedAluno ? (
         <StudentDetails
           aluno={selectedAluno}
           onEdit={handleEdit}
@@ -401,7 +419,10 @@ function StudentSearch() {
           onBack={handleBackToSearch}
         />
       ) : (
+        /* E se os dois forem falsos (ternario ? :), mostra o formulário de busca.
+             onSubmit recebe a função handleSearch */
         <div className="w-full">
+          {/* Inicio - Formulario de pesquisa do aluno */}
           <form
             onSubmit={handleSearch}
             className="w-full h-auto p-2 sm:p-4 space-y-2 sm:space-y-4 mx-auto"
@@ -409,6 +430,9 @@ function StudentSearch() {
             <h3 className="text-xl font-bold text-white mb-4">
               Pesquisar Aluno
             </h3>
+            {/* Inicio - Campo de pesquisa pelo codigo. 
+                type definido como number, name definido como codigo, value recebe de 
+                searchData.codigo, onChange recebe a funcao handleSearchChange. */}
             <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-2 items-center">
               <label>Código:</label>
               <input
@@ -420,6 +444,11 @@ function StudentSearch() {
                 placeholder="Digite o código"
               />
             </div>
+            {/* Fim - Campo de pesquisa pelo codigo */}
+
+            {/* Inicio - Campo de pesquisa pelo CPF.
+                Type é definido como texto, name como cpf, o value recebe de searchData.cpf, onChange
+                recebe a funcao de handleCPFChange. */}
             <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-2 items-center">
               <label>CPF:</label>
               <input
@@ -432,6 +461,11 @@ function StudentSearch() {
                 maxLength="14"
               />
             </div>
+            {/* Fim - Campo de pesquisa pelo CPF */}
+
+            {/* Inicio - Campo de pesquisa pelo nome.
+                type é definido como texto, name definido como nome, value recebe a funcao de
+                searchData.nome, onChange recebe a funcao de handleSearchChange.  */}
             <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-2 items-center">
               <label>Nome:</label>
               <input
@@ -443,6 +477,12 @@ function StudentSearch() {
                 placeholder="Digite o nome"
               />
             </div>
+            {/* Fim - Campo de pesuisa pelo nome */}
+
+            {/* Inicio - Campo que busca apenas alunos inativos.
+                Type é definido como checkbox, id definido como mostrarInaivos, checked recebe a
+                funcao mostrarInativos e onChange recebe o evento (e) que executa a funcao 
+                setMostrarInativos (do evento (e) e.target.checked) */}
             <div className="flex items-center gap-3 pl-0 md:pl-52">
               <input
                 type="checkbox"
@@ -458,21 +498,24 @@ function StudentSearch() {
                 Mostrar apenas alunos inativos
               </label>
             </div>
+            {/* Fim - Campo que busca apenas alunos inativos. */}
           </form>
+          {/* Fim - Formulario de pesquisa do aluno. */}
+          {/* Inicio - Botoes de controle - pesquisae e limpar */}
           <div className="flex justify-center gap-4 pt-4">
             <Buttons.PesquisarAluno
               onClick={handleSearch}
-              type="button"
-              disabled={loading}
-            >
-              {loading ? "Pesquisando..." : "Pesquisar"}
-            </Buttons.PesquisarAluno>
-            <Buttons.Limpar
-              type="button"
-              onClick={handleClearSearch}
+              loading={loading}
               disabled={loading}
             />
+            <Buttons.Limpar onClick={handleClearSearch} />
           </div>
+          {/* Fim - Botoes de controle - pesquisar e limpar */}
+
+          {/* Inicio - Resultados da pesquisa 
+              Nesse bloco, se o tamanho do results.length for maior que 0 e se contiver resultados,
+              mostra na tela ordenando por codigo ou nome (clicando nos botoes) e se tiver mais de 
+              10 alunos, mostra a paginacao. */}
           {results.length > 0 && (
             <div className="w-full mt-6">
               <div className="md:hidden mb-4 space-y-3">
@@ -483,6 +526,7 @@ function StudentSearch() {
                   <span className="text-white text-sm text-center">
                     Ordenar por:
                   </span>
+                  {/* Inicio - Botoes de controle de ordenacao - codigo e nome */}
                   <div className="flex gap-2 justify-center">
                     <button
                       onClick={() => handleSortChange("codigo")}
@@ -502,12 +546,18 @@ function StudentSearch() {
                           : "bg-gray-700 text-gray-300 active:bg-gray-600"
                       }`}
                     >
-                      <img src="user.png" alt="Nome" className="w-6 h-6 flex" />
+                      <img
+                        src="/controle_pa/user.png"
+                        alt="Nome"
+                        className="w-6 h-6 flex"
+                      />
                       Nome
                     </button>
                   </div>
+                  {/* Fim - Botoes de controle de ordenacao - codigo e nome */}
                 </div>
               </div>
+              {/* Inicio - Tags de alunos da pesquisa */}
               <div className="space-y-2">
                 {currentAlunos.map((aluno) => (
                   <div
@@ -528,6 +578,9 @@ function StudentSearch() {
                   </div>
                 ))}
               </div>
+              {/* Fim - Tags de alunos da pesquisa */}
+
+              {/* Inicio - Paginacao e botoes de controle - anterior e proximo */}
               {totalPages > 1 && (
                 <div className="flex justify-center items-center gap-2 mt-6">
                   <button
@@ -561,9 +614,12 @@ function StudentSearch() {
                   </button>
                 </div>
               )}
+              {/* Fim - Paginacao e botoes de controle - anterior e proximo */}
             </div>
           )}
+          {/* Fim - Resultados da pesquisa  */}
         </div>
+        /* Fim - Formulario de pesquisa */
       )}
     </div>
   );

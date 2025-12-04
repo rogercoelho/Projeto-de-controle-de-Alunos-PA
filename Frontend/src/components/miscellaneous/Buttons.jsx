@@ -22,12 +22,13 @@ CadastrarAluno.propTypes = {
 /* Fim - Botao Cadastrar Aluno */
 
 /* Inicio - Botao Limpar */
-function Limpar({ onClick, disabled }) {
+function Limpar({ onClick, disabled, type = "button" }) {
   return (
     <button
       className="bg-gray-500 rounded-md p-2 border-2 border-gray-300 font-bold hover:bg-gray-600"
       onClick={onClick}
       disabled={disabled}
+      type={type}
     >
       🧹Limpar
     </button>
@@ -36,22 +37,29 @@ function Limpar({ onClick, disabled }) {
 Limpar.propTypes = {
   onClick: PropTypes.func,
   disabled: PropTypes.bool,
+  type: PropTypes.string,
 };
 /* Fim - Botao Limpar */
 
 /* Inicio - Botao Pesquisar Aluno */
-function PesquisarAluno({ onClick }) {
+function PesquisarAluno({ onClick, type = "button", disabled, loading }) {
   return (
     <button
-      className="bg-emerald-600 rounded-2xl p-2 border-2 border-gray-300 font-bold"
+      className="bg-emerald-600 rounded-md p-2 border-2 border-gray-300 font-bold"
       onClick={onClick}
+      type={type}
+      disabled={disabled}
+      loading={loading}
     >
-      🔎 Pesquisar Aluno
+      🔎{loading ? "Pesquisando..." : "Pesquisar Aluno"}
     </button>
   );
 }
 PesquisarAluno.propTypes = {
   onClick: PropTypes.func,
+  type: PropTypes.string,
+  disabled: PropTypes.bool,
+  loading: PropTypes.bool,
 };
 /* Fim - Botao Pesquisar Aluno */
 

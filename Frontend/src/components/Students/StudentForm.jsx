@@ -403,7 +403,7 @@ function StudentForm({ aluno, onSaveSuccess }) {
      A div Configura a tela e o formulario, o classname chama um "bloco" de  configuracoes de 
      layout que nesse caso é usado TailwindCSS */
   return (
-    <div className="w-full max-w-2xl mx-auto h-auto p-6 bg-gray-800 rounded-xl">
+    <div className="w-full h-auto p-6 bg-gray-800 rounded-xl">
       {/* Aqui fica a mensagem toast (que aparece no canto direito da tela) Ela é 
         uma props (propriedade) que esta definida em /miscellaneous/Messages.jsx  */}
       <MessageToast messageToast={message} />

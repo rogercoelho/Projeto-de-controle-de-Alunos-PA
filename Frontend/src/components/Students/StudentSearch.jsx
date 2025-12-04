@@ -518,7 +518,7 @@ function StudentSearch() {
               10 alunos, mostra a paginacao. */}
           {results.length > 0 && (
             <div className="w-full mt-6">
-              <div className="md:hidden mb-4 space-y-3">
+              <div className="mb-4 space-y-3">
                 <h3 className="text-lg font-bold text-white text-center">
                   Resultados ({results.length} alunos)
                 </h3>
@@ -527,7 +527,7 @@ function StudentSearch() {
                     Ordenar por:
                   </span>
                   {/* Inicio - Botoes de controle de ordenacao - codigo e nome */}
-                  <div className="flex gap-2 justify-center">
+                  <div className="flex gap-4 justify-center">
                     <Buttons.OrdenarPorCodigo
                       onClick={() => handleSortChange("codigo")}
                       isActive={sortBy === "codigo"}

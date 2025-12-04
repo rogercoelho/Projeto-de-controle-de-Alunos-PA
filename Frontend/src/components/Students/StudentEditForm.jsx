@@ -1,3 +1,6 @@
+import PropTypes from "prop-types";
+import PhotoSkeleton from "../miscellaneous/PhotoSkeleton";
+
 function StudentEditForm({
   editFormData,
   onChange,
@@ -32,19 +35,49 @@ function StudentEditForm({
         </span>
       </div>
 
-      {selectedAluno?.Alunos_Foto && (
+      <div>
         <div className="flex flex-col items-center mb-2">
           <label className="font-bold text-gray-300 mb-1">Foto Atual:</label>
-          <img
-            src={`https://api2.plantandoalegria.com.br/uploads/fotos/${selectedAluno.Alunos_Foto}`}
-            alt={selectedAluno.Alunos_Nome}
-            className="w-32 h-32 object-cover rounded-md border-2 border-gray-300"
-            onError={(e) => (e.target.style.display = "none")}
-          />
+          {/* Exibe a foto antiga se não houver nova selecionada */}
+          {!arquivosEdit.foto &&
+            selectedAluno &&
+            typeof selectedAluno.Alunos_Foto === "string" &&
+            selectedAluno.Alunos_Foto.trim() !== "" &&
+            selectedAluno.Alunos_Foto.trim().toLowerCase() !== "null" &&
+            selectedAluno.Alunos_Foto.trim().toLowerCase() !== "undefined" && (
+              <PhotoSkeleton
+                foto={String(selectedAluno.Alunos_Foto)}
+                nome={
+                  selectedAluno.Alunos_Nome ||
+                  editFormData.Alunos_Nome ||
+                  "Aluno"
+                }
+              />
+            )}
+          {/* Exibe a nova foto se houver nova selecionada */}
+          {arquivosEdit.foto && (
+            <PhotoSkeleton
+              foto={URL.createObjectURL(arquivosEdit.foto)}
+              nome={
+                editFormData.Alunos_Nome ||
+                selectedAluno?.Alunos_Nome ||
+                "Aluno"
+              }
+            />
+          )}
+          {/* Mostra o nome do arquivo antigo apenas se não houver nova foto */}
+          {selectedAluno?.Alunos_Foto && !arquivosEdit.foto && (
+            <span className="text-xs text-gray-500 mt-1">
+              Arquivo: {selectedAluno.Alunos_Foto}
+            </span>
+          )}
+          {/* Mostra o nome do arquivo novo apenas se houver nova foto */}
+          {arquivosEdit.foto && (
+            <span className="text-xs text-green-600 mt-1">
+              Novo arquivo: {arquivosEdit.foto.name}
+            </span>
+          )}
         </div>
-      )}
-
-      <div>
         <label className="block text-sm font-medium text-gray-300 mb-2">
           Nova Foto
         </label>
@@ -364,8 +397,6 @@ function StudentEditForm({
 }
 
 export default StudentEditForm;
-
-import PropTypes from "prop-types";
 
 StudentEditForm.propTypes = {
   editFormData: PropTypes.object.isRequired,

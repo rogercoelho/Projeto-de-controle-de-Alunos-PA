@@ -6,11 +6,25 @@ function PhotoSkeleton({ foto, nome }) {
   const [error, setError] = useState(false);
   const [cacheBuster, setCacheBuster] = useState(() => Date.now());
 
+  // Detecta se é uma URL local (blob) ou nome de arquivo
+  const isBlob = foto && foto.startsWith("blob:");
+  const imgSrc = isBlob
+    ? foto
+    : foto
+    ? `https://api2.plantandoalegria.com.br/uploads/fotos/${foto}?t=${cacheBuster}`
+    : "";
+
   React.useEffect(() => {
+    setLoaded(false);
+    setError(false);
     setCacheBuster(Date.now());
     if (!foto) return;
     const img = new window.Image();
-    img.src = `https://api2.plantandoalegria.com.br/uploads/fotos/${foto}?t=${Date.now()}`;
+    if (isBlob) {
+      img.src = foto;
+    } else {
+      img.src = `https://api2.plantandoalegria.com.br/uploads/fotos/${foto}?t=${Date.now()}`;
+    }
     img.onload = () => setLoaded(true);
     img.onerror = () => setError(true);
   }, [foto]);
@@ -30,7 +44,7 @@ function PhotoSkeleton({ foto, nome }) {
     <div className="w-48 h-48 relative" style={{ background: "transparent" }}>
       {loaded && !error && (
         <img
-          src={`https://api2.plantandoalegria.com.br/uploads/fotos/${foto}?t=${cacheBuster}`}
+          src={imgSrc}
           alt={nome}
           className="w-48 h-48 object-contain rounded-md border-2 border-gray-300"
           style={{ zIndex: 1, position: "relative", background: "transparent" }}

@@ -8,12 +8,7 @@ function StudentDetails({ aluno, onEdit, onToggleSituacao, onBack }) {
     <div className="w-full h-auto space-y-2 mx-auto">
       <div className="flex gap-2 mb-4">
         <Buttons.VoltarPesquisa onBack={onBack} />
-        <button
-          onClick={onEdit}
-          className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
-        >
-          ✏️ Editar
-        </button>
+        <Buttons.EditarAluno onClick={onEdit} />
         <button
           onClick={onToggleSituacao}
           className={`text-white px-4 py-2 rounded-md ${

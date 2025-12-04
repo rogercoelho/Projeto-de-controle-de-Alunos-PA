@@ -28,7 +28,8 @@ function StudentSearch() {
      isEditing para controlar se o modo de edição está ativo
      sortBy para controlar o critério de ordenação
      currentPage para controlar a página atual na paginação
-     alunosPerPage para controlar a quantidade de alunos por página */
+     alunosPerPage para controlar a quantidade de alunos por página
+     e arquivosEdit para controlar os arquivos de edição, inicia com null. */
   const [mostrarInativos, setMostrarInativos] = useState(false);
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -38,6 +39,22 @@ function StudentSearch() {
   const [sortBy, setSortBy] = useState("codigo");
   const [currentPage, setCurrentPage] = useState(1);
   const alunosPerPage = 10;
+  const [arquivosEdit, setArquivosEdit] = useState({
+    foto: null,
+    contrato: null,
+  });
+
+  /* Cria a variavel constante handleFileChange para lidar com a mudança de arquivos. 
+     Usa o evento (e) para executar a criacap das variaveis contantes name e file, que revebe o 
+     valor do evento e.target
+     Se files existir e for maior que 0, atualiza o estado arquivosEdit com o novo arquivo, passando
+     o conteudo de prev e atualizando o name e files na posicao [0] */
+  const handleFileChange = (e) => {
+    const { name, files } = e.target;
+    if (files && files.length > 0) {
+      setArquivosEdit((prev) => ({ ...prev, [name]: files[0] }));
+    }
+  };
 
   /* Função para ordenar os resultados com base no critério selecionado
      Cria uma variavel constante (ordenarResultados) que recebe 2 parametros:
@@ -371,14 +388,20 @@ function StudentSearch() {
       <MessageToast messageToast={message} />
       {/* Se isEditing for verdadeiro e selectedAluno existir, mostra o formulário
        de edição do aluno. Repassa as informacoes, aluno que recebe de
-       selectedAluno, onCancel recebe o valor de setIsEditing(false) e 
-       onSaveSuccess recebe a função para atualizar o aluno e setIsEditing(false) */}
+       selectedAluno, arquivosedit recebe de arquivosedit (carrega a foto e o contrato do aluno)
+       onFilechange chama a funcao handleFileChange para alterar a foto e o contrato
+       onCancel recebe o valor de setIsEditing(false), onSaveSuccess recebe a 
+       função para atualizar o aluno e setIsEditing(false) e setArquivosEdit({ foto: null, 
+       contrato: null }) para zerar as informacoes do contrato e foto,*/}
       {isEditing && selectedAluno ? (
         <StudentEditForm
-          aluno={selectedAluno}
+          editFormData={selectedAluno}
+          arquivosEdit={arquivosEdit}
+          onFileChange={handleFileChange}
           onCancel={() => setIsEditing(false)}
           onSaveSuccess={async (updatedAluno) => {
             setIsEditing(false);
+            setArquivosEdit({ foto: null, contrato: null });
             /* Tenta buscar o aluno atualizado na API para garantir que a 
                foto/contrato estejam atualizados
                Cria a variavel constante response que aguarda a resposta da API,

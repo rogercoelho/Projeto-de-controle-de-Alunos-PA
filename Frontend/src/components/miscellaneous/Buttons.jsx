@@ -124,20 +124,22 @@ VoltarPesquisa.propTypes = {
 };
 /* Fim - Botao Voltar para a Pesquisa */
 
+/* Inicio - Botao Editar Aluno */
 function EditarAluno({ onClick }) {
   return (
     <button
-      className="bg-emerald-600 rounded-2xl p-2 border-2 border-gray-300 font-bold"
+      className={`flex gap-4 border-2 p-2 rounded-md font-bold bg-blue-500 border-gray-300 hover:bg-blue-600`}
       onClick={onClick}
     >
-      Editar Aluno
+      ✏️ Editar
     </button>
   );
 }
-
 EditarAluno.propTypes = {
   onClick: PropTypes.func,
 };
+/* Fim - Botao Editar Aluno */
+
 function DeletarAluno({ onClick }) {
   return (
     <button

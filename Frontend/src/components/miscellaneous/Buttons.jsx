@@ -41,6 +41,25 @@ Limpar.propTypes = {
 };
 /* Fim - Botao Limpar */
 
+/* Inicio - Botao X (Remover Conteudo) */
+function BotaoX({ onClick }) {
+  return (
+    <button
+      type="button"
+      className="ml-0.5 text-red-500 font-bold rounded hover:bg-red-700 hover:text-white"
+      style={{ padding: "3px 7px" }}
+      onClick={onClick}
+      aria-label="X"
+    >
+      X
+    </button>
+  );
+}
+BotaoX.propTypes = {
+  onClick: PropTypes.func,
+};
+/* Fim - Botao X (Remover Conteudo) */
+
 /* Inicio - Botao Pesquisar Aluno */
 function PesquisarAluno({ onClick, type = "button", disabled, loading }) {
   return (
@@ -232,6 +251,7 @@ ListarUsuarios.propTypes = {
 
 export const Buttons = {
   OrdenarPorCodigo,
+  BotaoX,
   OrdenarPorNome,
   VoltarPesquisa,
   CadastrarAluno,

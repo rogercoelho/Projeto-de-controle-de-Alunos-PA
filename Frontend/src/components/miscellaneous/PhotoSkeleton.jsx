@@ -6,9 +6,12 @@ function PhotoSkeleton({ foto, nome }) {
   const [error, setError] = useState(false);
   const [cacheBuster, setCacheBuster] = useState(() => Date.now());
 
-  // Detecta se é uma URL local (blob) ou nome de arquivo
+  // Detecta se é uma URL local (blob), absoluta (começa com / ou http), ou nome de arquivo
   const isBlob = foto && foto.startsWith("blob:");
+  const isAbsolute = foto && (foto.startsWith("/") || foto.startsWith("http"));
   const imgSrc = isBlob
+    ? foto
+    : isAbsolute
     ? foto
     : foto
     ? `https://api2.plantandoalegria.com.br/uploads/fotos/${foto}?t=${cacheBuster}`
@@ -20,8 +23,8 @@ function PhotoSkeleton({ foto, nome }) {
     setCacheBuster(Date.now());
     if (!foto) return;
     const img = new window.Image();
-    if (isBlob) {
-      img.src = foto;
+    if (isBlob || isAbsolute) {
+      img.src = imgSrc;
     } else {
       img.src = `https://api2.plantandoalegria.com.br/uploads/fotos/${foto}?t=${Date.now()}`;
     }
@@ -33,7 +36,7 @@ function PhotoSkeleton({ foto, nome }) {
     return (
       <div className="w-48 h-48 flex items-center justify-center bg-transparent rounded-md border-2 border-gray-300">
         <img
-          src="/controle_pa/logo.png"
+          src="/logo.png"
           alt="Logo placeholder"
           className="w-24 h-24 object-contain opacity-60"
         />
@@ -53,7 +56,7 @@ function PhotoSkeleton({ foto, nome }) {
       {!loaded && (
         <div className="absolute inset-0 flex items-center justify-center bg-black rounded-md z-10 animate-pulse">
           <img
-            src="/controle_pa/logo.png"
+            src="/logo.png"
             alt="Logo placeholder"
             className="w-24 h-24 object-contain opacity-60"
           />

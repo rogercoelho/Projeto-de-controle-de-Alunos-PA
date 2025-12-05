@@ -1,5 +1,5 @@
 import PropTypes from "prop-types";
-import StudentPhotoSkeleton from "../miscellaneous/PhotoSkeleton";
+import PhotoSkeleton from "../miscellaneous/PhotoSkeleton";
 import Buttons from "../miscellaneous/Buttons";
 
 function StudentDetails({ aluno, onEdit, onToggleSituacao, onBack }) {
@@ -24,10 +24,7 @@ function StudentDetails({ aluno, onEdit, onToggleSituacao, onBack }) {
       <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-2 items-center">
         <label className="font-bold">Foto:</label>
         <div className="flex flex-col gap-2">
-          <StudentPhotoSkeleton
-            foto={aluno.Alunos_Foto}
-            nome={aluno.Alunos_Nome}
-          />
+          <PhotoSkeleton foto={aluno.Alunos_Foto} nome={aluno.Alunos_Nome} />
           {aluno.Alunos_Foto && (
             <span className="text-xs text-gray-500">
               Arquivo: {aluno.Alunos_Foto}

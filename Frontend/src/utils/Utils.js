@@ -1,4 +1,7 @@
-// Funções utilitárias para Students
+/* Retorna a classe de cor do input do studenteditform conforme editável */
+export function corCampoEditavel(isEditable) {
+  return isEditable ? "bg-gray-500" : "bg-gray-700";
+}
 
 export function calcularIdade(dataNascimento) {
   if (!dataNascimento) return 0;

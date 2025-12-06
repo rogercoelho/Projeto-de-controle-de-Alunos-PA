@@ -81,6 +81,10 @@ function StudentDetails({ aluno, onEdit, onToggleSituacao, onBack }) {
           <div>{aluno.Alunos_Nome_Responsavel}</div>
         </div>
         <div className="text-sm md:text-base">
+          <div className="font-bold text-gray-400">CPF do Responsável:</div>
+          <div>{aluno.Alunos_CPF_Responsavel}</div>
+        </div>
+        <div className="text-sm md:text-base">
           <div className="font-bold text-gray-400">CEP:</div>
           <div>{aluno.Alunos_Endereco_CEP}</div>
         </div>

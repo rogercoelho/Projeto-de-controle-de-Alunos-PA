@@ -768,7 +768,7 @@ function StudentForm({ aluno, onSaveSuccess }) {
             name="foto"
             onChange={handleFileChange}
             accept="image/*"
-            className="w-full px-4 py-2 bg-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-2 bg-gray-700 text-white rounded-md mb-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           {arquivos.foto && (
             <span className="text-sm text-green-600 flex items-center gap-2">
@@ -796,7 +796,7 @@ function StudentForm({ aluno, onSaveSuccess }) {
             name="contrato"
             onChange={handleFileChange}
             accept="application/pdf,image/*"
-            className="w-full px-4 py-2 bg-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-2 bg-gray-700 text-white rounded-md mb-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           {arquivos.contrato && (
             <span className="text-sm text-green-600 flex items-center gap-2">

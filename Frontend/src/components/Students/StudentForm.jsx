@@ -20,6 +20,8 @@ import {
   formatarCEP,
   converterData,
 } from "../../utils/Utils";
+/* Importa o hook UseToast para gerenciar e exibir mensagens toast */
+import useToast from "../../hooks/useToast";
 /* Adiciona o link do CDN do Material Icons se ainda não estiver presente
 Sao apenas para adicionar os icones do material icons */
 if (
@@ -74,25 +76,26 @@ function StudentForm({ aluno, onSaveSuccess }) {
       }));
     }
     if (erroCep) {
-      setMessage({ type: "error", text: erroCep });
+      showToast({ type: "error", text: erroCep });
     }
   }, [dadosCep, erroCep]);
 
   /* Cria variaveis constante de estado para controlar as mensagens
   de loading e feedback (resultado) do toast */
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState({ type: "", text: "" });
+  //const [message, setMessage] = useState({ type: "", text: "" });
+  const [messageToast, showToast] = useToast();
 
   /*  Uso do react useEffect para limpar mensagens do toast 
   após 1.5 segundos */
-  React.useEffect(() => {
-    if (message.text) {
-      const timer = setTimeout(() => {
-        setMessage({ type: "", text: "" });
-      }, 1500);
-      return () => clearTimeout(timer);
-    }
-  }, [message.text]);
+  // React.useEffect(() => {
+  //   if (message.text) {
+  //     const timer = setTimeout(() => {
+  //       setMessage({ type: "", text: "" });
+  //     }, 1500);
+  //     return () => clearTimeout(timer);
+  //   }
+  // }, [message.text]);
 
   /* Cria variavel constante para inicializar o armazenamento dos
   arquivos (foto e contrato). Ambos sao iniciados sem valor */
@@ -127,7 +130,7 @@ function StudentForm({ aluno, onSaveSuccess }) {
       ...prev,
       Alunos_Endereco_CEP: cepFormatado,
     }));
-    setMessage({ type: "", text: "" });
+    showToast({ type: "", text: "" });
   };
   /* Cria uma variavel constante handleChange que recebe o evento (e)
      e atualiza o estado do formulário. 
@@ -150,14 +153,14 @@ function StudentForm({ aluno, onSaveSuccess }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setMessage({ type: "", text: "" });
+    showToast({ type: "", text: "" });
     /* Usa a funcao utilitaria validarTelefone importado do utils
        para validar os telefones */
     if (
       formData.Alunos_Telefone &&
       !validarTelefone(formData.Alunos_Telefone)
     ) {
-      setMessage({
+      showToast({
         type: "error",
         text: "Telefone principal deve ter 11 dígitos.",
       });
@@ -168,7 +171,7 @@ function StudentForm({ aluno, onSaveSuccess }) {
       formData.Alunos_Telefone_Emergencia_1 &&
       !validarTelefone(formData.Alunos_Telefone_Emergencia_1)
     ) {
-      setMessage({
+      showToast({
         type: "error",
         text: "Telefone de emergência 1 deve ter 11 dígitos.",
       });
@@ -179,7 +182,7 @@ function StudentForm({ aluno, onSaveSuccess }) {
       formData.Alunos_Telefone_Emergencia_2 &&
       !validarTelefone(formData.Alunos_Telefone_Emergencia_2)
     ) {
-      setMessage({
+      showToast({
         type: "error",
         text: "Telefone de emergência 2 deve ter 11 dígitos.",
       });
@@ -191,7 +194,7 @@ function StudentForm({ aluno, onSaveSuccess }) {
        validarEmail importado do utils */
 
     if (formData.Alunos_Email && !validarEmail(formData.Alunos_Email)) {
-      setMessage({
+      showToast({
         type: "error",
         text: "E-mail inválido.",
       });
@@ -206,7 +209,7 @@ function StudentForm({ aluno, onSaveSuccess }) {
       calcularIdade(formData.Alunos_Data_Nascimento) >= 18 &&
       !validarCPF(formData.Alunos_CPF)
     ) {
-      setMessage({
+      showToast({
         type: "error",
         text: "CPF do aluno inválido.",
       });
@@ -218,7 +221,7 @@ function StudentForm({ aluno, onSaveSuccess }) {
       calcularIdade(formData.Alunos_Data_Nascimento) < 18 &&
       !validarCPF(formData.Alunos_CPF_Responsavel)
     ) {
-      setMessage({
+      showToast({
         type: "error",
         text: "CPF do responsável inválido.",
       });
@@ -307,7 +310,7 @@ function StudentForm({ aluno, onSaveSuccess }) {
         resData.Mensagem && resData.Mensagem.toLowerCase().includes("sucesso");
       /* Se isSuccess for verdadeiro (true) exibe a mensagem de sucesso no toast */
       if (isSuccess) {
-        setMessage({
+        showToast({
           type: "success",
           text:
             (aluno && aluno.Alunos_Codigo
@@ -330,7 +333,7 @@ function StudentForm({ aluno, onSaveSuccess }) {
            atualizar o aluno, se nao tiver manda a mensagem de erro para cadastrar um novo aluno.
             */
       } else {
-        setMessage({
+        showToast({
           type: "error",
           text:
             resData.Erro ||
@@ -359,7 +362,7 @@ function StudentForm({ aluno, onSaveSuccess }) {
         const errData = error.response.data;
         msg = errData.Erro || errData.Mensagem || msg;
       }
-      setMessage({ type: "error", text: msg });
+      showToast({ type: "error", text: msg });
 
       /* E o ultimo bloco do try catch é o finally. Esse bloco executa independente
       se entrou no try ou no catch. Seria a "conclusão". Nesse bloco volta a definir
@@ -406,7 +409,7 @@ function StudentForm({ aluno, onSaveSuccess }) {
     <div className="w-full h-auto p-6 bg-gray-800 rounded-xl">
       {/* Aqui fica a mensagem toast (que aparece no canto direito da tela) Ela é 
         uma props (propriedade) que esta definida em /miscellaneous/Messages.jsx  */}
-      <MessageToast messageToast={message} />
+      {messageToast && <MessageToast messageToast={messageToast} />}
 
       {/* Aqui começa o Formulario. dentro de form, usamos uma funcao dele (onsubmit)
         para definir o conportamento ao enviar o formulario. O onsubmit recebe a funcao

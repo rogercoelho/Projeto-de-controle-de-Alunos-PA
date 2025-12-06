@@ -72,6 +72,10 @@ function StudentEditForm({
 
   const cpfRespObrigatorio = idade < 18;
 
+  // Função para definir a cor do campo editável
+  const getInputBgClass = (isEditable) =>
+    isEditable ? "bg-gray-500" : "bg-gray-700";
+
   return (
     <form
       onSubmit={async (e) => {
@@ -197,7 +201,7 @@ function StudentEditForm({
             onFileChange(e);
           }}
           accept="image/*"
-          className="w-full px-4 py-2 bg-gray-700 text-white rounded-md"
+          className="w-full px-4 py-2 bg-gray-500 text-white rounded-md"
         />
         {arquivosEdit.foto && !fotoRemovida && (
           <span className="text-sm text-green-600">
@@ -232,7 +236,7 @@ function StudentEditForm({
             onFileChange(e);
           }}
           accept="application/pdf,image/*"
-          className="w-full px-4 py-2 bg-gray-700 text-white rounded-md"
+          className="w-full px-4 py-2 bg-gray-500 text-white rounded-md"
         />
         {arquivosEdit.contrato && !contratoRemovido && (
           <span className="text-sm text-green-600 flex items-center gap-2">
@@ -283,7 +287,9 @@ function StudentEditForm({
           name="Alunos_Nome"
           value={editFormData.Alunos_Nome || ""}
           onChange={handleChange}
-          className="w-full px-4 py-2 bg-gray-700 text-white rounded-md"
+          className={`w-full px-4 py-2 ${getInputBgClass(
+            true
+          )} text-white rounded-md`}
           required
         />
       </div>
@@ -297,7 +303,9 @@ function StudentEditForm({
           name="Alunos_Data_Nascimento"
           value={editFormData.Alunos_Data_Nascimento || ""}
           onChange={handleChange}
-          className="w-full px-4 py-2 bg-gray-700 text-white rounded-md"
+          className={`w-full px-4 py-2 ${getInputBgClass(
+            false
+          )} text-white rounded-md`}
           required
           readOnly
         />
@@ -312,7 +320,9 @@ function StudentEditForm({
           name="Alunos_CPF"
           value={editFormData.Alunos_CPF || ""}
           onChange={handleChange}
-          className="w-full px-4 py-2 bg-gray-700 text-white rounded-md"
+          className={`w-full px-4 py-2 ${getInputBgClass(
+            !cpfAlunoReadOnly
+          )} text-white rounded-md`}
           placeholder="000.000.000-00"
           maxLength="14"
           readOnly={cpfAlunoReadOnly}
@@ -329,7 +339,9 @@ function StudentEditForm({
           name="Alunos_Nome_Responsavel"
           value={editFormData.Alunos_Nome_Responsavel || ""}
           onChange={handleChange}
-          className="w-full px-4 py-2 bg-gray-700 text-white rounded-md"
+          className={`w-full px-4 py-2 ${getInputBgClass(
+            true
+          )} text-white rounded-md`}
           required={nomeRespObrigatorio}
         />
       </div>
@@ -343,7 +355,9 @@ function StudentEditForm({
           name="Alunos_CPF_Responsavel"
           value={editFormData.Alunos_CPF_Responsavel || ""}
           onChange={handleChange}
-          className="w-full px-4 py-2 bg-gray-700 text-white rounded-md"
+          className={`w-full px-4 py-2 ${getInputBgClass(
+            true
+          )} text-white rounded-md`}
           placeholder="000.000.000-00"
           maxLength="14"
           required={cpfRespObrigatorio}
@@ -360,7 +374,9 @@ function StudentEditForm({
             name="Alunos_Endereco_CEP"
             value={editFormData.Alunos_Endereco_CEP || ""}
             onChange={handleChange}
-            className="w-full px-4 py-2 bg-gray-700 text-white rounded-md"
+            className={`w-full px-4 py-2 ${getInputBgClass(
+              true
+            )} text-white rounded-md`}
             placeholder="00000-000"
             maxLength="9"
             required
@@ -381,7 +397,9 @@ function StudentEditForm({
           type="text"
           name="Alunos_Endereco"
           value={editFormData.Alunos_Endereco || ""}
-          className="w-full px-4 py-2 bg-gray-700 text-white rounded-md"
+          className={`w-full px-4 py-2 ${getInputBgClass(
+            false
+          )} text-white rounded-md`}
           readOnly
           required
         />
@@ -396,7 +414,9 @@ function StudentEditForm({
           name="Alunos_Endereco_Complemento"
           value={editFormData.Alunos_Endereco_Complemento || ""}
           onChange={handleChange}
-          className="w-full px-4 py-2 bg-gray-700 text-white rounded-md"
+          className={`w-full px-4 py-2 ${getInputBgClass(
+            true
+          )} text-white rounded-md`}
         />
       </div>
 
@@ -408,7 +428,9 @@ function StudentEditForm({
           type="text"
           name="Alunos_Endereco_Bairro"
           value={editFormData.Alunos_Endereco_Bairro || ""}
-          className="w-full px-4 py-2 bg-gray-700 text-white rounded-md"
+          className={`w-full px-4 py-2 ${getInputBgClass(
+            false
+          )} text-white rounded-md`}
           readOnly
           required
         />
@@ -422,7 +444,9 @@ function StudentEditForm({
           type="text"
           name="Alunos_Endereco_Cidade"
           value={editFormData.Alunos_Endereco_Cidade || ""}
-          className="w-full px-4 py-2 bg-gray-700 text-white rounded-md"
+          className={`w-full px-4 py-2 ${getInputBgClass(
+            false
+          )} text-white rounded-md`}
           readOnly
           required
         />
@@ -436,7 +460,9 @@ function StudentEditForm({
           type="text"
           name="Alunos_Endereco_Estado"
           value={editFormData.Alunos_Endereco_Estado || ""}
-          className="w-full px-4 py-2 bg-gray-700 text-white rounded-md"
+          className={`w-full px-4 py-2 ${getInputBgClass(
+            false
+          )} text-white rounded-md`}
           maxLength="2"
           readOnly
           required
@@ -452,7 +478,9 @@ function StudentEditForm({
           name="Alunos_Telefone"
           value={editFormData.Alunos_Telefone || ""}
           onChange={handleChange}
-          className="w-full px-4 py-2 bg-gray-700 text-white rounded-md"
+          className={`w-full px-4 py-2 ${getInputBgClass(
+            true
+          )} text-white rounded-md`}
           placeholder="(00) 00000-0000"
           maxLength="15"
           required
@@ -468,7 +496,9 @@ function StudentEditForm({
           name="Alunos_Email"
           value={editFormData.Alunos_Email || ""}
           onChange={handleChange}
-          className="w-full px-4 py-2 bg-gray-700 text-white rounded-md"
+          className={`w-full px-4 py-2 ${getInputBgClass(
+            true
+          )} text-white rounded-md`}
           required
         />
       </div>
@@ -482,7 +512,9 @@ function StudentEditForm({
           name="Alunos_Contato_Emergencia"
           value={editFormData.Alunos_Contato_Emergencia || ""}
           onChange={handleChange}
-          className="w-full px-4 py-2 bg-gray-700 text-white rounded-md"
+          className={`w-full px-4 py-2 ${getInputBgClass(
+            true
+          )} text-white rounded-md`}
           required
         />
       </div>
@@ -496,7 +528,9 @@ function StudentEditForm({
           name="Alunos_Telefone_Emergencia_1"
           value={editFormData.Alunos_Telefone_Emergencia_1 || ""}
           onChange={handleChange}
-          className="w-full px-4 py-2 bg-gray-700 text-white rounded-md"
+          className={`w-full px-4 py-2 ${getInputBgClass(
+            true
+          )} text-white rounded-md`}
           placeholder="(00) 00000-0000"
           maxLength="15"
           required
@@ -512,7 +546,9 @@ function StudentEditForm({
           name="Alunos_Telefone_Emergencia_2"
           value={editFormData.Alunos_Telefone_Emergencia_2 || ""}
           onChange={handleChange}
-          className="w-full px-4 py-2 bg-gray-700 text-white rounded-md"
+          className={`w-full px-4 py-2 ${getInputBgClass(
+            true
+          )} text-white rounded-md`}
           placeholder="(00) 00000-0000"
           maxLength="15"
         />

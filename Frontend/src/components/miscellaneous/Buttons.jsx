@@ -200,6 +200,26 @@ BotaoAtivarDesativar.propTypes = {
 };
 /* Fim - Botao Ativar/Desativar */
 
+/* Inicio - Botao Cancelar */
+function BotaoCancelar({ onClick, disabled, type = "button" }) {
+  return (
+    <button
+      type={type || "button"}
+      onClick={onClick}
+      disabled={disabled}
+      className="bg-gray-600 text-white p-2 border-2 rounded-md border-gray-300 hover:bg-gray-700 disabled:bg-gray-400"
+    >
+      ❌ Cancelar
+    </button>
+  );
+}
+BotaoCancelar.propTypes = {
+  onClick: PropTypes.func,
+  disabled: PropTypes.bool,
+  type: PropTypes.string,
+};
+/* Fim - Botao Cancelar */
+
 function DeletarAluno({ onClick }) {
   return (
     <button
@@ -292,6 +312,7 @@ ListarUsuarios.propTypes = {
 
 export const Buttons = {
   OrdenarPorCodigo,
+  BotaoCancelar,
   BotaoAtivarDesativar,
   SalvarAlteracoes,
   BotaoX,

@@ -562,14 +562,7 @@ function StudentEditForm({
             loading={loadingbutton}
             disabled={loadingbutton}
           />
-          <button
-            type="button"
-            onClick={onCancel}
-            disabled={loading}
-            className="bg-gray-600 text-white px-6 py-2 rounded-md hover:bg-gray-700 disabled:bg-gray-400"
-          >
-            ❌ Cancelar
-          </button>
+          <Buttons.BotaoCancelar onClick={onCancel} disabled={loading} />
         </div>
         {messageToast && <MessageToast messageToast={messageToast} />}
       </form>

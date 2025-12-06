@@ -197,13 +197,41 @@ router.post(
         Aluno_Cadastrado: novoAluno, // Retornando os dados do novo aluno criado no json
       });
     } catch (error) {
-      // Capturando erros que possam ocorrer durante o cadastro do novo aluno
-      console.error("Erro ao cadastrar aluno:", error.message);
-      res.json({
-        // Enviando a resposta (res) em formato JSON
-        statusCode: error.original?.code || 500, // Retornando o status de erro ou 500 se não houver
-        Mensagem: "Erro ao cadastrar novo aluno", // Mensagem de erro no cadastro para o json
-        Erro: error.message, // Detalhes do erro para o json
+      if (error.name === "SequelizeUniqueConstraintError") {
+        // Pega o campo que causou o erro
+        const campo = error.errors && error.errors[0].path;
+        let mensagem = "Campo único já cadastrado.";
+        let erro = "CAMPO_DUPLICADO";
+
+        if (campo === "Alunos_Codigo") {
+          mensagem = "Código do aluno já cadastrado.";
+          erro = "CODIGO_DUPLICADO";
+        } else if (campo === "Alunos_Nome") {
+          mensagem = "Nome do aluno já cadastrado.";
+          erro = "NOME_DUPLICADO";
+        } else if (campo === "Alunos_CPF") {
+          mensagem = "CPF já cadastrado.";
+          erro = "CPF_DUPLICADO";
+        }
+
+        return res.status(400).json({
+          Mensagem: mensagem,
+          Erro: erro,
+        });
+      }
+
+      if (error.name === "SequelizeValidationError") {
+        return res.status(400).json({
+          Mensagem:
+            "Erro de validação: " +
+            error.errors.map((e) => e.message).join(", "),
+          Erro: "VALIDATION_ERROR",
+        });
+      }
+
+      res.status(500).json({
+        Mensagem: "Erro interno do servidor.",
+        Erro: error.message,
       });
     }
   }

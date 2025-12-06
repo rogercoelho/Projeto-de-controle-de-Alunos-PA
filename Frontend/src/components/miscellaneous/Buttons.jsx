@@ -126,8 +126,6 @@ OrdenarPorNome.propTypes = {
 /* Fim - Botao Ordenar por Nome */
 
 /* Inicio - Botao Voltar para a Pesquisa */
-
-/* Inicio - Botao Voltar para a Pesquisa */
 function VoltarPesquisa({ onBack }) {
   return (
     <button
@@ -158,6 +156,29 @@ EditarAluno.propTypes = {
   onClick: PropTypes.func,
 };
 /* Fim - Botao Editar Aluno */
+
+/* Inicio - Botao Salvar Alteracoes */
+
+function SalvarAlteracoes({ onClick, type = "submit", disabled, loading }) {
+  return (
+    <button
+      className="bg-emerald-600 rounded-md p-2 border-2 border-gray-300 font-bold hover:bg-emerald-700"
+      onClick={onClick}
+      type={type || "submit"}
+      disabled={disabled}
+      loading={loading}
+    >
+      💾 {loading ? "Salvando..." : "Salvar Alterações"}
+    </button>
+  );
+}
+SalvarAlteracoes.propTypes = {
+  onClick: PropTypes.func,
+  type: PropTypes.string,
+  disabled: PropTypes.bool,
+  loading: PropTypes.bool,
+};
+/* Fim - Botao Salvar Alteracoes */
 
 function DeletarAluno({ onClick }) {
   return (
@@ -251,6 +272,7 @@ ListarUsuarios.propTypes = {
 
 export const Buttons = {
   OrdenarPorCodigo,
+  SalvarAlteracoes,
   BotaoX,
   OrdenarPorNome,
   VoltarPesquisa,

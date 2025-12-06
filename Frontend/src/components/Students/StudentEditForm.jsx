@@ -1,9 +1,19 @@
+import {
+  calcularIdade,
+  validarCPF,
+  formatarCPF,
+  converterData,
+} from "../../utils/Utils";
+import api from "../../services/api";
+import MessageToast from "../miscellaneous/MessageToast";
+import React, { useRef } from "react";
+
 import PropTypes from "prop-types";
 import PhotoSkeleton from "../miscellaneous/PhotoSkeleton";
+import Buttons from "../miscellaneous/Buttons";
 
 function StudentEditForm({
-  editFormData,
-  onChange,
+  editFormData: initialFormData,
   onSubmit,
   onCancel,
   arquivosEdit,
@@ -12,9 +22,128 @@ function StudentEditForm({
   loadingCep,
   selectedAluno,
 }) {
+  // Estado local do formulário de edição
+  const [editFormData, setEditFormData] = React.useState(initialFormData);
+  // Atualiza o estado local se mudar o aluno selecionado
+  React.useEffect(() => {
+    setEditFormData(initialFormData);
+  }, [initialFormData]);
+  // Ref para o input de foto
+  const fotoInputRef = useRef(null);
+  // Ref para o input de contrato
+  const contratoInputRef = useRef(null);
+  // Estado local para forçar atualização visual imediata
+  const [fotoRemovida, setFotoRemovida] = React.useState(false);
+  const [contratoRemovido, setContratoRemovido] = React.useState(false);
+  // Resetar controle local ao selecionar nova foto
+  React.useEffect(() => {
+    setFotoRemovida(false);
+  }, [arquivosEdit.foto]);
+  // Resetar controle local ao selecionar novo contrato
+  React.useEffect(() => {
+    setContratoRemovido(false);
+  }, [arquivosEdit.contrato]);
+  // Estado local para mensagem toast
+  const [messageToast, setMessageToast] = React.useState(null);
+
+  // Handler local para campos do formulário
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    let newValue = value;
+    if (name === "Alunos_CPF" || name === "Alunos_CPF_Responsavel") {
+      newValue = formatarCPF(value);
+    }
+    setEditFormData((prev) => ({ ...prev, [name]: newValue }));
+  };
+  // Lógica de controle de edição dos campos
+  const idade = calcularIdade(editFormData.Alunos_Data_Nascimento);
+
+  // CPF do aluno: readonly se já estava preenchido ao abrir
+  const cpfAlunoReadOnly = !!initialFormData.Alunos_CPF;
+  // CPF do aluno: obrigatório se maior de 18 anos
+  const cpfAlunoObrigatorio = idade >= 18;
+
+  // Nome do responsável: editável e obrigatório se aluno for menor de idade e
+  // (não estiver preenchido ou for "Aluno Maior de Idade")
+  const nomeRespObrigatorio =
+    idade < 18 ||
+    !initialFormData.Alunos_Nome_Responsavel ||
+    initialFormData.Alunos_Nome_Responsavel === "Aluno Maior de Idade";
+
+  const cpfRespObrigatorio = idade < 18;
+
   return (
     <form
-      onSubmit={onSubmit}
+      onSubmit={async (e) => {
+        e.preventDefault();
+        // Validação de CPF ao enviar
+        if (editFormData.Alunos_CPF && !validarCPF(editFormData.Alunos_CPF)) {
+          setMessageToast({ type: "error", text: "CPF do aluno inválido" });
+          setTimeout(() => setMessageToast(null), 3000);
+          return;
+        }
+        if (
+          editFormData.Alunos_CPF_Responsavel &&
+          !validarCPF(editFormData.Alunos_CPF_Responsavel)
+        ) {
+          setMessageToast({
+            type: "error",
+            text: "CPF do responsável inválido",
+          });
+          setTimeout(() => setMessageToast(null), 3000);
+          return;
+        }
+        try {
+          const formDataConvertido = {
+            ...editFormData,
+            Alunos_Data_Nascimento: converterData(
+              editFormData.Alunos_Data_Nascimento
+            ),
+          };
+          let response;
+          if (arquivosEdit.foto || arquivosEdit.contrato) {
+            const data = new FormData();
+            Object.entries(formDataConvertido).forEach(([key, value]) => {
+              data.append(key, value);
+            });
+            if (arquivosEdit.foto) data.append("foto", arquivosEdit.foto);
+            if (arquivosEdit.contrato)
+              data.append("contrato", arquivosEdit.contrato);
+            response = await api.patch(
+              `/alunos/update/${editFormData.Alunos_Codigo}`,
+              data,
+              { headers: { "Content-Type": "multipart/form-data" } }
+            );
+          } else {
+            response = await api.patch(
+              `/alunos/update/${editFormData.Alunos_Codigo}`,
+              formDataConvertido
+            );
+          }
+          const resData = response.data;
+          if (resData && resData.statusCode === 200) {
+            setMessageToast({
+              type: "success",
+              text: resData.Mensagem || "Alterações salvas com sucesso!",
+            });
+            setTimeout(() => setMessageToast(null), 3000);
+            if (typeof onSubmit === "function") onSubmit(editFormData);
+          } else {
+            setMessageToast({
+              type: "error",
+              text: resData.Mensagem || "Erro ao salvar alterações.",
+            });
+            setTimeout(() => setMessageToast(null), 3000);
+          }
+        } catch (error) {
+          setMessageToast({
+            type: "error",
+            text:
+              error?.response?.data?.Mensagem || "Erro ao salvar alterações.",
+          });
+          setTimeout(() => setMessageToast(null), 3000);
+        }
+      }}
       className="bg-gray-800 rounded-xl p-6 space-y-4 mx-auto"
     >
       <div className="w-full mb-8 flex">
@@ -34,64 +163,58 @@ function StudentEditForm({
           Campos com * são obrigatórios.
         </span>
       </div>
-
       <div>
-        <div className="flex flex-col items-center mb-2">
-          <label className="font-bold text-gray-300 mb-1">Foto Atual:</label>
-          {/* Exibe a foto antiga se não houver nova selecionada */}
-          {!arquivosEdit.foto &&
-            selectedAluno &&
-            typeof selectedAluno.Alunos_Foto === "string" &&
-            selectedAluno.Alunos_Foto.trim() !== "" &&
-            selectedAluno.Alunos_Foto.trim().toLowerCase() !== "null" &&
-            selectedAluno.Alunos_Foto.trim().toLowerCase() !== "undefined" && (
-              <PhotoSkeleton
-                foto={String(selectedAluno.Alunos_Foto)}
-                nome={
-                  selectedAluno.Alunos_Nome ||
-                  editFormData.Alunos_Nome ||
-                  "Aluno"
-                }
-              />
-            )}
-          {/* Exibe a nova foto se houver nova selecionada */}
-          {arquivosEdit.foto && (
+        <div className="flex flex-col mb-6">
+          <label className="font-bold text-gray-300 mb-1">Foto:</label>
+          <div className="flex flex-col gap-2">
+            {/* Se houver nova foto, mostra ela. Senão, mostra a foto atual */}
             <PhotoSkeleton
-              foto={URL.createObjectURL(arquivosEdit.foto)}
+              foto={
+                fotoRemovida ||
+                (!arquivosEdit.foto && !editFormData.Alunos_Foto)
+                  ? "/logo.png"
+                  : arquivosEdit.foto
+                  ? URL.createObjectURL(arquivosEdit.foto)
+                  : editFormData.Alunos_Foto
+              }
               nome={
                 editFormData.Alunos_Nome ||
                 selectedAluno?.Alunos_Nome ||
                 "Aluno"
               }
             />
-          )}
-          {/* Mostra o nome do arquivo antigo apenas se não houver nova foto */}
-          {selectedAluno?.Alunos_Foto && !arquivosEdit.foto && (
-            <span className="text-xs text-gray-500 mt-1">
-              Arquivo: {selectedAluno.Alunos_Foto}
-            </span>
-          )}
-          {/* Mostra o nome do arquivo novo apenas se houver nova foto */}
-          {arquivosEdit.foto && (
-            <span className="text-xs text-green-600 mt-1">
-              Novo arquivo: {arquivosEdit.foto.name}
-            </span>
-          )}
+          </div>
         </div>
         <label className="block text-sm font-medium text-gray-300 mb-2">
           Nova Foto
         </label>
         <input
+          ref={fotoInputRef}
           type="file"
           name="foto"
-          onChange={onFileChange}
+          onChange={(e) => {
+            setFotoRemovida(false);
+            onFileChange(e);
+          }}
           accept="image/*"
           className="w-full px-4 py-2 bg-gray-700 text-white rounded-md"
         />
-        {arquivosEdit.foto && (
+        {arquivosEdit.foto && !fotoRemovida && (
           <span className="text-sm text-green-600">
             📷 {arquivosEdit.foto.name} (
             {(arquivosEdit.foto.size / 1024).toFixed(1)} KB)
+            <Buttons.BotaoX
+              onClick={() => {
+                if (fotoInputRef.current) fotoInputRef.current.value = "";
+                setFotoRemovida(true);
+                onFileChange({
+                  target: {
+                    name: "foto",
+                    files: [],
+                  },
+                });
+              }}
+            />
           </span>
         )}
       </div>
@@ -101,23 +224,41 @@ function StudentEditForm({
           Novo Contrato
         </label>
         <input
+          ref={contratoInputRef}
           type="file"
           name="contrato"
-          onChange={onFileChange}
+          onChange={(e) => {
+            setContratoRemovido(false);
+            onFileChange(e);
+          }}
           accept="application/pdf,image/*"
           className="w-full px-4 py-2 bg-gray-700 text-white rounded-md"
         />
-        {arquivosEdit.contrato && (
-          <span className="text-sm text-green-600">
+        {arquivosEdit.contrato && !contratoRemovido && (
+          <span className="text-sm text-green-600 flex items-center gap-2">
             📄 {arquivosEdit.contrato.name} (
             {(arquivosEdit.contrato.size / 1024).toFixed(1)} KB)
+            <Buttons.BotaoX
+              onClick={() => {
+                if (contratoInputRef.current)
+                  contratoInputRef.current.value = "";
+                setContratoRemovido(true);
+                onFileChange({
+                  target: {
+                    name: "contrato",
+                    files: [],
+                  },
+                });
+              }}
+            />
           </span>
         )}
-        {selectedAluno?.Alunos_Contrato && !arquivosEdit.contrato && (
-          <span className="text-sm text-gray-600">
-            Atual: {selectedAluno.Alunos_Contrato}
-          </span>
-        )}
+        {selectedAluno?.Alunos_Contrato &&
+          (!arquivosEdit.contrato || contratoRemovido) && (
+            <span className="text-sm text-gray-600">
+              Atual: {selectedAluno.Alunos_Contrato}
+            </span>
+          )}
       </div>
 
       <div>
@@ -141,7 +282,7 @@ function StudentEditForm({
           type="text"
           name="Alunos_Nome"
           value={editFormData.Alunos_Nome || ""}
-          onChange={onChange}
+          onChange={handleChange}
           className="w-full px-4 py-2 bg-gray-700 text-white rounded-md"
           required
         />
@@ -155,53 +296,57 @@ function StudentEditForm({
           type="date"
           name="Alunos_Data_Nascimento"
           value={editFormData.Alunos_Data_Nascimento || ""}
-          onChange={onChange}
+          onChange={handleChange}
           className="w-full px-4 py-2 bg-gray-700 text-white rounded-md"
           required
+          readOnly
         />
       </div>
 
       <div>
         <label className="block text-sm font-medium text-gray-300 mb-2">
-          CPF *
+          CPF{cpfAlunoObrigatorio ? " *" : ""}
         </label>
         <input
           type="text"
           name="Alunos_CPF"
           value={editFormData.Alunos_CPF || ""}
-          onChange={onChange}
+          onChange={handleChange}
           className="w-full px-4 py-2 bg-gray-700 text-white rounded-md"
           placeholder="000.000.000-00"
           maxLength="14"
-          required
+          readOnly={cpfAlunoReadOnly}
+          required={cpfAlunoObrigatorio}
         />
       </div>
 
       <div>
         <label className="block text-sm font-medium text-gray-300 mb-2">
-          Nome do Responsável
+          Nome do Responsável{nomeRespObrigatorio ? " *" : ""}
         </label>
         <input
           type="text"
           name="Alunos_Nome_Responsavel"
           value={editFormData.Alunos_Nome_Responsavel || ""}
-          onChange={onChange}
+          onChange={handleChange}
           className="w-full px-4 py-2 bg-gray-700 text-white rounded-md"
+          required={nomeRespObrigatorio}
         />
       </div>
 
       <div>
         <label className="block text-sm font-medium text-gray-300 mb-2">
-          CPF do Responsável
+          CPF do Responsável {cpfRespObrigatorio ? " *" : ""}
         </label>
         <input
           type="text"
           name="Alunos_CPF_Responsavel"
           value={editFormData.Alunos_CPF_Responsavel || ""}
-          onChange={onChange}
+          onChange={handleChange}
           className="w-full px-4 py-2 bg-gray-700 text-white rounded-md"
           placeholder="000.000.000-00"
           maxLength="14"
+          required={cpfRespObrigatorio}
         />
       </div>
 
@@ -214,7 +359,7 @@ function StudentEditForm({
             type="text"
             name="Alunos_Endereco_CEP"
             value={editFormData.Alunos_Endereco_CEP || ""}
-            onChange={onChange}
+            onChange={handleChange}
             className="w-full px-4 py-2 bg-gray-700 text-white rounded-md"
             placeholder="00000-000"
             maxLength="9"
@@ -236,7 +381,6 @@ function StudentEditForm({
           type="text"
           name="Alunos_Endereco"
           value={editFormData.Alunos_Endereco || ""}
-          onChange={onChange}
           className="w-full px-4 py-2 bg-gray-700 text-white rounded-md"
           readOnly
           required
@@ -251,7 +395,7 @@ function StudentEditForm({
           type="text"
           name="Alunos_Endereco_Complemento"
           value={editFormData.Alunos_Endereco_Complemento || ""}
-          onChange={onChange}
+          onChange={handleChange}
           className="w-full px-4 py-2 bg-gray-700 text-white rounded-md"
         />
       </div>
@@ -264,7 +408,6 @@ function StudentEditForm({
           type="text"
           name="Alunos_Endereco_Bairro"
           value={editFormData.Alunos_Endereco_Bairro || ""}
-          onChange={onChange}
           className="w-full px-4 py-2 bg-gray-700 text-white rounded-md"
           readOnly
           required
@@ -279,7 +422,6 @@ function StudentEditForm({
           type="text"
           name="Alunos_Endereco_Cidade"
           value={editFormData.Alunos_Endereco_Cidade || ""}
-          onChange={onChange}
           className="w-full px-4 py-2 bg-gray-700 text-white rounded-md"
           readOnly
           required
@@ -294,7 +436,6 @@ function StudentEditForm({
           type="text"
           name="Alunos_Endereco_Estado"
           value={editFormData.Alunos_Endereco_Estado || ""}
-          onChange={onChange}
           className="w-full px-4 py-2 bg-gray-700 text-white rounded-md"
           maxLength="2"
           readOnly
@@ -310,7 +451,7 @@ function StudentEditForm({
           type="tel"
           name="Alunos_Telefone"
           value={editFormData.Alunos_Telefone || ""}
-          onChange={onChange}
+          onChange={handleChange}
           className="w-full px-4 py-2 bg-gray-700 text-white rounded-md"
           placeholder="(00) 00000-0000"
           maxLength="15"
@@ -326,7 +467,7 @@ function StudentEditForm({
           type="email"
           name="Alunos_Email"
           value={editFormData.Alunos_Email || ""}
-          onChange={onChange}
+          onChange={handleChange}
           className="w-full px-4 py-2 bg-gray-700 text-white rounded-md"
           required
         />
@@ -334,29 +475,31 @@ function StudentEditForm({
 
       <div>
         <label className="block text-sm font-medium text-gray-300 mb-2">
-          Contato de Emergência
+          Nome do Contato de Emergência *
         </label>
         <input
           type="text"
           name="Alunos_Contato_Emergencia"
           value={editFormData.Alunos_Contato_Emergencia || ""}
-          onChange={onChange}
+          onChange={handleChange}
           className="w-full px-4 py-2 bg-gray-700 text-white rounded-md"
+          required
         />
       </div>
 
       <div>
         <label className="block text-sm font-medium text-gray-300 mb-2">
-          Telefone Emergência 1
+          Telefone Emergência 1 *
         </label>
         <input
           type="tel"
           name="Alunos_Telefone_Emergencia_1"
           value={editFormData.Alunos_Telefone_Emergencia_1 || ""}
-          onChange={onChange}
+          onChange={handleChange}
           className="w-full px-4 py-2 bg-gray-700 text-white rounded-md"
           placeholder="(00) 00000-0000"
           maxLength="15"
+          required
         />
       </div>
 
@@ -368,7 +511,7 @@ function StudentEditForm({
           type="tel"
           name="Alunos_Telefone_Emergencia_2"
           value={editFormData.Alunos_Telefone_Emergencia_2 || ""}
-          onChange={onChange}
+          onChange={handleChange}
           className="w-full px-4 py-2 bg-gray-700 text-white rounded-md"
           placeholder="(00) 00000-0000"
           maxLength="15"
@@ -392,6 +535,7 @@ function StudentEditForm({
           ❌ Cancelar
         </button>
       </div>
+      {messageToast && <MessageToast messageToast={messageToast} />}
     </form>
   );
 }

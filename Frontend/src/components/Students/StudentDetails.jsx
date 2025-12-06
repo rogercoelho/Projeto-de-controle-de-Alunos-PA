@@ -9,7 +9,11 @@ function StudentDetails({ aluno, onEdit, onToggleSituacao, onBack }) {
       <div className="flex gap-2 mb-4">
         <Buttons.VoltarPesquisa onBack={onBack} />
         <Buttons.EditarAluno onClick={onEdit} />
-        <button
+        <Buttons.BotaoAtivarDesativar
+          onClick={onToggleSituacao}
+          aluno={aluno}
+        />
+        {/*         <button
           onClick={onToggleSituacao}
           className={`text-white px-4 py-2 rounded-md ${
             aluno.Alunos_Situacao === "Ativo"
@@ -18,7 +22,7 @@ function StudentDetails({ aluno, onEdit, onToggleSituacao, onBack }) {
           }`}
         >
           {aluno.Alunos_Situacao === "Ativo" ? "⛔ Desativar" : "✅ Ativar"}
-        </button>
+        </button> */}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-2 items-center">

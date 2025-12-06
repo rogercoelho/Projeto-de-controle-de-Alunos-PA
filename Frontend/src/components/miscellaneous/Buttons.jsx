@@ -158,7 +158,6 @@ EditarAluno.propTypes = {
 /* Fim - Botao Editar Aluno */
 
 /* Inicio - Botao Salvar Alteracoes */
-
 function SalvarAlteracoes({ onClick, type = "submit", disabled, loading }) {
   return (
     <button
@@ -179,6 +178,27 @@ SalvarAlteracoes.propTypes = {
   loading: PropTypes.bool,
 };
 /* Fim - Botao Salvar Alteracoes */
+
+/* Inicio - Botao Ativar/Desativar */
+function BotaoAtivarDesativar({ onClick, aluno }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex gap-4 border-2 p-2 rounded-md font-bold  text-white border-gray-300 ${
+        aluno.Alunos_Situacao === "Ativo"
+          ? "bg-orange-600 hover:bg-orange-700"
+          : "bg-green-600 hover:bg-green-700"
+      }`}
+    >
+      {aluno.Alunos_Situacao === "Ativo" ? "⛔ Desativar" : "✅ Ativar"}
+    </button>
+  );
+}
+BotaoAtivarDesativar.propTypes = {
+  onClick: PropTypes.func,
+  aluno: PropTypes.object,
+};
+/* Fim - Botao Ativar/Desativar */
 
 function DeletarAluno({ onClick }) {
   return (
@@ -272,6 +292,7 @@ ListarUsuarios.propTypes = {
 
 export const Buttons = {
   OrdenarPorCodigo,
+  BotaoAtivarDesativar,
   SalvarAlteracoes,
   BotaoX,
   OrdenarPorNome,

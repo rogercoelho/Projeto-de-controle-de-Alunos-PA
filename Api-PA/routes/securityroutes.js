@@ -110,7 +110,7 @@ function autenticarToken(req, res, next) {
       return res.status(401).json({
         // Retorna status 401 Unauthorized
         statusCode: 401, // Status code de não autorizado
-        Mensagem: "Token inválido ou expirado. Tente outra vez...", // mensagem bonitinha
+        Mensagem: "Token inválido ou expirado. Faça login novamente.", // mensagem bonitinha
       });
     }
 

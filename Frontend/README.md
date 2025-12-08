@@ -16,6 +16,8 @@ Sistema de gerenciamento para a Escola de Circo Plantando Alegria.
 - `npm run lint` - Executa o ESLint
 - `npm run preview` - Preview da build de produção
 
+- npm install react-router-dom para ir para a tela de login quando o token estiver expirado.
+
 ## Funcionalidades
 
 - Controle de Alunos

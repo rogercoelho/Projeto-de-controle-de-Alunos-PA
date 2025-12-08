@@ -28,8 +28,8 @@ router.post("/login", async (req, res) => {
       console.warn(
         `⚠️ Tentativa de login - usuário não encontrado: ${usuario} ⚠️`
       );
-      return res.status(401).json({
-        statusCode: 401,
+      return res.status(403).json({
+        statusCode: 403,
         Mensagem: "Usuário ou senha inválidos.",
       });
     }
@@ -42,8 +42,8 @@ router.post("/login", async (req, res) => {
 
     if (!senhaValida) {
       console.warn(`⚠️ Tentativa de login - senha incorreta: ${usuario} ⚠️`);
-      return res.status(401).json({
-        statusCode: 401,
+      return res.status(403).json({
+        statusCode: 403,
         Mensagem: "Usuário ou senha inválidos.",
       });
     }
@@ -58,7 +58,7 @@ router.post("/login", async (req, res) => {
       },
       process.env.JWT_SECRET,
       {
-        expiresIn: "8h", // Tempo de expiração do token
+        expiresIn: "1h", // Tempo de expiração do token
       }
     );
 
@@ -107,9 +107,9 @@ function autenticarToken(req, res, next) {
     if (err) {
       // Se houver erro na verificação do token
       console.error("❌ Token inválido:", err.message); // Log de token inválido
-      return res.status(403).json({
-        // Retorna status 403 Forbidden
-        statusCode: 403, // Status code de proibido
+      return res.status(401).json({
+        // Retorna status 401 Unauthorized
+        statusCode: 401, // Status code de não autorizado
         Mensagem: "Token inválido ou expirado. Tente outra vez...", // mensagem bonitinha
       });
     }

@@ -61,6 +61,9 @@ function StudentForm({ aluno, onSaveSuccess }) {
     formData.Alunos_Endereco_CEP
   );
 
+  //const [message, setMessage] = useState({ type: "", text: "" });
+  const [messageToast, showToast] = useToast();
+
   /* Usa o React useEffect para atualizar o formulário quando dadosCep ou erroCep mudarem
     Se dadosCep tiver informacao, entao preenche os campos do formulario. Se erroCep tiver
     informacao, entao exibe a mensagem de erro */
@@ -78,13 +81,11 @@ function StudentForm({ aluno, onSaveSuccess }) {
     if (erroCep) {
       showToast({ type: "error", text: erroCep });
     }
-  }, [dadosCep, erroCep]);
+  }, [dadosCep, erroCep, showToast]);
 
   /* Cria variaveis constante de estado para controlar as mensagens
   de loading e feedback (resultado) do toast */
   const [loading, setLoading] = useState(false);
-  //const [message, setMessage] = useState({ type: "", text: "" });
-  const [messageToast, showToast] = useToast();
 
   /*  Uso do react useEffect para limpar mensagens do toast 
   após 1.5 segundos */
@@ -597,7 +598,7 @@ function StudentForm({ aluno, onSaveSuccess }) {
               required
             />
             {loadingCep && (
-              <span className="absolute right-2 top-2 text-white text-sm">
+              <span className="absolute right-2 top-2 text-orange-500 text-2xl">
                 Buscando...
               </span>
             )}

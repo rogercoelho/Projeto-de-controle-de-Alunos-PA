@@ -41,8 +41,13 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       // Token inválido ou expirado - redirecionar para login
-      localStorage.removeItem("token");
-      window.dispatchEvent(new Event("logout"));
+      window.dispatchEvent(
+        new CustomEvent("token-expired", {
+          detail:
+            error.response.data?.Mensagem ||
+            "Token expirado. Por favor, faça login novamente.",
+        })
+      );
     }
     return Promise.reject(error);
   }

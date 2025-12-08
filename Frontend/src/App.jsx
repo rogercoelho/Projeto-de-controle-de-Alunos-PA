@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { Routes, Route } from "react-router-dom";
 import Login from "./components/security/Login";
 import StudentForm from "./components/students/StudentForm";
@@ -15,6 +14,7 @@ import ProtectedRoute from "./components/Security/ProtectedRoute";
 import AdminDelete from "./components/Security/AdminDelete";
 import MobileMenu from "./components/miscellaneous/MobileMenu";
 import { logout, getUsuario, isAdmin } from "./services/auth";
+import useToast from "./hooks/useToast";
 
 function App() {
   const [activeComponent, setActiveComponent] = useState(null);
@@ -27,7 +27,7 @@ function App() {
   const [usuario, setUsuario] = useState(() => getUsuario());
   // eslint-disable-next-line no-unused-vars
   const [ehAdmin, setEhAdmin] = useState(() => isAdmin());
-  const navigate = useNavigate();
+  const [, showMessageToast] = useToast();
 
   const handleLogout = () => {
     if (confirm("Deseja realmente sair?")) {
@@ -37,13 +37,36 @@ function App() {
   };
   // Logout automático (token expirado)
   useEffect(() => {
-    const handleAutoLogout = () => {
-      logout(); // Limpa token/localStorage
-      navigate("/security/login"); // Redireciona para a tela correta
+    // Atualiza usuario e ehAdmin ao montar e após login/logout
+    const updateUserState = () => {
+      setUsuario(getUsuario());
+      setEhAdmin(isAdmin());
     };
-    window.addEventListener("logout", handleAutoLogout);
-    return () => window.removeEventListener("logout", handleAutoLogout);
-  }, [navigate]);
+    window.addEventListener("login", updateUserState);
+    window.addEventListener("logout", updateUserState);
+    updateUserState();
+
+    const handleTokenExpired = (e) => {
+      showMessageToast({ type: "error", text: e.detail });
+      setTimeout(() => {
+        window.dispatchEvent(new Event("logout"));
+      }, 4000); // tempo da mensagem toast antes de redirecionar
+    };
+    window.addEventListener("token-expired", handleTokenExpired);
+
+    const handleLogout = () => {
+      logout(); // remove o token
+      window.location.href = "/security/login"; // redireciona para login
+    };
+    window.addEventListener("logout", handleLogout);
+
+    return () => {
+      window.removeEventListener("login", updateUserState);
+      window.removeEventListener("logout", updateUserState);
+      window.removeEventListener("token-expired", handleTokenExpired);
+      window.removeEventListener("logout", handleLogout);
+    };
+  }, [showMessageToast]);
 
   const handleNavigate = (component, subComponent) => {
     setActiveComponent(component);

@@ -31,11 +31,11 @@ function Login() {
         type: "success",
         text: "Login realizado com sucesso!",
       });
-
+      window.dispatchEvent(new Event("login"));
       // Redirecionar após login bem-sucedido
       setTimeout(() => {
         navigate("/"); // Recarrega a página para atualizar o estado
-      }, 1500);
+      }, 2500);
     } catch (error) {
       console.error("Erro ao fazer login:", error);
       setMessage({
@@ -46,7 +46,7 @@ function Login() {
       });
       setTimeout(() => {
         setMessage({ type: "", text: "" });
-      }, 1500);
+      }, 2500);
     } finally {
       setLoading(false);
     }

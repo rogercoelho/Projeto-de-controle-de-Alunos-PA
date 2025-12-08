@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { login } from "../../services/auth";
+import { useNavigate } from "react-router-dom";
 
 function Login() {
   const [formData, setFormData] = useState({
@@ -9,6 +10,7 @@ function Login() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
   const [showPassword, setShowPassword] = useState(false);
+  const navigate = useNavigate(); // Hook para navegação
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -32,7 +34,7 @@ function Login() {
 
       // Redirecionar após login bem-sucedido
       setTimeout(() => {
-        window.location.reload(); // Recarrega a página para atualizar o estado
+        navigate("/"); // Recarrega a página para atualizar o estado
       }, 1500);
     } catch (error) {
       console.error("Erro ao fazer login:", error);

@@ -1,20 +1,19 @@
 import { isAuthenticated } from "../../services/auth";
-import Login from "./Login";
+import { Navigate } from "react-router-dom";
+import PropTypes from "prop-types";
 
 function ProtectedRoute({ children }) {
   // Verifica se o usuário está autenticado
   if (!isAuthenticated()) {
-    return <Login />;
+    return <Navigate to="/security/login" replace />;
   }
 
   // Se autenticado, mostra o conteúdo protegido
   return children;
 }
 
-export default ProtectedRoute;
-
-import PropTypes from "prop-types";
-
 ProtectedRoute.propTypes = {
   children: PropTypes.node.isRequired,
 };
+
+export default ProtectedRoute;

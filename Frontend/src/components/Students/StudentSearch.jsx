@@ -369,34 +369,28 @@ function StudentSearch() {
           onFileChange={handleFileChange}
           onCancel={() => setIsEditing(false)}
           onSaveSuccess={async (updatedAluno) => {
-            setIsEditing(false);
             setArquivosEdit({ foto: null, contrato: null });
-            /* Tenta buscar o aluno atualizado na API para garantir que a 
-               foto/contrato estejam atualizados
-               Cria a variavel constante response que aguarda a resposta da API,
-               repassando o código do aluno armazenado no updatedAluno.Alunos_Codigo */
             try {
               const response = await api.get(
                 `/alunos/codigo/${updatedAluno.Alunos_Codigo}`
               );
-              /* Se a resposta da API contiver dados e o código do aluno entao setSelectedAluno
-                 recebe os dados atualizados de response.data
-                 Senao, setSelectedAluno usa o parametro prev repassando seu conteúdo e 
-                 atualizando com o conteudo de updatedAluno */
+              console.log("Dados retornados do backend:", response.data);
               if (response.data && response.data.Alunos_Codigo) {
                 setSelectedAluno(response.data);
               } else {
-                setSelectedAluno((prev) => ({ ...prev, ...updatedAluno }));
+                setSelectedAluno(updatedAluno);
               }
-              /* Se der erro na requisição, setSelectedAluno usa o parametro prev repassando seu
-               conteúdo e atualizando com o conteudo de updatedAluno. Depois seta a mensagem de sucesso */
             } catch {
-              setSelectedAluno((prev) => ({ ...prev, ...updatedAluno }));
+              setSelectedAluno(updatedAluno);
             }
-            showToast({
+            /*  showToast({
               type: "success",
               text: "Alterações salvas com sucesso!",
-            });
+            }); */
+            // Aguarda 3 segundos antes de fechar o formulário de edição
+            setTimeout(() => {
+              setIsEditing(false);
+            }, 3000);
           }}
         />
       ) : /* Se isEditing for falso e selectedAluno existir, mostra os detalhes do aluno. A variavel

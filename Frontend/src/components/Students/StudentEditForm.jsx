@@ -16,7 +16,7 @@ import Buttons from "../miscellaneous/Buttons";
 
 function StudentEditForm({
   editFormData: initialFormData,
-  onSubmit,
+  onSaveSuccess,
   onCancel,
   arquivosEdit,
   onFileChange,
@@ -134,7 +134,9 @@ function StudentEditForm({
                 type: "success",
                 text: resData.Mensagem || "Alterações salvas com sucesso!",
               });
-              if (typeof onSubmit === "function") onSubmit(editFormData);
+              // Chama o callback correto para atualizar e fechar o formulário
+              if (typeof onSaveSuccess === "function")
+                onSaveSuccess(editFormData);
             } else {
               showToast({
                 type: "error",
@@ -574,8 +576,8 @@ export default StudentEditForm;
 
 StudentEditForm.propTypes = {
   editFormData: PropTypes.object.isRequired,
-  onChange: PropTypes.func.isRequired,
-  onSubmit: PropTypes.func.isRequired,
+  onChange: PropTypes.func,
+  onSaveSuccess: PropTypes.func.isRequired,
   onCancel: PropTypes.func.isRequired,
   arquivosEdit: PropTypes.shape({
     foto: PropTypes.any,

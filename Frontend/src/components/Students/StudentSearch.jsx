@@ -1,11 +1,10 @@
-import React from "react";
 import { useState } from "react";
 import api from "../../services/api";
 import { formatarCPF } from "../../utils/Utils";
 import StudentDetails from "./StudentDetails";
-//import StudentForm from "./StudentForm";
 import StudentEditForm from "./StudentEditForm";
 import MessageToast from "../miscellaneous/MessageToast";
+import useToast from "../../hooks/useToast";
 import { Buttons } from "../miscellaneous/Buttons";
 
 /* ===== Inicio da Função StudentSearch */
@@ -33,7 +32,9 @@ function StudentSearch() {
   const [mostrarInativos, setMostrarInativos] = useState(false);
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState({ type: "", text: "" });
+  // const [message, setMessage] = useState({ type: "", text: "" });
+  const [messageToast, showToast] = useToast();
+  <MessageToast messageToast={messageToast} />;
   const [selectedAluno, setSelectedAluno] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [sortBy, setSortBy] = useState("codigo");
@@ -105,7 +106,7 @@ function StudentSearch() {
   const handleClearSearch = () => {
     setSearchData({ codigo: "", cpf: "", nome: "" });
     setResults([]);
-    setMessage({ type: "", text: "" });
+    showToast({ type: "", text: "" });
     setCurrentPage(1);
   };
 
@@ -145,7 +146,7 @@ function StudentSearch() {
      Se estiver, exibe uma mensagem de erro. Caso contrário, ativa o modo de edição (true). */
   const handleEdit = () => {
     if (selectedAluno && selectedAluno.Alunos_Situacao === "Inativo") {
-      setMessage({
+      showToast({
         type: "error",
         text: "Editar aluno inativo nao é permitido",
       });
@@ -183,9 +184,9 @@ function StudentSearch() {
           Alunos_Situacao: novoStatus,
         }));
         // Garante que a mensagem toast apareça mesmo se já houver uma mensagem anterior
-        setMessage({});
+        showToast({});
         setTimeout(() => {
-          setMessage({
+          showToast({
             type: "success",
             text: `Aluno ${
               novoStatus === "Inativo" ? "desativado" : "ativado"
@@ -195,7 +196,7 @@ function StudentSearch() {
         /* Caso contrário, exibe uma mensagem de erro com a mensagem retornada pela API ou 
            uma mensagem padrão */
       } else {
-        setMessage({
+        showToast({
           type: "error",
           text: response.data?.Mensagem || "Erro ao atualizar situação.",
         });
@@ -203,7 +204,7 @@ function StudentSearch() {
       /* A mesma coisa com o Catch. Mostra a mensagem de erro caso ocorra um problema na 
         requisição */
     } catch (error) {
-      setMessage({
+      showToast({
         type: "error",
         text: "Erro ao atualizar situação do aluno." + error,
       });
@@ -234,67 +235,36 @@ function StudentSearch() {
   const handleSearch = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setMessage({ type: "", text: "" });
+    showToast({ type: "", text: "" });
 
     /* Faz a tentativa de buscar os alunos com base nos critérios fornecidos. */
     try {
       const { codigo, cpf, nome } = searchData;
       let alunos = [];
-      /* Busca por prioridade: Código > CPF > Nome */
+      // Busca por prioridade: Código > CPF > Nome
       if (codigo && !cpf && !nome) {
-        /* Busca por código */
         const response = await api.get(`/alunos/codigo/${codigo}`);
         if (response.data && response.data.Alunos_Codigo) {
           alunos = [response.data];
-        } else if (response.data && response.data.statusCode === 404) {
-          setMessage({ type: "error", text: "Aluno não encontrado." });
-        } else {
-          setMessage({ type: "error", text: "Aluno não encontrado." });
         }
-        /* busca por CPF */
       } else if (!codigo && cpf && !nome) {
-        try {
-          const response = await api.get(
-            `/alunos/cpf/${encodeURIComponent(cpf)}`
-          );
-          if (response.data) {
-            if (response.data.Aluno) {
-              alunos = [response.data.Aluno];
-            } else if (response.data.Alunos_Codigo) {
-              alunos = [response.data];
-            } else if (response.data.statusCode === 404) {
-              setMessage({ type: "error", text: "Aluno não encontrado." });
-            } else {
-              setMessage({ type: "error", text: "Aluno não encontrado." });
-            }
-          } else {
-            setMessage({ type: "error", text: "Aluno não encontrado." });
-          }
-        } catch (error) {
-          if (error?.response?.status === 404) {
-            setMessage({ type: "error", text: "Aluno não encontrado." });
-          } else {
-            setMessage({ type: "error", text: "Aluno não encontrado." });
+        const response = await api.get(
+          `/alunos/cpf/${encodeURIComponent(cpf)}`
+        );
+        if (response.data) {
+          if (response.data.Aluno) {
+            alunos = [response.data.Aluno];
+          } else if (response.data.Alunos_Codigo) {
+            alunos = [response.data];
           }
         }
-        /* busca por nome */
       } else if (!codigo && !cpf && nome) {
-        // Busca por nome
-        try {
-          const response = await api.get(
-            `/alunos/nome/${encodeURIComponent(nome)}`
-          );
-          if (response.data && response.data.Listagem_de_Alunos) {
-            alunos = response.data.Listagem_de_Alunos;
-          } else if (response.data && response.data.statusCode === 404) {
-            setMessage({ type: "error", text: "Aluno não encontrado." });
-          } else {
-            setMessage({ type: "error", text: "Aluno não encontrado." });
-          }
-        } catch (error) {
-          setMessage({ type: "error", text: "Aluno não encontrado." + error });
+        const response = await api.get(
+          `/alunos/nome/${encodeURIComponent(nome)}`
+        );
+        if (response.data && response.data.Listagem_de_Alunos) {
+          alunos = response.data.Listagem_de_Alunos;
         }
-        /* Busca combinada: E (retorna apenas os que batem com todos os critérios) */
       } else if (
         (codigo && cpf) ||
         (codigo && nome) ||
@@ -303,13 +273,13 @@ function StudentSearch() {
       ) {
         let promises = [];
         if (codigo) promises.push(api.get(`/alunos/codigo/${codigo}`));
-        if (cpf) {
+        if (cpf)
           promises.push(api.get(`/alunos/cpf/${encodeURIComponent(cpf)}`));
-        }
         if (nome)
           promises.push(api.get(`/alunos/nome/${encodeURIComponent(nome)}`));
         const responses = await Promise.allSettled(promises);
         let tempAlunos = [];
+        let has401 = false;
         responses.forEach((res) => {
           if (res.status === "fulfilled" && res.value.data) {
             if (res.value.data.Alunos_Codigo) {
@@ -319,24 +289,28 @@ function StudentSearch() {
             } else if (Array.isArray(res.value.data.Listagem_de_Alunos)) {
               tempAlunos = tempAlunos.concat(res.value.data.Listagem_de_Alunos);
             }
+          } else if (
+            res.status === "rejected" &&
+            res.reason?.response?.status === 401
+          ) {
+            has401 = true;
           }
         });
-        /* Remove duplicados pelo código do aluno */
+        if (has401) {
+          throw { response: { status: 401 } };
+        }
+        // Remove duplicados pelo código do aluno
         const unique = {};
         tempAlunos.forEach((a) => {
           if (a.Alunos_Codigo) unique[a.Alunos_Codigo] = a;
         });
         alunos = Object.values(unique);
-        if (alunos.length === 0) {
-          setMessage({ type: "error", text: "Nenhum aluno encontrado." });
-        }
-        /* Caso nenhum critério seja fornecido, busca todos os alunos, paginado */
       } else {
         const response = await api.get("/alunos");
         alunos = response.data.Listagem_de_Alunos || [];
       }
 
-      /* Filtra por situação Apenas alunos ativos ou inativos */
+      // Filtra por situação Apenas alunos ativos ou inativos
       alunos = alunos.filter((a) => {
         if (mostrarInativos) {
           return a.Alunos_Situacao === "Inativo";
@@ -345,47 +319,42 @@ function StudentSearch() {
         }
       });
 
-      /* Se nao tiver aluno inativo ou ativo mostra a mensagem */
+      setResults(ordenarResultados(alunos, sortBy));
+      setCurrentPage(1);
+      // Mensagem de sucesso ou erro de quantidade
       if (alunos.length === 0) {
-        setMessage({
+        showToast({
           type: "error",
           text: mostrarInativos
             ? "Nenhum aluno inativo encontrado."
             : "Nenhum aluno ativo encontrado.",
         });
-        /* Caso contrario mostra a mensagem de quantos alunos encontrou */
       } else {
-        setMessage({
+        showToast({
           type: "success",
           text: `Encontrado ${alunos.length} aluno(s) cadastrado(s)`,
         });
       }
-      setResults(ordenarResultados(alunos, sortBy));
-      setCurrentPage(1);
-    } catch {
-      /* Caso de erro na busca mostra a mensagem */
-      setMessage({ type: "error", text: "Aluno não encontrado." });
+    } catch (error) {
+      if (error?.response?.status === 401) {
+        throw error;
+      } else if (error?.response?.status === 404) {
+        showToast({ type: "error", text: "Aluno não encontrado." });
+      } else if (error?.message === "Network Error") {
+        showToast({ type: "error", text: "Erro de rede. Tente novamente." });
+      } else {
+        showToast({ type: "error", text: "Erro inesperado ao buscar alunos." });
+      }
       setResults([]);
     } finally {
-      /* e o bloco finally coloca o setLoading(false) para finalizar a busca */
       setLoading(false);
     }
   };
-  /* Esconde a mensagem após 1,5s */
-  React.useEffect(() => {
-    if (message.text) {
-      const timer = setTimeout(() => {
-        setMessage({ type: "", text: "" });
-      }, 1500);
-      return () => clearTimeout(timer);
-    }
-  }, [message.text]);
-
   /* Inicio - Retorna as informacoes na tela. */
   return (
     <div className="w-full h-auto">
+      {messageToast && <MessageToast messageToast={messageToast} />}
       {/* Chama a função MessageToast para exibir mensagens padronizadas */}
-      <MessageToast messageToast={message} />
       {/* Se isEditing for verdadeiro e selectedAluno existir, mostra o formulário
        de edição do aluno. Repassa as informacoes, aluno que recebe de
        selectedAluno, arquivosedit recebe de arquivosedit (carrega a foto e o contrato do aluno)
@@ -424,7 +393,7 @@ function StudentSearch() {
             } catch {
               setSelectedAluno((prev) => ({ ...prev, ...updatedAluno }));
             }
-            setMessage({
+            showToast({
               type: "success",
               text: "Alterações salvas com sucesso!",
             });

@@ -339,7 +339,7 @@ function StudentForm({ aluno, onSaveSuccess }) {
           text:
             resData.Erro ||
             resData.Mensagem ||
-            (aluno ? "Erro ao salvar alterações." : "Erro ao cadastrar aluno."),
+            (aluno ? "Erro ao salvar aluno." : "Erro ao cadastrar aluno."),
         });
       }
     } catch (error) {
@@ -357,7 +357,7 @@ function StudentForm({ aluno, onSaveSuccess }) {
     prioridade)) E ai passa para o setMessage o type e o conteudo da variavel msg 
     como Text */
 
-      let msg = "Erro ao cadastrar/alterar aluno.";
+      let msg = "Erro ao cadastrar aluno.";
       if (error.response) {
         // Mensagem principal
         msg =
@@ -598,7 +598,7 @@ function StudentForm({ aluno, onSaveSuccess }) {
               required
             />
             {loadingCep && (
-              <span className="absolute right-2 top-2 text-orange-500 text-2xl">
+              <span className="absolute right-2 top-2 text-orange-500 text-base">
                 Buscando...
               </span>
             )}

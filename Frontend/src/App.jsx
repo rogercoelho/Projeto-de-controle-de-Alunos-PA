@@ -201,7 +201,9 @@ function App() {
                           key={`user-list-${userListKey}`}
                         />
                       )}
-                      {activeComponent === "Classes" && <Classes key="classes" />}
+                      {activeComponent === "Classes" && (
+                        <Classes key="classes" />
+                      )}
                       {activeComponent === "Attendance" && (
                         <Attendance key="attendance" />
                       )}

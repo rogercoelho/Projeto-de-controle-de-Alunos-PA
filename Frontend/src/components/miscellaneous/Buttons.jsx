@@ -220,6 +220,27 @@ BotaoCancelar.propTypes = {
 };
 /* Fim - Botao Cancelar */
 
+/* Inicio - Botao Cadastrar Plano */
+function CadastrarPlano({ onClick, type = "submit", disabled, loading }) {
+  return (
+    <button
+      type={type || "submit"}
+      className="bg-emerald-600 rounded-md p-2 border-2 border-gray-300 font-bold hover:bg-emerald-700"
+      onClick={onClick}
+      disabled={disabled}
+    >
+      {loading ? "Cadastrando..." : "Cadastrar Plano"}
+    </button>
+  );
+}
+CadastrarPlano.propTypes = {
+  onClick: PropTypes.func,
+  type: PropTypes.string,
+  disabled: PropTypes.bool,
+  loading: PropTypes.bool,
+};
+/* Fim - Botao Cadastrar Aluno */
+
 function DeletarAluno({ onClick }) {
   return (
     <button
@@ -312,6 +333,7 @@ ListarUsuarios.propTypes = {
 
 export const Buttons = {
   OrdenarPorCodigo,
+  CadastrarPlano,
   BotaoCancelar,
   BotaoAtivarDesativar,
   SalvarAlteracoes,

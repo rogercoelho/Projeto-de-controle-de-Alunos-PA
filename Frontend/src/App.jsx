@@ -4,9 +4,8 @@ import Login from "./components/security/Login";
 import StudentForm from "./components/students/StudentForm";
 import StudentSearch from "./components/students/StudentSearch";
 import { UsersComponents } from "./components/Security/Users";
-import PlanosComponents from "./components/classes/Planos";
-import Classes from "./components/classes/Classes";
-import Attendance from "./components/classes/Attendance";
+import PackagesForm from "./components/Packages/PackagesForm";
+import Attendance from "./components/Packages/Attendance";
 import Financeiro from "./components/Financeiro";
 import Faturamento from "./components/Faturamento";
 import RegistrarPagamento from "./components/RegistrarPagamento";
@@ -201,8 +200,8 @@ function App() {
                           key={`user-list-${userListKey}`}
                         />
                       )}
-                      {activeComponent === "Classes" && (
-                        <Classes key="classes" />
+                      {activeComponent2 === "PackagesForm" && (
+                        <PackagesForm key={`packages-form`} />
                       )}
                       {activeComponent === "Attendance" && (
                         <Attendance key="attendance" />
@@ -222,12 +221,6 @@ function App() {
                           activeComponent2 === "Financeiro") && (
                           <Financeiro key="financeiro" />
                         )}
-                      {activeComponent2 === "PlanoForm" && (
-                        <PlanosComponents.PlanoForm key="plano-form" />
-                      )}
-                      {activeComponent2 === "PlanoSearch" && (
-                        <PlanosComponents.PlanoSearch key="plano-search" />
-                      )}
                     </div>
                   </div>
                 )}

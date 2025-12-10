@@ -197,7 +197,7 @@ function MobileMenu({ onNavigate, ehAdmin }) {
             >
               <div className="pb-3 space-y-2 pl-2">
                 <button
-                  onClick={() => handleNavigation("Planos", "PlanoForm")}
+                  onClick={() => handleNavigation("Planos", "PackagesForm")}
                   className="w-full flex items-center gap-3 px-4 py-3 bg-red-900/30 hover:bg-red-800/40 active:bg-red-700/50 rounded-lg text-white text-left transition-all border border-red-800/50"
                 >
                   <svg

@@ -1,3 +1,7 @@
+// Deixa o texto em caixa alta
+export function toUpperCaseText(str) {
+  return (str || "").toUpperCase();
+}
 /* Retorna a classe de cor do input do studenteditform conforme editável */
 export function corCampoEditavel(isEditable) {
   return isEditable ? "bg-gray-500" : "bg-gray-700";
@@ -73,6 +77,12 @@ export function converterData(dataBR) {
   const [dia, mes, ano] = dataBR.split("/");
   if (!dia || !mes || !ano) return dataBR;
   return `${ano}-${mes.padStart(2, "0")}-${dia.padStart(2, "0")}`;
+}
+
+export function validarCodigoPlano(codigoPlano) {
+  return codigoPlano
+    .toUpperCase() // Converte para caixa alta
+    .replace(/[^A-Z0-9]/g, ""); // Remove tudo que não é letra ou número
 }
 
 export function limparFormData() {

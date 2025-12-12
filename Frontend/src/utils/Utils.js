@@ -1,3 +1,26 @@
+export function filtrarQuantidadeSemana(valor) {
+  // Remove tudo que não for número (inclusive letras, sinais, etc)
+  const apenasNumeros = valor.replace(/\D/g, "");
+  // Converte para número e limita entre 1 e 7
+  let num = parseInt(apenasNumeros, 10);
+  if (isNaN(num)) return "";
+  if (num < 1) num = 1;
+  if (num > 7) num = 7;
+  return String(num);
+}
+export function bloquearTeclasInvalidasQuantidadeSemana(e) {
+  if (
+    e.key === "e" ||
+    e.key === "E" ||
+    e.key === "+" ||
+    e.key === "-" ||
+    e.key === "." ||
+    e.key === ","
+  ) {
+    e.preventDefault();
+  }
+}
+
 // Deixa o texto em caixa alta
 export function toUpperCaseText(str) {
   return (str || "").toUpperCase();

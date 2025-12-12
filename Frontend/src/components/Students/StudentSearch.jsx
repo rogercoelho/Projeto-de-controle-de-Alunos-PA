@@ -489,7 +489,7 @@ function StudentSearch() {
           {/* Fim - Formulario de pesquisa do aluno. */}
           {/* Inicio - Botoes de controle - pesquisae e limpar */}
           <div className="flex justify-center gap-4 pt-4">
-            <Buttons.PesquisarAluno
+            <Buttons.BotaoPesquisar
               onClick={handleSearch}
               loading={loading}
               disabled={loading}

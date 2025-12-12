@@ -61,7 +61,7 @@ BotaoX.propTypes = {
 /* Fim - Botao X (Remover Conteudo) */
 
 /* Inicio - Botao Pesquisar Aluno */
-function PesquisarAluno({ onClick, type = "button", disabled, loading }) {
+function BotaoPesquisar({ onClick, type = "button", disabled, loading }) {
   return (
     <button
       className="bg-emerald-600 rounded-md p-2 border-2 border-gray-300 font-bold"
@@ -74,7 +74,7 @@ function PesquisarAluno({ onClick, type = "button", disabled, loading }) {
     </button>
   );
 }
-PesquisarAluno.propTypes = {
+BotaoPesquisar.propTypes = {
   onClick: PropTypes.func,
   type: PropTypes.string,
   disabled: PropTypes.bool,
@@ -343,7 +343,7 @@ export const Buttons = {
   CadastrarAluno,
   EditarAluno,
   DeletarAluno,
-  PesquisarAluno,
+  BotaoPesquisar,
   ControleAulas,
   ControlePresenca,
   ControleUsuarios,

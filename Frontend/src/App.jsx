@@ -5,7 +5,6 @@ import StudentForm from "./components/students/StudentForm";
 import StudentSearch from "./components/students/StudentSearch";
 import { UsersComponents } from "./components/Security/Users";
 import PackagesForm from "./components/Packages/PackagesForm";
-import Attendance from "./components/Packages/Attendance";
 import Financeiro from "./components/Financeiro";
 import Faturamento from "./components/Faturamento";
 import RegistrarPagamento from "./components/RegistrarPagamento";
@@ -203,9 +202,7 @@ function App() {
                       {activeComponent2 === "PackagesForm" && (
                         <PackagesForm key={`packages-form`} />
                       )}
-                      {activeComponent === "Attendance" && (
-                        <Attendance key="attendance" />
-                      )}
+
                       {activeComponent === "Financeiro" &&
                         activeComponent2 === "Faturamento" && (
                           <Faturamento key="faturamento" />

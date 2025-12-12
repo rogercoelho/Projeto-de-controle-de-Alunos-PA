@@ -5,6 +5,7 @@ import StudentForm from "./components/students/StudentForm";
 import StudentSearch from "./components/students/StudentSearch";
 import { UsersComponents } from "./components/Security/Users";
 import PackagesForm from "./components/Packages/PackagesForm";
+import PackagesSearch from "./components/Packages/PackagesSearch";
 import Financeiro from "./components/Financeiro";
 import Faturamento from "./components/Faturamento";
 import RegistrarPagamento from "./components/RegistrarPagamento";
@@ -22,6 +23,7 @@ function App() {
   const [showAdminDelete, setShowAdminDelete] = useState(false);
   const [userListKey, setUserListKey] = useState(0);
   const [studentSearchKey, setStudentSearchKey] = useState(0);
+  const [packagesSearchKey, setPackagesSearchKey] = useState(0);
   const [registrarPagamentoKey, setRegistrarPagamentoKey] = useState(0);
   // eslint-disable-next-line no-unused-vars
   const [usuario, setUsuario] = useState(() => getUsuario());
@@ -78,6 +80,10 @@ function App() {
     // Incrementa a key quando StudentSearch é selecionado para forçar remontagem
     if (subComponent === "StudentSearch") {
       setStudentSearchKey((prev) => prev + 1);
+    }
+    // Incrementa a key quando PackagesSearck é selecionado para forçar remontagem
+    if (subComponent === "PackagesSearch") {
+      setPackagesSearchKey((prev) => prev + 1);
     }
     // Incrementa a key quando RegistrarPagamento é selecionado para forçar remontagem
     if (component === "Financeiro" && subComponent === "RegistrarPagamento") {
@@ -202,7 +208,11 @@ function App() {
                       {activeComponent2 === "PackagesForm" && (
                         <PackagesForm key={`packages-form`} />
                       )}
-
+                      {activeComponent2 === "PackagesSearch" && (
+                        <PackagesSearch
+                          key={`packages-search-${packagesSearchKey}`}
+                        />
+                      )}
                       {activeComponent === "Financeiro" &&
                         activeComponent2 === "Faturamento" && (
                           <Faturamento key="faturamento" />

@@ -1,7 +1,8 @@
 import api from "../../services/api";
 import { useState } from "react";
+import Buttons from "../miscellaneous/Buttons";
 
-// Componente de Pesquisa de Planos
+/* Componente de Pesquisa de Planos */
 function PackagesSearch() {
   const [planos, setPlanos] = useState([]);
   const [mostrarInativos, setMostrarInativos] = useState(false);
@@ -534,13 +535,13 @@ function PackagesSearch() {
             </div>
 
             <div className="flex gap-4">
-              <button
+              <Buttons.BotaoPesquisar
                 type="submit"
+                loading={loading}
                 disabled={loading}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white px-6 py-2 rounded-md transition-colors"
               >
-                {loading ? "Pesquisando..." : "Pesquisar"}
-              </button>
+                Pesquisar Plano
+              </Buttons.BotaoPesquisar>
               <button
                 type="button"
                 onClick={handleClear}

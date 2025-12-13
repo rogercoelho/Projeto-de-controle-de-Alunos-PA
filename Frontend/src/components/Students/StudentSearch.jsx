@@ -493,7 +493,9 @@ function StudentSearch() {
               onClick={handleSearch}
               loading={loading}
               disabled={loading}
-            />
+            >
+              Pesquisar Aluno
+            </Buttons.BotaoPesquisar>
             <Buttons.Limpar onClick={handleClearSearch} />
           </div>
           {/* Fim - Botoes de controle - pesquisar e limpar */}

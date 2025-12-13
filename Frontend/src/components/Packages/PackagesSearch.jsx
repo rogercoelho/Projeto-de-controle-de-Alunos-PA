@@ -206,14 +206,16 @@ function PackagesSearch() {
         ...selectedPlano,
         Plano_Ativo: novoStatus,
       });
-      showToast({
-        type: "success",
-        text:
-          response.data.Mensagem ||
-          (novoStatus === "Ativo"
-            ? "Plano ativado com sucesso!"
-            : "Plano desativado com sucesso!"),
-      });
+      // Garante que a mensagem toast apareça mesmo se já houver uma mensagem anterior
+      showToast({});
+      setTimeout(() => {
+        showToast({
+          type: "success",
+          text: `Plano ${
+            novoStatus === "Inativo" ? "inativado" : "ativado"
+          } com sucesso!`,
+        });
+      }, 50);
     } catch (error) {
       // Se for erro 401, o interceptor global já trata
       if (error.response?.status !== 401) {

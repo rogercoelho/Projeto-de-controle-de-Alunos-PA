@@ -61,16 +61,22 @@ BotaoX.propTypes = {
 /* Fim - Botao X (Remover Conteudo) */
 
 /* Inicio - Botao Pesquisar Aluno */
-function BotaoPesquisar({ onClick, type = "button", disabled, loading }) {
+function BotaoPesquisar({
+  children,
+  onClick,
+  type = "button",
+  disabled,
+  loading,
+}) {
+  const label = children || "Pesquisar";
   return (
     <button
       className="bg-emerald-600 rounded-md p-2 border-2 border-gray-300 font-bold"
       onClick={onClick}
       type={type}
       disabled={disabled}
-      loading={loading}
     >
-      🔎{loading ? "Pesquisando..." : "Pesquisar Aluno"}
+      🔎 {loading ? `Pesquisando...` : label}
     </button>
   );
 }
@@ -79,6 +85,7 @@ BotaoPesquisar.propTypes = {
   type: PropTypes.string,
   disabled: PropTypes.bool,
   loading: PropTypes.bool,
+  children: PropTypes.node,
 };
 /* Fim - Botao Pesquisar Aluno */
 

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import api from "../services/api";
+import api from "../../services/api";
 
 function Faturamento() {
   const [formData, setFormData] = useState({

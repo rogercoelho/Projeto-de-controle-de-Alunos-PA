@@ -9,7 +9,6 @@ import api from "../../services/api";
 import MessageToast from "../miscellaneous/MessageToast";
 import useToast from "../../hooks/useToast";
 import React, { useRef } from "react";
-
 import PropTypes from "prop-types";
 import PhotoSkeleton from "../miscellaneous/PhotoSkeleton";
 import Buttons from "../miscellaneous/Buttons";

@@ -149,7 +149,7 @@ VoltarPesquisa.propTypes = {
 /* Fim - Botao Voltar para a Pesquisa */
 
 /* Inicio - Botao Editar Aluno */
-function EditarAluno({ onClick }) {
+function BotaoEditar({ onClick }) {
   return (
     <button
       className={`flex gap-4 border-2 p-2 rounded-md font-bold bg-blue-500 border-gray-300 hover:bg-blue-600`}
@@ -159,7 +159,7 @@ function EditarAluno({ onClick }) {
     </button>
   );
 }
-EditarAluno.propTypes = {
+BotaoEditar.propTypes = {
   onClick: PropTypes.func,
 };
 /* Fim - Botao Editar Aluno */
@@ -348,7 +348,7 @@ export const Buttons = {
   OrdenarPorNome,
   VoltarPesquisa,
   CadastrarAluno,
-  EditarAluno,
+  BotaoEditar,
   DeletarAluno,
   BotaoPesquisar,
   ControleAulas,

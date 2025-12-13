@@ -264,6 +264,15 @@ router.patch(
       // Prepara os dados para atualização
       const dadosAtualizacao = { ...req.body };
 
+      // Se o nome do responsável estiver vazio, grava "Aluno Maior de Idade"
+      if (
+        dadosAtualizacao.Alunos_Nome_Responsavel !== undefined &&
+        (!dadosAtualizacao.Alunos_Nome_Responsavel ||
+          dadosAtualizacao.Alunos_Nome_Responsavel.trim() === "")
+      ) {
+        dadosAtualizacao.Alunos_Nome_Responsavel = "Aluno Maior de Idade";
+      }
+
       // Guarda dados antigos para o log
       const dadosAntigos = atualizaaluno.toJSON();
 

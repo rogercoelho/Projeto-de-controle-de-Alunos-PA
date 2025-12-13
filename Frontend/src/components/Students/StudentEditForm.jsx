@@ -106,6 +106,10 @@ function StudentEditForm({
               Alunos_Data_Nascimento: converterData(
                 editFormData.Alunos_Data_Nascimento
               ),
+              // Se o nome do responsável estiver vazio, grava "Aluno Maior de Idade"
+              Alunos_Nome_Responsavel:
+                editFormData.Alunos_Nome_Responsavel?.trim() ||
+                "Aluno Maior de Idade",
             };
             let response;
             if (arquivosEdit.foto || arquivosEdit.contrato) {

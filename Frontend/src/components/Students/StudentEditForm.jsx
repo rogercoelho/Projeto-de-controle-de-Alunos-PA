@@ -566,7 +566,7 @@ function StudentEditForm({
           />
         </div>
         <div className="flex justify-center gap-4 pt-4">
-          <Buttons.SalvarAlteracoes
+          <Buttons.BotaoSalvarAlteracoes
             onClick={onclick}
             loading={loadingbutton}
             disabled={loadingbutton}

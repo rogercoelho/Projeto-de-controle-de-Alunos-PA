@@ -182,11 +182,13 @@ BotaoAtivarInativar.propTypes = {
 };
 /* Fim - Botao Ativar/Inativar */
 
-/* ============================================== */
-/* ============================================== */
-
 /* Inicio - Botao Salvar Alteracoes */
-function SalvarAlteracoes({ onClick, type = "submit", disabled, loading }) {
+function BotaoSalvarAlteracoes({
+  onClick,
+  type = "submit",
+  disabled,
+  loading,
+}) {
   return (
     <button
       className="bg-emerald-600 rounded-md p-2 border-2 border-gray-300 font-bold hover:bg-emerald-700"
@@ -199,7 +201,7 @@ function SalvarAlteracoes({ onClick, type = "submit", disabled, loading }) {
     </button>
   );
 }
-SalvarAlteracoes.propTypes = {
+BotaoSalvarAlteracoes.propTypes = {
   onClick: PropTypes.func,
   type: PropTypes.string,
   disabled: PropTypes.bool,
@@ -235,7 +237,7 @@ function BotaoPaginacaoAnterior({ onClick, disabled }) {
       disabled={disabled}
       className="px-3 py-1 bg-gray-700 text-white rounded disabled:opacity-50 hover:bg-gray-600"
     >
-      ◀ Anterior
+      Anterior
     </button>
   );
 }
@@ -253,7 +255,7 @@ function BotaoPaginacaoProxima({ onClick, disabled }) {
       disabled={disabled}
       className="px-3 py-1 bg-gray-700 text-white rounded disabled:opacity-50 hover:bg-gray-600"
     >
-      Próxima ▶
+      Próxima
     </button>
   );
 }
@@ -262,6 +264,9 @@ BotaoPaginacaoProxima.propTypes = {
   disabled: PropTypes.bool,
 };
 /* Fim - Botao Paginação Próxima */
+
+/* ============================================== */
+/* ============================================== */
 
 /* Inicio - Botao Cadastrar Plano */
 function CadastrarPlano({ onClick, type = "submit", disabled, loading }) {
@@ -383,7 +388,7 @@ export const Buttons = {
   BotaoPesquisar,
   BotaoX,
   CadastrarPlano,
-  SalvarAlteracoes,
+  BotaoSalvarAlteracoes,
   BotaoVoltar,
   DeletarAluno,
   ControleAulas,

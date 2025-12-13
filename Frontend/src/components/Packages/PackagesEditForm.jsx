@@ -114,9 +114,13 @@ function PackagesEditForm({
 
       {/* Botões */}
       <div className="flex gap-4 pt-4">
-        <Buttons.BotaoSalvar type="submit" loading={loading} disabled={loading}>
+        <Buttons.SalvarAlteracoes
+          type="submit"
+          loading={loading}
+          disabled={loading}
+        >
           {loading ? "Salvando..." : "Salvar Alterações"}
-        </Buttons.BotaoSalvar>
+        </Buttons.SalvarAlteracoes>
         <Buttons.BotaoCancelar onClick={onCancel} disabled={loading}>
           Cancelar
         </Buttons.BotaoCancelar>

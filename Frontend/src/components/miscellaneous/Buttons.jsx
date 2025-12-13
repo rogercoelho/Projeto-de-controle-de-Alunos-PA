@@ -1,4 +1,4 @@
-import PropTypes, { func } from "prop-types";
+import PropTypes from "prop-types";
 
 /* Inicio - Botao Cadastrar */
 function BotaoCadastrar({
@@ -97,51 +97,40 @@ BotaoX.propTypes = {
 };
 /* Fim - Botao X (Remover Conteudo) */
 
-/* Inicio - Botao Ordenar por Código */
-function OrdenarPorCodigo({ onClick, isActive }) {
+/* Inicio - Select Ordenação */
+function SelectOrdenacao({ value, onChange, options, label = "Ordenar por:" }) {
   return (
-    <button
-      onClick={onClick}
-      className={`flex gap-4 border-2 p-2 rounded-md font-bold transition-colors text-sm ${
-        isActive
-          ? "bg-blue-500 border-gray-300 hover:bg-blue-600"
-          : "bg-gray-700 text-gray-300 active:bg-gray-600"
-      }`}
-    >
-      🧩 Código
-    </button>
+    <div className="flex items-center gap-2">
+      <span className="text-gray-400 text-sm">{label}</span>
+      <select
+        value={value}
+        onChange={onChange}
+        className="bg-gray-700 text-white px-3 py-1 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+      >
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    </div>
   );
 }
-OrdenarPorCodigo.propTypes = {
-  onClick: PropTypes.func,
-  isActive: PropTypes.bool,
+SelectOrdenacao.propTypes = {
+  value: PropTypes.string.isRequired,
+  onChange: PropTypes.func.isRequired,
+  options: PropTypes.arrayOf(
+    PropTypes.shape({
+      value: PropTypes.string.isRequired,
+      label: PropTypes.string.isRequired,
+    })
+  ).isRequired,
+  label: PropTypes.string,
 };
-/* Fim - Botao Ordenar por Código */
+/* Fim - Select Ordenação */
 
-/* Inicio - Botao Ordenar por Nome */
-function OrdenarPorNome({ onClick, isActive }) {
-  return (
-    <button
-      onClick={onClick}
-      className={`flex gap-4 border-2 p-2 rounded-md font-bold transition-colors text-sm ${
-        isActive
-          ? "bg-blue-500 border-gray-300 hover:bg-blue-600"
-          : "bg-gray-700 text-gray-300 active:bg-gray-600"
-      }`}
-    >
-      <img src="/controle_pa/user.png" alt="Nome" className="w-6 h-6 flex" />
-      Nome
-    </button>
-  );
-}
-OrdenarPorNome.propTypes = {
-  onClick: PropTypes.func,
-  isActive: PropTypes.bool,
-};
-/* Fim - Botao Ordenar por Nome */
-
-/* Inicio - Botao Voltar para a Pesquisa */
-function VoltarPesquisa({ onBack }) {
+/* Inicio - Botao Voltar */
+function BotaoVoltar({ onBack }) {
   return (
     <button
       onClick={onBack}
@@ -151,12 +140,12 @@ function VoltarPesquisa({ onBack }) {
     </button>
   );
 }
-VoltarPesquisa.propTypes = {
+BotaoVoltar.propTypes = {
   onBack: PropTypes.func,
 };
-/* Fim - Botao Voltar para a Pesquisa */
+/* Fim - Botao Voltar */
 
-/* Inicio - Botao Editar Aluno */
+/* Inicio - Botao Editar */
 function BotaoEditar({ onClick }) {
   return (
     <button
@@ -170,7 +159,31 @@ function BotaoEditar({ onClick }) {
 BotaoEditar.propTypes = {
   onClick: PropTypes.func,
 };
-/* Fim - Botao Editar Aluno */
+/* Fim - Botao Editar */
+
+/* Inicio - Botao Ativar/Inativar */
+function BotaoAtivarInativar({ onClick, isAtivo }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex gap-2 border-2 p-2 rounded-md font-bold text-white border-gray-300 ${
+        isAtivo
+          ? "bg-orange-600 hover:bg-orange-700"
+          : "bg-green-600 hover:bg-green-700"
+      }`}
+    >
+      {isAtivo ? "🚫 Inativar" : "✅ Ativar"}
+    </button>
+  );
+}
+BotaoAtivarInativar.propTypes = {
+  onClick: PropTypes.func,
+  isAtivo: PropTypes.bool,
+};
+/* Fim - Botao Ativar/Inativar */
+
+/* ============================================== */
+/* ============================================== */
 
 /* Inicio - Botao Salvar Alteracoes */
 function SalvarAlteracoes({ onClick, type = "submit", disabled, loading }) {
@@ -194,27 +207,6 @@ SalvarAlteracoes.propTypes = {
 };
 /* Fim - Botao Salvar Alteracoes */
 
-/* Inicio - Botao Ativar/Desativar */
-function BotaoAtivarDesativar({ onClick, aluno }) {
-  return (
-    <button
-      onClick={onClick}
-      className={`flex gap-4 border-2 p-2 rounded-md font-bold  text-white border-gray-300 ${
-        aluno.Alunos_Situacao === "Ativo"
-          ? "bg-orange-600 hover:bg-orange-700"
-          : "bg-green-600 hover:bg-green-700"
-      }`}
-    >
-      {aluno.Alunos_Situacao === "Ativo" ? "⛔ Inativar" : "✅ Ativar"}
-    </button>
-  );
-}
-BotaoAtivarDesativar.propTypes = {
-  onClick: PropTypes.func,
-  aluno: PropTypes.object,
-};
-/* Fim - Botao Ativar/Desativar */
-
 /* Inicio - Botao Cancelar */
 function BotaoCancelar({ onClick, disabled, type = "button" }) {
   return (
@@ -234,28 +226,6 @@ BotaoCancelar.propTypes = {
   type: PropTypes.string,
 };
 /* Fim - Botao Cancelar */
-
-/* Inicio - Botao Ativar/Desativar Plano */
-function BotaoAtivarDesativarPlano({ onClick, plano }) {
-  const isAtivo = plano?.Plano_Ativo === "Ativo";
-  return (
-    <button
-      onClick={onClick}
-      className={`flex gap-2 border-2 p-2 rounded-md font-bold text-white border-gray-300 ${
-        isAtivo
-          ? "bg-orange-600 hover:bg-orange-700"
-          : "bg-green-600 hover:bg-green-700"
-      }`}
-    >
-      {isAtivo ? "🚫 Desativar" : "✅ Ativar"}
-    </button>
-  );
-}
-BotaoAtivarDesativarPlano.propTypes = {
-  onClick: PropTypes.func,
-  plano: PropTypes.object,
-};
-/* Fim - Botao Ativar/Desativar Plano */
 
 /* Inicio - Botao Paginação Anterior */
 function BotaoPaginacaoAnterior({ onClick, disabled }) {
@@ -292,38 +262,6 @@ BotaoPaginacaoProxima.propTypes = {
   disabled: PropTypes.bool,
 };
 /* Fim - Botao Paginação Próxima */
-
-/* Inicio - Select Ordenação */
-function SelectOrdenacao({ value, onChange, options, label = "Ordenar por:" }) {
-  return (
-    <div className="flex items-center gap-2">
-      <span className="text-gray-400 text-sm">{label}</span>
-      <select
-        value={value}
-        onChange={onChange}
-        className="bg-gray-700 text-white px-3 py-1 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-      >
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
-    </div>
-  );
-}
-SelectOrdenacao.propTypes = {
-  value: PropTypes.string.isRequired,
-  onChange: PropTypes.func.isRequired,
-  options: PropTypes.arrayOf(
-    PropTypes.shape({
-      value: PropTypes.string.isRequired,
-      label: PropTypes.string.isRequired,
-    })
-  ).isRequired,
-  label: PropTypes.string,
-};
-/* Fim - Select Ordenação */
 
 /* Inicio - Botao Cadastrar Plano */
 function CadastrarPlano({ onClick, type = "submit", disabled, loading }) {
@@ -441,15 +379,12 @@ export const Buttons = {
   BotaoEditar,
   BotaoLimpar,
   BotaoCancelar,
-  BotaoAtivarDesativar,
-  BotaoAtivarDesativarPlano,
+  BotaoAtivarInativar,
   BotaoPesquisar,
   BotaoX,
-  OrdenarPorCodigo,
   CadastrarPlano,
   SalvarAlteracoes,
-  OrdenarPorNome,
-  VoltarPesquisa,
+  BotaoVoltar,
   DeletarAluno,
   ControleAulas,
   ControlePresenca,

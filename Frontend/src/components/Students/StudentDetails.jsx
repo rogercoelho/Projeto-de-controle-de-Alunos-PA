@@ -7,11 +7,11 @@ function StudentDetails({ aluno, onEdit, onToggleSituacao, onBack }) {
   return (
     <div className="w-full h-auto space-y-2 mx-auto">
       <div className="flex gap-2 mb-4">
-        <Buttons.VoltarPesquisa onBack={onBack} />
+        <Buttons.BotaoVoltar onBack={onBack} />
         <Buttons.BotaoEditar onClick={onEdit} />
-        <Buttons.BotaoAtivarDesativar
+        <Buttons.BotaoAtivarInativar
           onClick={onToggleSituacao}
-          aluno={aluno}
+          isAtivo={aluno?.Alunos_Situacao === "Ativo"}
         />
       </div>
 

@@ -8,11 +8,11 @@ function PackagesDetails({ plano, onEdit, onToggleStatus, onBack }) {
     <div className="w-full h-auto space-y-2 mx-auto">
       {/* Botões de ação */}
       <div className="flex gap-2 mb-4">
-        <Buttons.VoltarPesquisa onBack={onBack} />
+        <Buttons.BotaoVoltar onBack={onBack} />
         <Buttons.BotaoEditar onClick={onEdit} />
-        <Buttons.BotaoAtivarDesativarPlano
+        <Buttons.BotaoAtivarInativar
           onClick={onToggleStatus}
-          plano={plano}
+          isAtivo={plano?.Plano_Ativo === "Ativo"}
         />
       </div>
 

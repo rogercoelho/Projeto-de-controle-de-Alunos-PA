@@ -123,6 +123,7 @@ function PackagesSearch() {
   };
 
   const handleEdit = () => {
+    console.log("🔧 handleEdit chamado - isEditing será true");
     setIsEditing(true);
     setEditFormData({ ...selectedPlano });
   };
@@ -219,8 +220,7 @@ function PackagesSearch() {
         showToast({
           type: "error",
           text:
-            error.response?.data?.Erro ||
-            "Erro ao atualizar status do plano.",
+            error.response?.data?.Erro || "Erro ao atualizar status do plano.",
         });
       }
     }
@@ -342,7 +342,7 @@ function PackagesSearch() {
                       <span className="text-white font-medium">
                         {plano.Plano_Nome}
                       </span>
-                      <span className="text-gray-400 text-sm ml-2">
+                      <span className="text-slate-400 text-sm ml-2">
                         ({plano.Plano_Codigo})
                       </span>
                     </div>

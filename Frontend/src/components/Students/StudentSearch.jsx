@@ -148,7 +148,7 @@ function StudentSearch() {
     if (selectedAluno && selectedAluno.Alunos_Situacao === "Inativo") {
       showToast({
         type: "error",
-        text: "Editar aluno inativo nao é permitido",
+        text: "Editar aluno inativo não é permitido",
       });
       return;
     }
@@ -189,7 +189,7 @@ function StudentSearch() {
           showToast({
             type: "success",
             text: `Aluno ${
-              novoStatus === "Inativo" ? "desativado" : "ativado"
+              novoStatus === "Inativo" ? "inativado" : "ativado"
             } com sucesso!`,
           });
         }, 50);
@@ -524,19 +524,26 @@ function StudentSearch() {
                 {currentAlunos.map((aluno) => (
                   <div
                     key={aluno.Alunos_Codigo}
-                    className="bg-gray-800 rounded-xl p-4 hover:bg-gray-700 active:bg-gray-600 cursor-pointer transition-colors"
                     onClick={() => handleSelectAluno(aluno)}
+                    className="flex justify-between items-center p-3 bg-gray-700 rounded-lg cursor-pointer hover:bg-gray-600 transition-colors"
                   >
-                    <div className="space-y-1 text-sm md:text-base">
-                      <p>
-                        <span className="font-bold">Código do Aluno:</span>{" "}
-                        {aluno.Alunos_Codigo}
-                      </p>
-                      <p>
-                        <span className="font-bold">Nome Completo:</span>{" "}
+                    <div>
+                      <span className="text-white font-medium">
                         {aluno.Alunos_Nome}
-                      </p>
+                      </span>
+                      <span className="text-slate-400 text-sm ml-2">
+                        (Cód: {aluno.Alunos_Codigo})
+                      </span>
                     </div>
+                    <span
+                      className={`text-sm px-2 py-1 rounded ${
+                        aluno.Alunos_Situacao === "Ativo"
+                          ? "bg-green-600 text-white"
+                          : "bg-orange-600 text-white"
+                      }`}
+                    >
+                      {aluno.Alunos_Situacao}
+                    </span>
                   </div>
                 ))}
               </div>

@@ -131,18 +131,20 @@ function UserForm() {
     } catch (error) {
       console.error("Erro ao criar usuário:", error);
       console.error("Detalhes do erro:", error.response?.data);
-
-      setMessage({
-        type: "error",
-        text:
-          error.response?.data?.Mensagem ||
-          error.response?.data?.message ||
-          error.response?.data?.Erro ||
-          "Erro ao criar usuário. Tente novamente.",
-      });
-      setTimeout(() => {
-        setMessage({ type: "", text: "" });
-      }, 1500);
+      // Se for erro 401, o interceptor global já trata
+      if (error.response?.status !== 401) {
+        setMessage({
+          type: "error",
+          text:
+            error.response?.data?.Mensagem ||
+            error.response?.data?.message ||
+            error.response?.data?.Erro ||
+            "Erro ao criar usuário. Tente novamente.",
+        });
+        setTimeout(() => {
+          setMessage({ type: "", text: "" });
+        }, 1500);
+      }
     } finally {
       setLoading(false);
     }
@@ -371,16 +373,19 @@ function UserList() {
       }
     } catch (error) {
       console.error("Erro ao carregar usuários:", error);
-      setMessage({
-        type: "error",
-        text:
-          error.response?.data?.Mensagem ||
-          error.response?.data?.message ||
-          "Erro ao carregar usuários. Tente novamente.",
-      });
-      setTimeout(() => {
-        setMessage({ type: "", text: "" });
-      }, 1500);
+      // Se for erro 401, o interceptor global já trata
+      if (error.response?.status !== 401) {
+        setMessage({
+          type: "error",
+          text:
+            error.response?.data?.Mensagem ||
+            error.response?.data?.message ||
+            "Erro ao carregar usuários. Tente novamente.",
+        });
+        setTimeout(() => {
+          setMessage({ type: "", text: "" });
+        }, 1500);
+      }
     } finally {
       setLoading(false);
     }
@@ -464,13 +469,16 @@ function UserList() {
       }
     } catch (error) {
       console.error("Erro ao carregar usuários:", error);
-      setMessage({
-        type: "error",
-        text:
-          error.response?.data?.Mensagem ||
-          error.response?.data?.message ||
-          "Erro ao carregar usuários. Tente novamente.",
-      });
+      // Se for erro 401, o interceptor global já trata
+      if (error.response?.status !== 401) {
+        setMessage({
+          type: "error",
+          text:
+            error.response?.data?.Mensagem ||
+            error.response?.data?.message ||
+            "Erro ao carregar usuários. Tente novamente.",
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -565,16 +573,19 @@ function UserList() {
       setEditMode(false);
     } catch (error) {
       console.error("Erro ao atualizar usuário:", error);
-      setMessage({
-        type: "error",
-        text:
-          error.response?.data?.Mensagem ||
-          error.response?.data?.message ||
-          "Erro ao atualizar usuário. Tente novamente.",
-      });
-      setTimeout(() => {
-        setMessage({ type: "", text: "" });
-      }, 1500);
+      // Se for erro 401, o interceptor global já trata
+      if (error.response?.status !== 401) {
+        setMessage({
+          type: "error",
+          text:
+            error.response?.data?.Mensagem ||
+            error.response?.data?.message ||
+            "Erro ao atualizar usuário. Tente novamente.",
+        });
+        setTimeout(() => {
+          setMessage({ type: "", text: "" });
+        }, 1500);
+      }
     } finally {
       setLoading(false);
     }
@@ -607,16 +618,19 @@ function UserList() {
       }, 1500);
     } catch (error) {
       console.error("Erro ao excluir usuário:", error);
-      setMessage({
-        type: "error",
-        text:
-          error.response?.data?.Mensagem ||
-          error.response?.data?.message ||
-          "Erro ao excluir usuário. Tente novamente.",
-      });
-      setTimeout(() => {
-        setMessage({ type: "", text: "" });
-      }, 1500);
+      // Se for erro 401, o interceptor global já trata
+      if (error.response?.status !== 401) {
+        setMessage({
+          type: "error",
+          text:
+            error.response?.data?.Mensagem ||
+            error.response?.data?.message ||
+            "Erro ao excluir usuário. Tente novamente.",
+        });
+        setTimeout(() => {
+          setMessage({ type: "", text: "" });
+        }, 1500);
+      }
       setLoading(false);
     }
   };

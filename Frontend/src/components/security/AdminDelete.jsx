@@ -68,8 +68,12 @@ function AdminDelete() {
         setMessage({ type: "", text: "" });
       }, 1500);
     } catch (error) {
-      if (error.response?.status === 401) {
+      // 401 na verificação de senha significa senha incorreta, não token expirado
+      // Verifica se é erro de senha incorreta (vem da rota verify-password)
+      if (error.response?.status === 401 && senha) {
         setSenhaError("Senha incorreta. Tente novamente.");
+      } else if (error.response?.status === 401) {
+        // Token expirado - interceptor global cuida
       } else {
         setMessage({
           type: "error",

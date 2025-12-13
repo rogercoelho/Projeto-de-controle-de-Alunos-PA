@@ -357,50 +357,41 @@ function StudentForm({ aluno, onSaveSuccess }) {
     prioridade)) E ai passa para o setMessage o type e o conteudo da variavel msg 
     como Text */
 
-      let msg = "Erro ao cadastrar aluno.";
-      if (error.response) {
-        // Mensagem principal
-        msg =
-          error.response.data?.Mensagem ||
-          error.response.data?.Erro ||
-          `Erro do servidor: ${error.response.status} ${error.response.statusText}`;
+      // Se for erro 401, o interceptor global já trata - não mostrar mensagem local
+      if (error.response?.status === 401) {
+        // Não fazer nada, o interceptor global cuida
+      } else {
+        let msg = "Erro ao cadastrar aluno.";
+        if (error.response) {
+          // Mensagem principal
+          msg =
+            error.response.data?.Mensagem ||
+            error.response.data?.Erro ||
+            `Erro do servidor: ${error.response.status} ${error.response.statusText}`;
 
-        // Se for validation error, tenta mostrar detalhes extras
-        if (
-          msg.toLowerCase().includes("validation error") &&
-          error.response.data
-        ) {
-          // Tenta mostrar detalhes comuns de validação
-          if (error.response.data.errors) {
-            msg += " | Detalhes: " + JSON.stringify(error.response.data.errors);
-          } else if (error.response.data.details) {
-            msg +=
-              " | Detalhes: " + JSON.stringify(error.response.data.details);
-          } else {
-            msg += " | Dados: " + JSON.stringify(error.response.data);
+          // Se for validation error, tenta mostrar detalhes extras
+          if (
+            msg.toLowerCase().includes("validation error") &&
+            error.response.data
+          ) {
+            // Tenta mostrar detalhes comuns de validação
+            if (error.response.data.errors) {
+              msg +=
+                " | Detalhes: " + JSON.stringify(error.response.data.errors);
+            } else if (error.response.data.details) {
+              msg +=
+                " | Detalhes: " + JSON.stringify(error.response.data.details);
+            } else {
+              msg += " | Dados: " + JSON.stringify(error.response.data);
+            }
           }
+        } else if (error.request) {
+          msg = "Erro de rede: não foi possível conectar ao servidor.";
+        } else if (error.message) {
+          msg = `Erro: ${error.message}`;
         }
-      } else if (error.request) {
-        msg = "Erro de rede: não foi possível conectar ao servidor.";
-      } else if (error.message) {
-        msg = `Erro: ${error.message}`;
+        showToast({ type: "error", text: msg });
       }
-      showToast({ type: "error", text: msg });
-
-      // let msg = aluno
-      //   ? "Erro ao salvar alterações."
-      //   : "Erro ao cadastrar aluno.";
-      // if (error.response && error.response.data) {
-      //   const errData = error.response.data;
-      //   msg = errData.Erro || errData.Mensagem || msg;
-      // }
-      // showToast({ type: "error", text: msg });
-
-      /* E o ultimo bloco do try catch é o finally. Esse bloco executa independente
-      se entrou no try ou no catch. Seria a "conclusão". Nesse bloco volta a definir
-      o estado de loading para false, indicando que a operação assíncrona foi concluída, 
-      liberando os botoes. */
-    } finally {
       setLoading(false);
     }
   };

@@ -204,10 +204,13 @@ function StudentSearch() {
       /* A mesma coisa com o Catch. Mostra a mensagem de erro caso ocorra um problema na 
         requisição */
     } catch (error) {
-      showToast({
-        type: "error",
-        text: "Erro ao atualizar situação do aluno." + error,
-      });
+      // Se for erro 401, o interceptor global já trata
+      if (error.response?.status !== 401) {
+        showToast({
+          type: "error",
+          text: "Erro ao atualizar situação do aluno." + error,
+        });
+      }
     }
   };
 
@@ -336,8 +339,9 @@ function StudentSearch() {
         });
       }
     } catch (error) {
+      // Se for erro 401, o interceptor global já trata - não mostrar mensagem local
       if (error?.response?.status === 401) {
-        throw error;
+        // Não fazer nada, o interceptor global cuida
       } else if (error?.response?.status === 404) {
         showToast({ type: "error", text: "Aluno não encontrado." });
       } else if (error?.message === "Network Error") {

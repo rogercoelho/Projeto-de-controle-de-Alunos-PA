@@ -38,15 +38,18 @@ function Login() {
       }, 2500);
     } catch (error) {
       console.error("Erro ao fazer login:", error);
-      setMessage({
-        type: "error",
-        text:
-          error.response?.data?.message ||
-          "Erro ao fazer login. Verifique suas credenciais.",
-      });
-      setTimeout(() => {
-        setMessage({ type: "", text: "" });
-      }, 2500);
+      // Se for erro 401, o interceptor global já trata
+      if (error.response?.status !== 401) {
+        setMessage({
+          type: "error",
+          text:
+            error.response?.data?.message ||
+            "Erro ao fazer login. Verifique suas credenciais.",
+        });
+        setTimeout(() => {
+          setMessage({ type: "", text: "" });
+        }, 2500);
+      }
     } finally {
       setLoading(false);
     }

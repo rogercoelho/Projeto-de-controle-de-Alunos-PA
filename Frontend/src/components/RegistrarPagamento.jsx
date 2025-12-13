@@ -105,9 +105,12 @@ function RegistrarPagamento() {
       setFaturamentos([]);
       await fetchAlunosComPendencia();
       setTimeout(() => setMessage({ type: "", text: "" }), 1500);
-    } catch {
-      setMessage({ type: "error", text: "Erro ao registrar pagamento." });
-      setTimeout(() => setMessage({ type: "", text: "" }), 1500);
+    } catch (error) {
+      // Se for erro 401, o interceptor global já trata
+      if (error?.response?.status !== 401) {
+        setMessage({ type: "error", text: "Erro ao registrar pagamento." });
+        setTimeout(() => setMessage({ type: "", text: "" }), 1500);
+      }
     } finally {
       setLoading(false);
     }

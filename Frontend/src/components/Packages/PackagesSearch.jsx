@@ -72,13 +72,16 @@ function PackagesSearch() {
       }
     } catch (error) {
       console.error("Erro ao pesquisar planos:", error);
-      setMessage({
-        type: "error",
-        text:
-          error.response?.data?.Erro ||
-          "Erro ao pesquisar planos. Tente novamente.",
-      });
-      setTimeout(() => setMessage({ type: "", text: "" }), 1500);
+      // Se for erro 401, o interceptor global já trata
+      if (error.response?.status !== 401) {
+        setMessage({
+          type: "error",
+          text:
+            error.response?.data?.Erro ||
+            "Erro ao pesquisar planos. Tente novamente.",
+        });
+        setTimeout(() => setMessage({ type: "", text: "" }), 1500);
+      }
     } finally {
       setLoading(false);
     }
@@ -183,15 +186,18 @@ function PackagesSearch() {
       setIsEditing(false);
     } catch (error) {
       console.error("Erro ao atualizar plano:", error);
-      setMessage({
-        type: "error",
-        text:
-          error.response?.data?.Erro ||
-          "Erro ao atualizar plano. Tente novamente.",
-      });
-      setTimeout(() => {
-        setMessage({ type: "", text: "" });
-      }, 1500);
+      // Se for erro 401, o interceptor global já trata
+      if (error.response?.status !== 401) {
+        setMessage({
+          type: "error",
+          text:
+            error.response?.data?.Erro ||
+            "Erro ao atualizar plano. Tente novamente.",
+        });
+        setTimeout(() => {
+          setMessage({ type: "", text: "" });
+        }, 1500);
+      }
     } finally {
       setLoading(false);
     }
@@ -245,16 +251,19 @@ function PackagesSearch() {
                         1500
                       );
                     } catch (error) {
-                      setMessage({
-                        type: "error",
-                        text:
-                          error.response?.data?.Erro ||
-                          "Erro ao atualizar status do plano.",
-                      });
-                      setTimeout(
-                        () => setMessage({ type: "", text: "" }),
-                        1500
-                      );
+                      // Se for erro 401, o interceptor global já trata
+                      if (error.response?.status !== 401) {
+                        setMessage({
+                          type: "error",
+                          text:
+                            error.response?.data?.Erro ||
+                            "Erro ao atualizar status do plano.",
+                        });
+                        setTimeout(
+                          () => setMessage({ type: "", text: "" }),
+                          1500
+                        );
+                      }
                     }
                   }}
                   className={`px-4 py-2 rounded-md text-white transition-colors focus:outline-none ${

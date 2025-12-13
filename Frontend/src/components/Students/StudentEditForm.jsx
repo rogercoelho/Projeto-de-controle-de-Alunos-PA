@@ -143,11 +143,15 @@ function StudentEditForm({
               });
             }
           } catch (error) {
-            showToast({
-              type: "error",
-              text:
-                error?.response?.data?.Mensagem || "Erro ao salvar alterações.",
-            });
+            // Se for erro 401, o interceptor global já trata
+            if (error?.response?.status !== 401) {
+              showToast({
+                type: "error",
+                text:
+                  error?.response?.data?.Mensagem ||
+                  "Erro ao salvar alterações.",
+              });
+            }
           } finally {
             setLoadingbutton(false);
           }

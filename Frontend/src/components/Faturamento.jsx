@@ -144,16 +144,19 @@ function Faturamento() {
       setAlunoInfo(null);
       setPlanoInfo(null);
     } catch (err) {
-      setMessage({
-        type: "error",
-        text:
-          err?.response?.data?.Erro ||
-          err.message ||
-          "Erro ao registrar faturamento.",
-      });
-      setTimeout(() => {
-        setMessage({ type: "", text: "" });
-      }, 1500);
+      // Se for erro 401, o interceptor global já trata
+      if (err?.response?.status !== 401) {
+        setMessage({
+          type: "error",
+          text:
+            err?.response?.data?.Erro ||
+            err.message ||
+            "Erro ao registrar faturamento.",
+        });
+        setTimeout(() => {
+          setMessage({ type: "", text: "" });
+        }, 1500);
+      }
     } finally {
       setLoading(false);
     }

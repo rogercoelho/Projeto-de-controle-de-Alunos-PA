@@ -321,17 +321,14 @@ function PackagesSearch() {
                 <h3 className="text-lg font-semibold text-white">
                   Resultados ({planos.length})
                 </h3>
-                <div className="flex items-center gap-2">
-                  <span className="text-gray-400 text-sm">Ordenar por:</span>
-                  <select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value)}
-                    className="bg-gray-700 text-white px-3 py-1 rounded-md text-sm"
-                  >
-                    <option value="codigo">Código</option>
-                    <option value="nome">Nome</option>
-                  </select>
-                </div>
+                <Buttons.SelectOrdenacao
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  options={[
+                    { value: "codigo", label: "Código" },
+                    { value: "nome", label: "Nome" },
+                  ]}
+                />
               </div>
 
               <div className="space-y-2">
@@ -370,23 +367,17 @@ function PackagesSearch() {
               {/* Paginação */}
               {totalPages > 1 && (
                 <div className="flex justify-center items-center gap-2 mt-4">
-                  <button
+                  <Buttons.BotaoPaginacaoAnterior
                     onClick={() => handlePageChange(currentPage - 1)}
                     disabled={currentPage === 1}
-                    className="px-3 py-1 bg-gray-700 text-white rounded disabled:opacity-50"
-                  >
-                    Anterior
-                  </button>
+                  />
                   <span className="text-gray-400">
                     Página {currentPage} de {totalPages}
                   </span>
-                  <button
+                  <Buttons.BotaoPaginacaoProxima
                     onClick={() => handlePageChange(currentPage + 1)}
                     disabled={currentPage === totalPages}
-                    className="px-3 py-1 bg-gray-700 text-white rounded disabled:opacity-50"
-                  >
-                    Próxima
-                  </button>
+                  />
                 </div>
               )}
             </div>

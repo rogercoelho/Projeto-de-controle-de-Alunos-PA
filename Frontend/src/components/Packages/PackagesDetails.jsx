@@ -10,16 +10,10 @@ function PackagesDetails({ plano, onEdit, onToggleStatus, onBack }) {
       <div className="flex gap-2 mb-4">
         <Buttons.VoltarPesquisa onBack={onBack} />
         <Buttons.BotaoEditar onClick={onEdit} />
-        <button
+        <Buttons.BotaoAtivarDesativarPlano
           onClick={onToggleStatus}
-          className={`px-4 py-2 rounded-md text-white transition-colors focus:outline-none ${
-            plano.Plano_Ativo === "Ativo"
-              ? "bg-orange-500 hover:bg-orange-600"
-              : "bg-green-600 hover:bg-green-700"
-          }`}
-        >
-          {plano.Plano_Ativo === "Ativo" ? "🚫 Desativar" : "✅ Ativar"}
-        </button>
+          plano={plano}
+        />
       </div>
 
       {/* Card com detalhes do plano */}

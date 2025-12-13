@@ -227,6 +227,96 @@ BotaoCancelar.propTypes = {
 };
 /* Fim - Botao Cancelar */
 
+/* Inicio - Botao Ativar/Desativar Plano */
+function BotaoAtivarDesativarPlano({ onClick, plano }) {
+  const isAtivo = plano?.Plano_Ativo === "Ativo";
+  return (
+    <button
+      onClick={onClick}
+      className={`flex gap-2 border-2 p-2 rounded-md font-bold text-white border-gray-300 ${
+        isAtivo
+          ? "bg-orange-600 hover:bg-orange-700"
+          : "bg-green-600 hover:bg-green-700"
+      }`}
+    >
+      {isAtivo ? "🚫 Desativar" : "✅ Ativar"}
+    </button>
+  );
+}
+BotaoAtivarDesativarPlano.propTypes = {
+  onClick: PropTypes.func,
+  plano: PropTypes.object,
+};
+/* Fim - Botao Ativar/Desativar Plano */
+
+/* Inicio - Botao Paginação Anterior */
+function BotaoPaginacaoAnterior({ onClick, disabled }) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className="px-3 py-1 bg-gray-700 text-white rounded disabled:opacity-50 hover:bg-gray-600"
+    >
+      ◀ Anterior
+    </button>
+  );
+}
+BotaoPaginacaoAnterior.propTypes = {
+  onClick: PropTypes.func,
+  disabled: PropTypes.bool,
+};
+/* Fim - Botao Paginação Anterior */
+
+/* Inicio - Botao Paginação Próxima */
+function BotaoPaginacaoProxima({ onClick, disabled }) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className="px-3 py-1 bg-gray-700 text-white rounded disabled:opacity-50 hover:bg-gray-600"
+    >
+      Próxima ▶
+    </button>
+  );
+}
+BotaoPaginacaoProxima.propTypes = {
+  onClick: PropTypes.func,
+  disabled: PropTypes.bool,
+};
+/* Fim - Botao Paginação Próxima */
+
+/* Inicio - Select Ordenação */
+function SelectOrdenacao({ value, onChange, options, label = "Ordenar por:" }) {
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-gray-400 text-sm">{label}</span>
+      <select
+        value={value}
+        onChange={onChange}
+        className="bg-gray-700 text-white px-3 py-1 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+      >
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+SelectOrdenacao.propTypes = {
+  value: PropTypes.string.isRequired,
+  onChange: PropTypes.func.isRequired,
+  options: PropTypes.arrayOf(
+    PropTypes.shape({
+      value: PropTypes.string.isRequired,
+      label: PropTypes.string.isRequired,
+    })
+  ).isRequired,
+  label: PropTypes.string,
+};
+/* Fim - Select Ordenação */
+
 /* Inicio - Botao Cadastrar Plano */
 function CadastrarPlano({ onClick, type = "submit", disabled, loading }) {
   return (
@@ -343,6 +433,7 @@ export const Buttons = {
   BotaoLimpar,
   BotaoCancelar,
   BotaoAtivarDesativar,
+  BotaoAtivarDesativarPlano,
   BotaoPesquisar,
   BotaoX,
   OrdenarPorCodigo,
@@ -357,6 +448,9 @@ export const Buttons = {
   ControleUsuarios,
   CadastrarUsuario,
   ListarUsuarios,
+  BotaoPaginacaoAnterior,
+  BotaoPaginacaoProxima,
+  SelectOrdenacao,
 };
 
 export default Buttons;

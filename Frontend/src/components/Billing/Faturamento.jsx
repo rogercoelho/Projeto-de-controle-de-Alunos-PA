@@ -68,7 +68,7 @@ function Faturamento() {
       }
       setFetchingAluno(true);
       try {
-        const res = await api.get(`/alunos/search/${formData.codigoAluno}`);
+        const res = await api.get(`/alunos/codigo/${formData.codigoAluno}`);
         setAlunoInfo(res.data);
       } catch {
         setAlunoInfo(null);
@@ -175,7 +175,12 @@ function Faturamento() {
           <select
             name="codigoAluno"
             value={formData.codigoAluno}
-            onChange={handleChange}
+            onChange={(e) => {
+              setFormData((prev) => ({
+                ...prev,
+                codigoAluno: e.target.value,
+              }));
+            }}
             required
             className="w-full px-4 py-2 bg-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
@@ -201,7 +206,7 @@ function Faturamento() {
               setFormData((prev) => ({
                 ...prev,
                 codigoAluno: alunoSelecionado
-                  ? alunoSelecionado.Alunos_Codigo
+                  ? String(alunoSelecionado.Alunos_Codigo)
                   : "",
               }));
             }}

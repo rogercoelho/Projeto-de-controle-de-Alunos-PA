@@ -430,6 +430,7 @@ function StudentForm({ aluno, onSaveSuccess }) {
      layout que nesse caso é usado TailwindCSS */
   return (
     <div className="w-full h-auto p-6 bg-gray-800 rounded-xl">
+      <h2 className="text-xl font-bold text-white mb-4">Cadastrar Aluno</h2>
       {/* Aqui fica a mensagem toast (que aparece no canto direito da tela) Ela é 
         uma props (propriedade) que esta definida em /miscellaneous/Messages.jsx  */}
       {messageToast && <MessageToast messageToast={messageToast} />}

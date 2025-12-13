@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import api from "../../services/api";
 import { formatarDataBR } from "../../utils/Utils";
 import MessageToast from "../miscellaneous/MessageToast";
+import CustomSelect from "../miscellaneous/CustomSelect";
 import useToast from "../../hooks/useToast";
 
 function RegistrarPagamento() {
@@ -119,42 +120,20 @@ function RegistrarPagamento() {
       >
         <div className="flex flex-col gap-1">
           <label className="block text-base font-medium text-gray-300 mb-1">
-            Código do Aluno <span className="text-red-400">*</span>
+            Registrar Pagamento <span className="text-red-400">*</span>
           </label>
-          <select
+          <CustomSelect
             name="codigoAluno"
             value={codigoAluno}
             onChange={(e) => setCodigoAluno(e.target.value)}
-            onFocus={fetchAlunosComPendencia}
             required
-            disabled={alunos.length === 0}
-            className={`w-full px-4 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              alunos.length === 0 ? "opacity-60 cursor-not-allowed" : ""
-            }`}
-          >
-            <option value="">Selecione o código do aluno</option>
-            {alunos.map((aluno) => (
-              <option
-                key={aluno.Alunos_Codigo || aluno.Aluno_Codigo}
-                value={aluno.Alunos_Codigo || aluno.Aluno_Codigo}
-              >
-                {aluno.Alunos_Codigo || aluno.Aluno_Codigo}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="flex flex-col gap-1">
-          <label className="block text-base font-medium text-gray-300 mb-1 mt-2">
-            Nome do Aluno
-          </label>
-          <input
-            type="text"
-            value={alunos.length === 0 ? "" : alunoInfo?.Alunos_Nome || ""}
-            readOnly
-            disabled={alunos.length === 0}
-            className={`w-full px-4 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              alunos.length === 0 ? "opacity-60 cursor-not-allowed" : ""
-            }`}
+            placeholder="Selecione o código do aluno"
+            options={alunos.map((aluno) => ({
+              value: aluno.Alunos_Codigo || aluno.Aluno_Codigo,
+              label: `${aluno.Alunos_Codigo || aluno.Aluno_Codigo} - ${
+                aluno.Alunos_Nome || aluno.Aluno_Nome
+              }`,
+            }))}
           />
         </div>
         {alunos.length === 0 ? (

@@ -251,7 +251,7 @@ function PackagesSearch() {
         )
       ) : (
         <div className="w-full">
-          <h2 className="text-2xl font-bold text-white mb-6">
+          <h2 className="text-xl font-bold text-white mb-6">
             Pesquisar Planos
           </h2>
 

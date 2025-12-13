@@ -1,5 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import api from "../../services/api";
+import MessageToast from "../miscellaneous/MessageToast";
+import useToast from "../../hooks/useToast";
 
 function Faturamento() {
   const [formData, setFormData] = useState({
@@ -9,12 +11,12 @@ function Faturamento() {
   });
   const [alunos, setAlunos] = useState([]);
   const [planos, setPlanos] = useState([]);
-  const [message, setMessage] = useState({ type: "", text: "" });
   const [loading, setLoading] = useState(false);
   const [alunoInfo, setAlunoInfo] = useState(null);
   const [planoInfo, setPlanoInfo] = useState(null);
   const [fetchingAluno, setFetchingAluno] = useState(false);
   const [fetchingPlano, setFetchingPlano] = useState(false);
+  const [messageToast, showToast] = useToast();
 
   // Calcula o valor total do faturamento conforme o tipo de pagamento
   const valorTotalFaturamento = useMemo(() => {
@@ -104,7 +106,6 @@ function Faturamento() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setMessage({ type: "", text: "" });
     try {
       if (!planoInfo) throw new Error("Plano não encontrado");
       // Calcula a data de início e fim conforme o tipo do plano
@@ -133,29 +134,23 @@ function Faturamento() {
         Faturamento_Valor_Total: valorTotal,
       });
 
-      setMessage({
+      showToast({
         type: "success",
         text: "Faturamento registrado com sucesso!",
       });
-      setTimeout(() => {
-        setMessage({ type: "", text: "" });
-      }, 1500);
       setFormData({ codigoAluno: "", codigoPlano: "", dataVencimento: "" });
       setAlunoInfo(null);
       setPlanoInfo(null);
-    } catch (err) {
+    } catch (error) {
       // Se for erro 401, o interceptor global já trata
-      if (err?.response?.status !== 401) {
-        setMessage({
+      if (error?.response?.status !== 401) {
+        showToast({
           type: "error",
           text:
-            err?.response?.data?.Erro ||
-            err.message ||
+            error?.response?.data?.Erro ||
+            error?.message ||
             "Erro ao registrar faturamento.",
         });
-        setTimeout(() => {
-          setMessage({ type: "", text: "" });
-        }, 1500);
       }
     } finally {
       setLoading(false);
@@ -167,17 +162,7 @@ function Faturamento() {
       <h2 className="text-2xl sm:text-3xl font-bold text-white mb-4 sm:mb-6 text-center">
         Faturamento
       </h2>
-      {message.text && (
-        <div
-          className={`fixed bottom-4 right-4 z-50 p-4 rounded-md shadow-lg max-w-md w-auto ${
-            message.type === "success"
-              ? "bg-green-100 text-green-700 border-2 border-green-500"
-              : "bg-red-100 text-red-700 border-2 border-red-500"
-          }`}
-        >
-          {message.text}
-        </div>
-      )}
+      <MessageToast messageToast={messageToast} />
       <form
         onSubmit={handleSubmit}
         className="bg-gray-800 rounded-xl p-0 sm:p-6 space-y-4 w-full h-full min-h-[80vh] shadow-lg border-2 border-gray-700"

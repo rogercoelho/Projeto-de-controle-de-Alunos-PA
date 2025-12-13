@@ -215,11 +215,11 @@ function PackagesForm() {
           >
             {loading ? "Cadastrando..." : "Cadastrar Plano"}
           </Buttons.CadastrarPlano>
-          <Buttons.Limpar
+          <Buttons.BotaoLimpar
             type="button"
             onClick={handleClear}
             disabled={loading}
-          ></Buttons.Limpar>
+          ></Buttons.BotaoLimpar>
         </div>
       </form>
     </div>

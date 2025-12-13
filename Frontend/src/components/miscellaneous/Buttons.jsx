@@ -22,7 +22,7 @@ CadastrarAluno.propTypes = {
 /* Fim - Botao Cadastrar Aluno */
 
 /* Inicio - Botao Limpar */
-function Limpar({ onClick, disabled, type = "button" }) {
+function BotaoLimpar({ onClick, disabled, type = "button" }) {
   return (
     <button
       className="bg-gray-500 rounded-md p-2 border-2 border-gray-300 font-bold hover:bg-gray-600"
@@ -34,7 +34,7 @@ function Limpar({ onClick, disabled, type = "button" }) {
     </button>
   );
 }
-Limpar.propTypes = {
+BotaoLimpar.propTypes = {
   onClick: PropTypes.func,
   disabled: PropTypes.bool,
   type: PropTypes.string,
@@ -339,24 +339,24 @@ ListarUsuarios.propTypes = {
 };
 
 export const Buttons = {
-  OrdenarPorCodigo,
-  CadastrarPlano,
+  BotaoEditar,
+  BotaoLimpar,
   BotaoCancelar,
   BotaoAtivarDesativar,
-  SalvarAlteracoes,
+  BotaoPesquisar,
   BotaoX,
+  OrdenarPorCodigo,
+  CadastrarPlano,
+  SalvarAlteracoes,
   OrdenarPorNome,
   VoltarPesquisa,
   CadastrarAluno,
-  BotaoEditar,
   DeletarAluno,
-  BotaoPesquisar,
   ControleAulas,
   ControlePresenca,
   ControleUsuarios,
   CadastrarUsuario,
   ListarUsuarios,
-  Limpar,
 };
 
 export default Buttons;

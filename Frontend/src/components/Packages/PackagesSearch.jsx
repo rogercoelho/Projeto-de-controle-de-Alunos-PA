@@ -542,13 +542,7 @@ function PackagesSearch() {
               >
                 Pesquisar Plano
               </Buttons.BotaoPesquisar>
-              <button
-                type="button"
-                onClick={handleClear}
-                className="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-md transition-colors"
-              >
-                Limpar
-              </button>
+              <Buttons.BotaoLimpar onClick={handleClear} />
             </div>
           </form>
 

@@ -872,7 +872,7 @@ function StudentForm({ aluno, onSaveSuccess }) {
             disabled={loading}
             loading={loading}
           />
-          <Buttons.Limpar
+          <Buttons.BotaoLimpar
             type="button"
             onClick={(e) => {
               e.preventDefault();

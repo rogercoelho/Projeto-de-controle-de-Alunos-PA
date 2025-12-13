@@ -197,7 +197,7 @@ function BotaoAtivarDesativar({ onClick, aluno }) {
           : "bg-green-600 hover:bg-green-700"
       }`}
     >
-      {aluno.Alunos_Situacao === "Ativo" ? "⛔ Desativar" : "✅ Ativar"}
+      {aluno.Alunos_Situacao === "Ativo" ? "⛔ Inativar" : "✅ Ativar"}
     </button>
   );
 }

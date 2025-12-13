@@ -303,7 +303,8 @@ function Faturamento() {
                   <b>Nome:</b> {planoInfo.Plano_Nome}
                 </li>
                 <li>
-                  <b>Valor:</b> R$ {parseFloat(planoInfo.Plano_Valor).toFixed(2)}
+                  <b>Valor:</b> R${" "}
+                  {parseFloat(planoInfo.Plano_Valor).toFixed(2)}
                 </li>
                 <li>
                   <b>Tipo Pagamento:</b> {planoInfo.Plano_Pagamento}

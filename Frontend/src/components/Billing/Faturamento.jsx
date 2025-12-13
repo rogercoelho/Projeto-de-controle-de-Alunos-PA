@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import api from "../../services/api";
 import MessageToast from "../miscellaneous/MessageToast";
 import useToast from "../../hooks/useToast";
+import { formatarDataBR } from "../../utils/Utils";
 
 function Faturamento() {
   const [formData, setFormData] = useState({
@@ -290,7 +291,8 @@ function Faturamento() {
                 <b>Telefone:</b> {alunoInfo.Alunos_Telefone}
               </li>
               <li>
-                <b>Data Matrícula:</b> {alunoInfo.Alunos_Data_Matricula}
+                <b>Data Matrícula:</b>{" "}
+                {formatarDataBR(alunoInfo.Alunos_Data_Matricula) || "-"}
               </li>
             </ul>
           ) : (

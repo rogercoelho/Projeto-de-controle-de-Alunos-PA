@@ -102,6 +102,14 @@ export function converterData(dataBR) {
   return `${ano}-${mes.padStart(2, "0")}-${dia.padStart(2, "0")}`;
 }
 
+export function formatarDataBR(dataISO) {
+  // de 'AAAA-MM-DD' para 'DD/MM/AAAA'
+  if (!dataISO) return "";
+  const [ano, mes, dia] = dataISO.split("-");
+  if (!dia || !mes || !ano) return dataISO;
+  return `${dia.padStart(2, "0")}/${mes.padStart(2, "0")}/${ano}`;
+}
+
 export function validarCodigoPlano(codigoPlano) {
   return codigoPlano
     .toUpperCase() // Converte para caixa alta

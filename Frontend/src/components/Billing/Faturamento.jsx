@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import api from "../../services/api";
 import MessageToast from "../miscellaneous/MessageToast";
+import CustomSelect from "../miscellaneous/CustomSelect";
 import useToast from "../../hooks/useToast";
 import { formatarDataBR } from "../../utils/Utils";
 
@@ -225,21 +226,17 @@ function Faturamento() {
           <label className="block text-base font-medium text-gray-300 mb-2">
             Código do Plano *
           </label>
-          <select
+          <CustomSelect
             name="codigoPlano"
             value={formData.codigoPlano}
             onChange={handleChange}
             required
-            className="w-full px-4 py-2 bg-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="">Selecione o código do plano</option>
-            {planos.map((plano) => (
-              <option key={plano.Plano_Codigo} value={plano.Plano_Codigo}>
-                {plano.Plano_Codigo} - {plano.Plano_Nome} (
-                {plano.Plano_Pagamento})
-              </option>
-            ))}
-          </select>
+            placeholder="Selecione o código do plano"
+            options={planos.map((plano) => ({
+              value: plano.Plano_Codigo,
+              label: `${plano.Plano_Codigo} - ${plano.Plano_Nome} - ${plano.Plano_Quantidade_Semana}x /sem (${plano.Plano_Pagamento})`,
+            }))}
+          />
         </div>
         <div>
           <label className="block text-base font-medium text-gray-300 mb-2">
@@ -254,6 +251,79 @@ function Faturamento() {
             className="w-full px-4 py-2 bg-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
+
+        {/* Informações do Aluno e do Plano */}
+        <div className="flex flex-col gap-4">
+          <div className="bg-gray-700 rounded-xl p-4">
+            <h3 className="text-lg sm:text-xl font-bold text-white mb-2 text-center">
+              Informações do Aluno
+            </h3>
+            {fetchingAluno ? (
+              <div className="text-gray-400 text-center">Buscando aluno...</div>
+            ) : alunoInfo ? (
+              <ul className="text-gray-200 text-sm space-y-1">
+                <li>
+                  <b>Código:</b> {alunoInfo.Alunos_Codigo}
+                </li>
+                <li>
+                  <b>Nome:</b> {alunoInfo.Alunos_Nome}
+                </li>
+                <li>
+                  <b>CPF:</b> {alunoInfo.Alunos_CPF}
+                </li>
+                <li>
+                  <b>Email:</b> {alunoInfo.Alunos_Email}
+                </li>
+                <li>
+                  <b>Telefone:</b> {alunoInfo.Alunos_Telefone}
+                </li>
+                <li>
+                  <b>Data Matrícula:</b>{" "}
+                  {formatarDataBR(alunoInfo.Alunos_Data_Matricula) || "-"}
+                </li>
+              </ul>
+            ) : (
+              <div className="text-gray-400 text-center">
+                Nenhum aluno encontrado.
+              </div>
+            )}
+          </div>
+          <div className="bg-gray-700 rounded-xl p-4">
+            <h3 className="text-lg sm:text-xl font-bold text-white mb-2 text-center">
+              Informações do Plano
+            </h3>
+            {fetchingPlano ? (
+              <div className="text-gray-400 text-center">Buscando plano...</div>
+            ) : planoInfo ? (
+              <ul className="text-gray-200 text-sm space-y-1">
+                <li>
+                  <b>Código:</b> {planoInfo.Plano_Codigo}
+                </li>
+                <li>
+                  <b>Nome:</b> {planoInfo.Plano_Nome}
+                </li>
+                <li>
+                  <b>Valor:</b> R$ {parseFloat(planoInfo.Plano_Valor).toFixed(2)}
+                </li>
+                <li>
+                  <b>Tipo Pagamento:</b> {planoInfo.Plano_Pagamento}
+                </li>
+                {/* Status removido conforme solicitado */}
+                <li>
+                  <b>Valor Total Faturamento:</b>{" "}
+                  {valorTotalFaturamento !== null
+                    ? `R$ ${valorTotalFaturamento.toFixed(2)}`
+                    : "-"}
+                </li>
+              </ul>
+            ) : (
+              <div className="text-gray-400 text-center">
+                Nenhum plano encontrado.
+              </div>
+            )}
+          </div>
+        </div>
+
         <div className="flex flex-col sm:flex-row justify-center gap-4 pt-4">
           <button
             type="submit"
@@ -264,78 +334,6 @@ function Faturamento() {
           </button>
         </div>
       </form>
-
-      {/* Informações do Aluno e do Plano */}
-      <div className="mt-8 flex flex-col gap-6 w-full">
-        <div className="bg-gray-800 rounded-xl p-4">
-          <h3 className="text-lg sm:text-xl font-bold text-white mb-2 text-center">
-            Informações do Aluno
-          </h3>
-          {fetchingAluno ? (
-            <div className="text-gray-400 text-center">Buscando aluno...</div>
-          ) : alunoInfo ? (
-            <ul className="text-gray-200 text-sm space-y-1">
-              <li>
-                <b>Código:</b> {alunoInfo.Alunos_Codigo}
-              </li>
-              <li>
-                <b>Nome:</b> {alunoInfo.Alunos_Nome}
-              </li>
-              <li>
-                <b>CPF:</b> {alunoInfo.Alunos_CPF}
-              </li>
-              <li>
-                <b>Email:</b> {alunoInfo.Alunos_Email}
-              </li>
-              <li>
-                <b>Telefone:</b> {alunoInfo.Alunos_Telefone}
-              </li>
-              <li>
-                <b>Data Matrícula:</b>{" "}
-                {formatarDataBR(alunoInfo.Alunos_Data_Matricula) || "-"}
-              </li>
-            </ul>
-          ) : (
-            <div className="text-gray-400 text-center">
-              Nenhum aluno encontrado.
-            </div>
-          )}
-        </div>
-        <div className="bg-gray-800 rounded-xl p-4">
-          <h3 className="text-lg sm:text-xl font-bold text-white mb-2 text-center">
-            Informações do Plano
-          </h3>
-          {fetchingPlano ? (
-            <div className="text-gray-400 text-center">Buscando plano...</div>
-          ) : planoInfo ? (
-            <ul className="text-gray-200 text-sm space-y-1">
-              <li>
-                <b>Código:</b> {planoInfo.Plano_Codigo}
-              </li>
-              <li>
-                <b>Nome:</b> {planoInfo.Plano_Nome}
-              </li>
-              <li>
-                <b>Valor:</b> R$ {parseFloat(planoInfo.Plano_Valor).toFixed(2)}
-              </li>
-              <li>
-                <b>Tipo Pagamento:</b> {planoInfo.Plano_Pagamento}
-              </li>
-              {/* Status removido conforme solicitado */}
-              <li>
-                <b>Valor Total Faturamento:</b>{" "}
-                {valorTotalFaturamento !== null
-                  ? `R$ ${valorTotalFaturamento.toFixed(2)}`
-                  : "-"}
-              </li>
-            </ul>
-          ) : (
-            <div className="text-gray-400 text-center">
-              Nenhum plano encontrado.
-            </div>
-          )}
-        </div>
-      </div>
     </div>
   );
 }

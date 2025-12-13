@@ -8,7 +8,7 @@ import PackagesForm from "./components/Packages/PackagesForm";
 import PackagesSearch from "./components/Packages/PackagesSearch";
 import Financeiro from "./components/Financeiro";
 import Faturamento from "./components/Billing/Faturamento";
-import RegistrarPagamento from "./components/RegistrarPagamento";
+import RegistrarPagamento from "./components/Billing/RegistrarPagamento";
 import ProtectedRoute from "./components/Security/ProtectedRoute";
 import AdminDelete from "./components/Security/AdminDelete";
 import MobileMenu from "./components/miscellaneous/MobileMenu";

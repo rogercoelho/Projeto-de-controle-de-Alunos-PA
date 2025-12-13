@@ -1,7 +1,14 @@
 import PropTypes, { func } from "prop-types";
 
-/* Inicio - Botao Cadastrar Aluno */
-function CadastrarAluno({ onClick, type = "submit", disabled, loading }) {
+/* Inicio - Botao Cadastrar */
+function BotaoCadastrar({
+  children,
+  onClick,
+  type = "submit",
+  disabled,
+  loading,
+}) {
+  const label = children || "Cadastrar";
   return (
     <button
       type={type || "submit"}
@@ -9,17 +16,18 @@ function CadastrarAluno({ onClick, type = "submit", disabled, loading }) {
       onClick={onClick}
       disabled={disabled}
     >
-      {loading ? "Cadastrando..." : "Cadastrar Aluno"}
+      {loading ? "Cadastrando..." : label}
     </button>
   );
 }
-CadastrarAluno.propTypes = {
+BotaoCadastrar.propTypes = {
   onClick: PropTypes.func,
   type: PropTypes.string,
   disabled: PropTypes.bool,
   loading: PropTypes.bool,
+  children: PropTypes.node,
 };
-/* Fim - Botao Cadastrar Aluno */
+/* Fim - Botao Cadastrar */
 
 /* Inicio - Botao Limpar */
 function BotaoLimpar({ onClick, disabled, type = "button" }) {
@@ -41,26 +49,7 @@ BotaoLimpar.propTypes = {
 };
 /* Fim - Botao Limpar */
 
-/* Inicio - Botao X (Remover Conteudo) */
-function BotaoX({ onClick }) {
-  return (
-    <button
-      type="button"
-      className="ml-0.5 text-red-500 font-bold rounded hover:bg-red-700 hover:text-white"
-      style={{ padding: "3px 7px" }}
-      onClick={onClick}
-      aria-label="X"
-    >
-      X
-    </button>
-  );
-}
-BotaoX.propTypes = {
-  onClick: PropTypes.func,
-};
-/* Fim - Botao X (Remover Conteudo) */
-
-/* Inicio - Botao Pesquisar Aluno */
+/* Inicio - Botao Pesquisar */
 function BotaoPesquisar({
   children,
   onClick,
@@ -87,7 +76,26 @@ BotaoPesquisar.propTypes = {
   loading: PropTypes.bool,
   children: PropTypes.node,
 };
-/* Fim - Botao Pesquisar Aluno */
+/* Fim - Botao Pesquisar */
+
+/* Inicio - Botao X (Remover Conteudo) */
+function BotaoX({ onClick }) {
+  return (
+    <button
+      type="button"
+      className="ml-0.5 text-red-500 font-bold rounded hover:bg-red-700 hover:text-white"
+      style={{ padding: "3px 7px" }}
+      onClick={onClick}
+      aria-label="X"
+    >
+      X
+    </button>
+  );
+}
+BotaoX.propTypes = {
+  onClick: PropTypes.func,
+};
+/* Fim - Botao X (Remover Conteudo) */
 
 /* Inicio - Botao Ordenar por Código */
 function OrdenarPorCodigo({ onClick, isActive }) {
@@ -429,6 +437,7 @@ ListarUsuarios.propTypes = {
 };
 
 export const Buttons = {
+  BotaoCadastrar,
   BotaoEditar,
   BotaoLimpar,
   BotaoCancelar,
@@ -441,7 +450,6 @@ export const Buttons = {
   SalvarAlteracoes,
   OrdenarPorNome,
   VoltarPesquisa,
-  CadastrarAluno,
   DeletarAluno,
   ControleAulas,
   ControlePresenca,

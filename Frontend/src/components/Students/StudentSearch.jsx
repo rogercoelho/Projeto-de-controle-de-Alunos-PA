@@ -415,15 +415,15 @@ function StudentSearch() {
           {/* Inicio - Formulario de pesquisa do aluno */}
           <form
             onSubmit={handleSearch}
-            className="w-full h-auto p-2 sm:p-4 space-y-2 sm:space-y-4 mx-auto"
+            className="bg-gray-800 rounded-xl p-6 space-y-4 mb-6"
           >
-            <h3 className="text-xl font-bold text-white mb-4">
+            <h2 className="text-xl font-bold text-white mb-4">
               Pesquisar Aluno
-            </h3>
+            </h2>
             {/* Inicio - Campo de pesquisa pelo codigo. 
                 type definido como number, name definido como codigo, value recebe de 
                 searchData.codigo, onChange recebe a funcao handleSearchChange. */}
-            <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-2 items-center">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <label>Código:</label>
               <input
                 type="number"
@@ -473,35 +473,31 @@ function StudentSearch() {
                 Type é definido como checkbox, id definido como mostrarInaivos, checked recebe a
                 funcao mostrarInativos e onChange recebe o evento (e) que executa a funcao 
                 setMostrarInativos (do evento (e) e.target.checked) */}
-            <div className="flex items-center gap-3 pl-0 md:pl-52">
-              <input
-                type="checkbox"
-                id="mostrarInativos"
-                checked={mostrarInativos}
-                onChange={(e) => setMostrarInativos(e.target.checked)}
-                className="w-5 h-5 cursor-pointer"
-              />
-              <label
-                htmlFor="mostrarInativos"
-                className="cursor-pointer text-white"
-              >
+            <div className="flex items-center gap-4 mt-2">
+              <label className="flex items-center text-gray-300 text-sm">
+                <input
+                  type="checkbox"
+                  checked={mostrarInativos}
+                  onChange={(e) => setMostrarInativos(e.target.checked)}
+                  className="mr-2 accent-blue-600"
+                />
                 Mostrar apenas alunos inativos
               </label>
             </div>
             {/* Fim - Campo que busca apenas alunos inativos. */}
+            {/* Fim - Formulario de pesquisa do aluno. */}
+            {/* Inicio - Botoes de controle - pesquisae e limpar */}
+            <div className="flex gap-4">
+              <Buttons.BotaoPesquisar
+                onClick={handleSearch}
+                loading={loading}
+                disabled={loading}
+              >
+                Pesquisar Aluno
+              </Buttons.BotaoPesquisar>
+              <Buttons.BotaoLimpar onClick={handleClearSearch} />
+            </div>
           </form>
-          {/* Fim - Formulario de pesquisa do aluno. */}
-          {/* Inicio - Botoes de controle - pesquisae e limpar */}
-          <div className="flex justify-center gap-4 pt-4">
-            <Buttons.BotaoPesquisar
-              onClick={handleSearch}
-              loading={loading}
-              disabled={loading}
-            >
-              Pesquisar Aluno
-            </Buttons.BotaoPesquisar>
-            <Buttons.BotaoLimpar onClick={handleClearSearch} />
-          </div>
           {/* Fim - Botoes de controle - pesquisar e limpar */}
 
           {/* Inicio - Resultados da pesquisa 
@@ -509,28 +505,19 @@ function StudentSearch() {
               mostra na tela ordenando por codigo ou nome (clicando nos botoes) e se tiver mais de 
               10 alunos, mostra a paginacao. */}
           {results.length > 0 && (
-            <div className="w-full mt-6">
-              <div className="mb-4 space-y-3">
-                <h3 className="text-lg font-bold text-white text-center">
-                  Resultados ({results.length} alunos)
+            <div className="bg-gray-800 rounded-xl p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold text-white">
+                  Resultados ({results.length})
                 </h3>
-                <div className="flex flex-col gap-2">
-                  <span className="text-white text-sm text-center">
-                    Ordenar por:
-                  </span>
-                  {/* Inicio - Botoes de controle de ordenacao - codigo e nome */}
-                  <div className="flex gap-4 justify-center">
-                    <Buttons.OrdenarPorCodigo
-                      onClick={() => handleSortChange("codigo")}
-                      isActive={sortBy === "codigo"}
-                    ></Buttons.OrdenarPorCodigo>
-                    <Buttons.OrdenarPorNome
-                      onClick={() => handleSortChange("nome")}
-                      isActive={sortBy === "nome"}
-                    ></Buttons.OrdenarPorNome>
-                  </div>
-                  {/* Fim - Botoes de controle de ordenacao - codigo e nome */}
-                </div>
+                <Buttons.SelectOrdenacao
+                  value={sortBy}
+                  onChange={(e) => handleSortChange(e.target.value)}
+                  options={[
+                    { value: "codigo", label: "Código" },
+                    { value: "nome", label: "Nome" },
+                  ]}
+                />
               </div>
               {/* Inicio - Tags de alunos da pesquisa */}
               <div className="space-y-2">

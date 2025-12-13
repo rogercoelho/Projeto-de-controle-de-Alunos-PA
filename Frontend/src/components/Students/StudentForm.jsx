@@ -858,11 +858,13 @@ function StudentForm({ aluno, onSaveSuccess }) {
 
         {/* Inicio - Botoes de Ação: Cadastrar e Limpar */}
         <div className="flex justify-center gap-6 pt-4">
-          <Buttons.CadastrarAluno
+          <Buttons.BotaoCadastrar
             type="submit"
             disabled={loading}
             loading={loading}
-          />
+          >
+            Cadastrar Aluno
+          </Buttons.BotaoCadastrar>
           <Buttons.BotaoLimpar
             type="button"
             onClick={(e) => {

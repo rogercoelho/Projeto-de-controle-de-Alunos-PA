@@ -105,7 +105,7 @@ function PackagesForm() {
 
   return (
     <div className="w-full h-auto">
-      <h2 className="text-2xl font-bold text-white mb-6">Cadastrar Plano</h2>
+      <h2 className="text-xl font-bold text-white mb-4">Cadastrar Plano</h2>
       {/* Mensagem de feedback */}
       {messageToast && <MessageToast messageToast={messageToast} />}
       <form
@@ -202,13 +202,13 @@ function PackagesForm() {
         </div>
         {/* Botões */}
         <div className="flex justify-center gap-6 pt-4">
-          <Buttons.CadastrarPlano
+          <Buttons.BotaoCadastrar
             type="submit"
             disabled={loading}
             loading={loading}
           >
-            {loading ? "Cadastrando..." : "Cadastrar Plano"}
-          </Buttons.CadastrarPlano>
+            Cadastrar Plano
+          </Buttons.BotaoCadastrar>
           <Buttons.BotaoLimpar
             type="button"
             onClick={handleClear}

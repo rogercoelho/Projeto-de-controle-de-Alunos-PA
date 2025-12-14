@@ -36,7 +36,7 @@ function PhotoSkeleton({ foto, nome }) {
     return (
       <div className="w-48 h-48 flex items-center justify-center bg-transparent rounded-md border-2 border-gray-300">
         <img
-          src="/logo.png"
+          src="/controle_pa/logo.png"
           alt="Logo placeholder"
           className="w-24 h-24 object-contain opacity-60"
         />
@@ -56,7 +56,7 @@ function PhotoSkeleton({ foto, nome }) {
       {!loaded && (
         <div className="absolute inset-0 flex items-center justify-center bg-black rounded-md z-10 animate-pulse">
           <img
-            src="/logo.png"
+            src="/controle_pa/logo.png"
             alt="Logo placeholder"
             className="w-24 h-24 object-contain opacity-60"
           />

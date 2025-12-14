@@ -144,6 +144,7 @@ router.post(
         Alunos_Telefone_Emergencia_2,
         Alunos_Situacao,
         Alunos_Data_Matricula,
+        Alunos_Observacoes,
       } = req.body;
       // Se não vier preenchido, define como 'Aluno Maior de Idade'
       if (!Alunos_Nome_Responsavel || Alunos_Nome_Responsavel.trim() === "") {
@@ -180,6 +181,7 @@ router.post(
         Alunos_Data_Matricula,
         Alunos_Foto,
         Alunos_Contrato,
+        Alunos_Observacoes,
       });
 
       // Registra log de criação

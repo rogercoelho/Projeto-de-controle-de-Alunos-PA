@@ -202,7 +202,7 @@ function Relatorio() {
 
       let y = 10;
       const marginLeft = 10;
-      const pageWidth = 277;
+      const pageWidth = 275;
 
       // Fundo geral
       doc.setFillColor(...bgDark);
@@ -232,15 +232,15 @@ function Relatorio() {
       doc.setTextColor(...textWhite);
 
       const colX = {
-        codigo: marginLeft + 3,
-        aluno: marginLeft + 20,
-        plano: marginLeft + 70,
-        parcela: marginLeft + 110,
-        dataPag: marginLeft + 140,
-        valorMensal: marginLeft + 175,
-        valorDesc: marginLeft + 210,
-        valorWET: marginLeft + 245,
-        valorPA: marginLeft + 270,
+        codigo: marginLeft + 2,
+        aluno: marginLeft + 16,
+        plano: marginLeft + 62,
+        parcela: marginLeft + 100,
+        dataPag: marginLeft + 125,
+        valorMensal: marginLeft + 155,
+        valorDesc: marginLeft + 190,
+        valorWET: marginLeft + 225,
+        valorPA: marginLeft + 255,
       };
 
       doc.text("Cód", colX.codigo, y + 5.5);

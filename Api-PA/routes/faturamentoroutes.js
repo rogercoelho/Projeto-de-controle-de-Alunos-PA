@@ -29,7 +29,24 @@ const storageComprovante = multer.diskStorage({
   },
   filename: function (req, file, cb) {
     const ext = path.extname(file.originalname);
-    // Gera um ID único baseado na data/hora atual (formato: AAAAMMDD_HHMMSS_ms)
+    // Tenta obter o ID do faturamento correspondente a este arquivo
+    let fatId = "";
+    if (req.body && req.body.faturamentoIds) {
+      let faturamentoIds = req.body.faturamentoIds;
+      if (typeof faturamentoIds === "string") {
+        try {
+          faturamentoIds = JSON.parse(faturamentoIds);
+        } catch {
+          faturamentoIds = [];
+        }
+      }
+      // O campo fieldname é sempre "comprovantes" (array), então usamos o índice do arquivo
+      if (Array.isArray(faturamentoIds) && req.files) {
+        // req.files ainda não está populado neste momento, mas podemos usar req._fileIndex
+        fatId = faturamentoIds[req._fileIndex || 0] || "";
+      }
+    }
+    // Fallback: se não conseguir, deixa sem fatId
     const now = new Date();
     const dataHora = now
       .toISOString()
@@ -37,7 +54,12 @@ const storageComprovante = multer.diskStorage({
       .replace(/[-:T]/g, "")
       .replace(/(\d{8})(\d{6})/, "$1_$2");
     const ms = now.getMilliseconds().toString().padStart(3, "0");
-    const filename = `comprovante_${dataHora}_${ms}${ext}`;
+    // Adiciona fatId ao nome se existir
+    const filename = fatId
+      ? `comprovante_${fatId}_${dataHora}_${ms}${ext}`
+      : `comprovante_${dataHora}_${ms}${ext}`;
+    // Atualiza índice para o próximo arquivo
+    req._fileIndex = (req._fileIndex || 0) + 1;
     cb(null, filename);
   },
 });

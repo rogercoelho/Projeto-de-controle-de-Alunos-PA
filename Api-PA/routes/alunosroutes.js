@@ -299,7 +299,9 @@ router.patch(
         const arquivosFotos = fs.readdirSync(pastaFotos);
         const fotoAntiga = arquivosFotos.find(
           (arquivo) =>
-            (arquivo.startsWith(`foto_id_${codigo}_`) || arquivo.startsWith(`${codigo}_foto`)) && arquivo !== novoNomeFoto
+            (arquivo.startsWith(`foto_id_${codigo}_`) ||
+              arquivo.startsWith(`${codigo}_foto`)) &&
+            arquivo !== novoNomeFoto
         );
         if (fotoAntiga) {
           const caminhoFotoAntiga = path.join(pastaFotos, fotoAntiga);
@@ -319,7 +321,10 @@ router.patch(
         const ext = path.extname(req.files.contrato[0].originalname);
         // Formato: contrato_id_XXX_AAAAMMDD_ms
         const nowContrato = new Date();
-        const dataContrato = nowContrato.toISOString().slice(0, 10).replace(/-/g, ""); // AAAAMMDD
+        const dataContrato = nowContrato
+          .toISOString()
+          .slice(0, 10)
+          .replace(/-/g, ""); // AAAAMMDD
         const msContrato = nowContrato
           .getMilliseconds()
           .toString()
@@ -331,7 +336,8 @@ router.patch(
         const arquivosContratos = fs.readdirSync(pastaContratos);
         const contratoAntigo = arquivosContratos.find(
           (arquivo) =>
-            (arquivo.startsWith(`contrato_id_${codigo}_`) || arquivo.startsWith(`${codigo}_contrato`)) &&
+            (arquivo.startsWith(`contrato_id_${codigo}_`) ||
+              arquivo.startsWith(`${codigo}_contrato`)) &&
             arquivo !== novoNomeContrato
         );
         if (contratoAntigo) {

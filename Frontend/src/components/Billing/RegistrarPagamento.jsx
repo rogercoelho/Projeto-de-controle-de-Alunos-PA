@@ -238,10 +238,12 @@ function RegistrarPagamento() {
                           <div className="flex items-center gap-2 w-full sm:w-auto min-w-0">
                             <label className="text-gray-300 text-sm">
                               Data Pagamento:
+                              <span className="text-red-500"> *</span>
                             </label>
                             <input
                               type="date"
                               value={datasPagamento[fatId] || ""}
+                              required
                               onChange={(e) =>
                                 setDatasPagamento((prev) => ({
                                   ...prev,
@@ -275,6 +277,9 @@ function RegistrarPagamento() {
                           <div className="flex items-center gap-2 w-full sm:w-auto min-w-0">
                             <label className="text-gray-300 text-sm">
                               Motivo:
+                              {descontos[fatId] && (
+                                <span className="text-red-500">*</span>
+                              )}
                             </label>
                             <input
                               type="text"
@@ -302,6 +307,7 @@ function RegistrarPagamento() {
                           <div className="flex items-center gap-2 w-full">
                             <label className="text-gray-300 text-sm whitespace-nowrap">
                               Comprovante:
+                              <span className="text-red-500"> *</span>
                             </label>
                             <input
                               ref={(el) =>

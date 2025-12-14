@@ -142,14 +142,14 @@ function StudentDetails({ aluno, onEdit, onToggleSituacao, onBack }) {
             )}
           </div>
         </div>
-        {aluno.Alunos_Observacoes && (
-          <div className="text-sm md:text-base">
-            <div className="font-bold text-gray-400">Observações:</div>
-            <div className="whitespace-pre-wrap">
-              {aluno.Alunos_Observacoes}
-            </div>
+        <div className="text-sm md:text-base">
+          <div className="font-bold text-gray-400">Observações:</div>
+          <div className="whitespace-pre-wrap">
+            {aluno.Alunos_Observacoes || (
+              <span className="text-gray-500 italic">Não informado</span>
+            )}
           </div>
-        )}
+        </div>
       </div>
     </div>
   );

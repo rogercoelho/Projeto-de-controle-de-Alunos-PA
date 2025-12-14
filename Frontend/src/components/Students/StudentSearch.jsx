@@ -423,14 +423,14 @@ function StudentSearch() {
             {/* Inicio - Campo de pesquisa pelo codigo. 
                 type definido como number, name definido como codigo, value recebe de 
                 searchData.codigo, onChange recebe a funcao handleSearchChange. */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-2 items-center">
               <label>Código:</label>
               <input
                 type="number"
                 name="codigo"
                 value={searchData.codigo}
                 onChange={handleSearchChange}
-                className="w-full px-4 py-2 bg-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="border border-gray-300 rounded-md p-2 w-full bg-white text-black"
                 placeholder="Digite o código"
               />
             </div>

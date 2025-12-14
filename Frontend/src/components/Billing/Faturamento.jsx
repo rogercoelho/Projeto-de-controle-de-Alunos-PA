@@ -109,6 +109,22 @@ function Faturamento() {
     e.preventDefault();
     setLoading(true);
     try {
+      // Verifica se o aluno já possui faturamento em aberto
+      const resPendentes = await api.get(
+        `/faturamento/pendentes/${formData.codigoAluno}`
+      );
+      if (
+        resPendentes.data.faturamentos &&
+        resPendentes.data.faturamentos.length > 0
+      ) {
+        showToast({
+          type: "error",
+          text: "Aluno possui um faturamento em aberto. Não é possível registrar novo faturamento.",
+        });
+        setLoading(false);
+        return;
+      }
+
       if (!planoInfo) throw new Error("Plano não encontrado");
       // Calcula a data de início e fim conforme o tipo do plano
       const inicio = new Date(formData.dataVencimento);

@@ -34,18 +34,14 @@ const storage = multer.diskStorage({
     cb(null, uploadDir);
   },
   filename: function (req, file, cb) {
-    // Gera nome do arquivo com formato legível: codigo_tipo_AAAAMMDD_HHMMSS_ms
+    // Gera nome do arquivo com formato: tipo_id_XXX_AAAAMMDD_ms
     const codigo = req.body.Alunos_Codigo || "novo";
     const ext = path.extname(file.originalname);
     const tipo = file.fieldname === "foto" ? "foto" : "contrato";
     const now = new Date();
-    const dataHora = now
-      .toISOString()
-      .slice(0, 19)
-      .replace(/[-:T]/g, "")
-      .replace(/(\d{8})(\d{6})/, "$1_$2");
+    const data = now.toISOString().slice(0, 10).replace(/-/g, ""); // AAAAMMDD
     const ms = now.getMilliseconds().toString().padStart(3, "0");
-    const filename = `${codigo}_${tipo}_${dataHora}_${ms}${ext}`;
+    const filename = `${tipo}_id_${codigo}_${data}_${ms}${ext}`;
     cb(null, filename);
   },
 });
@@ -291,15 +287,11 @@ router.patch(
             : path.join(__dirname, "../uploads");
         const pastaFotos = path.join(baseDir, "fotos");
         const ext = path.extname(req.files.foto[0].originalname);
-        // Formato legível: codigo_foto_AAAAMMDD_HHMMSS_ms
+        // Formato: foto_id_XXX_AAAAMMDD_ms
         const now = new Date();
-        const dataHora = now
-          .toISOString()
-          .slice(0, 19)
-          .replace(/[-:T]/g, "")
-          .replace(/(\d{8})(\d{6})/, "$1_$2");
+        const data = now.toISOString().slice(0, 10).replace(/-/g, ""); // AAAAMMDD
         const ms = now.getMilliseconds().toString().padStart(3, "0");
-        const novoNomeFoto = `${codigo}_foto_${dataHora}_${ms}${ext}`;
+        const novoNomeFoto = `foto_id_${codigo}_${data}_${ms}${ext}`;
         const novoCaminhoFoto = path.join(pastaFotos, novoNomeFoto);
         // Renomeia o arquivo salvo pelo multer para o novo nome único
         fs.renameSync(req.files.foto[0].path, novoCaminhoFoto);
@@ -307,7 +299,7 @@ router.patch(
         const arquivosFotos = fs.readdirSync(pastaFotos);
         const fotoAntiga = arquivosFotos.find(
           (arquivo) =>
-            arquivo.startsWith(`${codigo}_foto`) && arquivo !== novoNomeFoto
+            (arquivo.startsWith(`foto_id_${codigo}_`) || arquivo.startsWith(`${codigo}_foto`)) && arquivo !== novoNomeFoto
         );
         if (fotoAntiga) {
           const caminhoFotoAntiga = path.join(pastaFotos, fotoAntiga);
@@ -325,25 +317,21 @@ router.patch(
             : path.join(__dirname, "../uploads");
         const pastaContratos = path.join(baseDir, "contratos");
         const ext = path.extname(req.files.contrato[0].originalname);
-        // Formato legível: codigo_contrato_AAAAMMDD_HHMMSS_ms
+        // Formato: contrato_id_XXX_AAAAMMDD_ms
         const nowContrato = new Date();
-        const dataHoraContrato = nowContrato
-          .toISOString()
-          .slice(0, 19)
-          .replace(/[-:T]/g, "")
-          .replace(/(\d{8})(\d{6})/, "$1_$2");
+        const dataContrato = nowContrato.toISOString().slice(0, 10).replace(/-/g, ""); // AAAAMMDD
         const msContrato = nowContrato
           .getMilliseconds()
           .toString()
           .padStart(3, "0");
-        const novoNomeContrato = `${codigo}_contrato_${dataHoraContrato}_${msContrato}${ext}`;
+        const novoNomeContrato = `contrato_id_${codigo}_${dataContrato}_${msContrato}${ext}`;
         const novoCaminhoContrato = path.join(pastaContratos, novoNomeContrato);
         fs.renameSync(req.files.contrato[0].path, novoCaminhoContrato);
         // Remove contrato antigo se existir e for diferente do novo nome
         const arquivosContratos = fs.readdirSync(pastaContratos);
         const contratoAntigo = arquivosContratos.find(
           (arquivo) =>
-            arquivo.startsWith(`${codigo}_contrato`) &&
+            (arquivo.startsWith(`contrato_id_${codigo}_`) || arquivo.startsWith(`${codigo}_contrato`)) &&
             arquivo !== novoNomeContrato
         );
         if (contratoAntigo) {

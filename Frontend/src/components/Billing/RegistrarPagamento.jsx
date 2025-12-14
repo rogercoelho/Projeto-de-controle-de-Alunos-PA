@@ -94,6 +94,7 @@ function RegistrarPagamento() {
         // Usa FormData para enviar arquivos
         const data = new FormData();
         data.append("pagamentos", JSON.stringify(pagamentos));
+        data.append("alunoCodigo", codigoAluno);
 
         // Coleta os IDs dos faturamentos que têm comprovante na ordem
         const faturamentoIds = [];

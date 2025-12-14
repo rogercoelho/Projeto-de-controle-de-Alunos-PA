@@ -29,6 +29,8 @@ const storageComprovante = multer.diskStorage({
   },
   filename: function (req, file, cb) {
     const ext = path.extname(file.originalname);
+    // Obtém o código do aluno
+    const alunoCodigo = req.body.alunoCodigo || "0";
     // Tenta obter o ID do faturamento correspondente a este arquivo
     let fatId = "";
     if (req.body && req.body.faturamentoIds) {
@@ -46,18 +48,14 @@ const storageComprovante = multer.diskStorage({
         fatId = faturamentoIds[req._fileIndex || 0] || "";
       }
     }
-    // Fallback: se não conseguir, deixa sem fatId
+    // Formato: comprovante_id_ALUNO_fatid_FATURAMENTO_AAAAMMDD_ms
     const now = new Date();
-    const dataHora = now
-      .toISOString()
-      .slice(0, 19)
-      .replace(/[-:T]/g, "")
-      .replace(/(\d{8})(\d{6})/, "$1_$2");
+    const data = now.toISOString().slice(0, 10).replace(/-/g, ""); // AAAAMMDD
     const ms = now.getMilliseconds().toString().padStart(3, "0");
-    // Adiciona fatId ao nome se existir
+    // Monta o nome com id do aluno e fatid do faturamento
     const filename = fatId
-      ? `comprovante_${fatId}_${dataHora}_${ms}${ext}`
-      : `comprovante_${dataHora}_${ms}${ext}`;
+      ? `comprovante_id_${alunoCodigo}_fatid_${fatId}_${data}_${ms}${ext}`
+      : `comprovante_id_${alunoCodigo}_${data}_${ms}${ext}`;
     // Atualiza índice para o próximo arquivo
     req._fileIndex = (req._fileIndex || 0) + 1;
     cb(null, filename);

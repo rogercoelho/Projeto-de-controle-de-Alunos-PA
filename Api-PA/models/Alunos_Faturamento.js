@@ -47,6 +47,11 @@ const Alunos_Faturamento = db.sequelizeconnection.define(
       allowNull: true,
       comment: "Motivo do desconto ou observação do pagamento",
     },
+    Faturamento_Comprovante: {
+      type: db.Sequelize.STRING,
+      allowNull: true,
+      comment: "Caminho do arquivo do comprovante de pagamento",
+    },
   },
   {
     timestamps: false,

@@ -14,6 +14,7 @@ function RegistrarPagamento() {
   const [datasPagamento, setDatasPagamento] = useState({});
   const [descontos, setDescontos] = useState({});
   const [motivosDesconto, setMotivosDesconto] = useState({});
+  const [comprovantes, setComprovantes] = useState({});
   const [messageToast, showToast] = useToast();
 
   // Função para buscar alunos com pendências
@@ -84,9 +85,34 @@ function RegistrarPagamento() {
     });
 
     try {
-      await api.patch("/faturamento/registrar-pagamento", {
-        pagamentos,
-      });
+      // Verifica se há comprovantes para enviar
+      const temComprovantes = Object.values(comprovantes).some((c) => c);
+
+      if (temComprovantes) {
+        // Usa FormData para enviar arquivos
+        const data = new FormData();
+        data.append("pagamentos", JSON.stringify(pagamentos));
+
+        // Coleta os IDs dos faturamentos que têm comprovante na ordem
+        const faturamentoIds = [];
+        Object.entries(comprovantes).forEach(([fatId, arquivo]) => {
+          if (arquivo) {
+            data.append("comprovantes", arquivo);
+            faturamentoIds.push(fatId);
+          }
+        });
+        // Envia os IDs como JSON para manter a ordem
+        data.append("faturamentoIds", JSON.stringify(faturamentoIds));
+
+        await api.patch("/faturamento/registrar-pagamento", data, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+      } else {
+        // Sem arquivos, envia JSON normal
+        await api.patch("/faturamento/registrar-pagamento", {
+          pagamentos,
+        });
+      }
       showToast({
         type: "success",
         text: "Pagamento registrado com sucesso!",
@@ -95,6 +121,7 @@ function RegistrarPagamento() {
       setDatasPagamento({});
       setDescontos({});
       setMotivosDesconto({});
+      setComprovantes({});
       setCodigoAluno("");
       setAlunoInfo(null);
       setFaturamentos([]);
@@ -119,9 +146,9 @@ function RegistrarPagamento() {
         style={{ minWidth: 0, maxWidth: "100vw" }}
       >
         <div className="flex flex-col gap-1">
-          <label className="block text-base font-medium text-gray-300 mb-1">
-            Registrar Pagamento <span className="text-red-400">*</span>
-          </label>
+          <h2 className="text-xl font-bold text-white mb-4">
+            Registrar Pagamento
+          </h2>
           <CustomSelect
             name="codigoAluno"
             value={codigoAluno}
@@ -187,7 +214,7 @@ function RegistrarPagamento() {
           faturamentos.length > 0 && (
             <>
               <div className="mt-4">
-                <label className="block text-base font-medium text-gray-300 mb-2">
+                <label className="block text-xl font-bold text-gray-300 mb-2">
                   Faturamentos Pendentes
                 </label>
                 <ul className="bg-gray-700 rounded-lg p-3 text-white text-base space-y-4">
@@ -198,11 +225,12 @@ function RegistrarPagamento() {
                         key={fatId}
                         className="flex flex-col gap-3 border-b border-gray-600 pb-3 last:border-b-0 last:pb-0"
                       >
-                        <span className="text-sm sm:text-base">
-                          <b>Plano:</b> {fat.Plano_Codigo} | <b>Início:</b>{" "}
+                        <span className="text-md sm:text-base">
+                          <b>Plano:</b> {fat.Plano_Codigo} <br />
+                          <b>Início:</b>{" "}
                           {formatarDataBR(fat.Faturamento_Inicio)} | <b>Fim:</b>{" "}
-                          {formatarDataBR(fat.Faturamento_Fim)} | <b>Valor:</b>{" "}
-                          R$ {fat.Faturamento_Valor_Total}
+                          {formatarDataBR(fat.Faturamento_Fim)} <br />
+                          <b>Valor:</b> R$ {fat.Faturamento_Valor_Total}
                         </span>
                         <div className="flex flex-col gap-2 sm:flex-row sm:items-center w-full">
                           <div className="flex items-center gap-2 w-full sm:w-auto min-w-0">
@@ -266,6 +294,29 @@ function RegistrarPagamento() {
                               disabled={!descontos[fatId]}
                             />
                           </div>
+                        </div>
+                        {/* Campo de upload de comprovante */}
+                        <div className="flex items-center gap-2 w-full mt-2">
+                          <label className="text-gray-300 text-sm whitespace-nowrap">
+                            Comprovante:
+                          </label>
+                          <input
+                            type="file"
+                            accept="image/*,.pdf"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0] || null;
+                              setComprovantes((prev) => ({
+                                ...prev,
+                                [fatId]: file,
+                              }));
+                            }}
+                            className="px-2 py-1 rounded bg-gray-600 text-white text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-sm file:bg-gray-500 file:text-white hover:file:bg-gray-400"
+                          />
+                          {comprovantes[fatId] && (
+                            <span className="text-green-400 text-xs whitespace-nowrap">
+                              ✓ {comprovantes[fatId].name}
+                            </span>
+                          )}
                         </div>
                       </li>
                     );

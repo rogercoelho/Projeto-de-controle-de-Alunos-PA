@@ -34,11 +34,18 @@ const storage = multer.diskStorage({
     cb(null, uploadDir);
   },
   filename: function (req, file, cb) {
-    // Gera nome do arquivo: ID_foto ou ID_contrato
-    const codigo = req.body.Alunos_Codigo || Date.now();
+    // Gera nome do arquivo com formato legível: codigo_tipo_AAAAMMDD_HHMMSS_ms
+    const codigo = req.body.Alunos_Codigo || "novo";
     const ext = path.extname(file.originalname);
     const tipo = file.fieldname === "foto" ? "foto" : "contrato";
-    const filename = `${codigo}_${tipo}_${Date.now()}${ext}`;
+    const now = new Date();
+    const dataHora = now
+      .toISOString()
+      .slice(0, 19)
+      .replace(/[-:T]/g, "")
+      .replace(/(\d{8})(\d{6})/, "$1_$2");
+    const ms = now.getMilliseconds().toString().padStart(3, "0");
+    const filename = `${codigo}_${tipo}_${dataHora}_${ms}${ext}`;
     cb(null, filename);
   },
 });

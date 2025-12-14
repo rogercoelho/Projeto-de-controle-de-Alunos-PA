@@ -857,7 +857,7 @@ function StudentForm({ aluno, onSaveSuccess }) {
             loading={loading}
           >
             <span className="flex items-center gap-2">
-              <img src="/controle_pa/user.png" alt="" className="w-5 h-5" />
+              <img src="controle_pa/user.png" alt="" className="w-5 h-5" />
               Cadastrar Aluno
             </span>
           </Buttons.BotaoCadastrar>

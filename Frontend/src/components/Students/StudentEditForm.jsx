@@ -188,7 +188,7 @@ function StudentEditForm({
                 foto={
                   fotoRemovida ||
                   (!arquivosEdit.foto && !editFormData.Alunos_Foto)
-                    ? "/logo.png"
+                    ? null
                     : arquivosEdit.foto
                     ? URL.createObjectURL(arquivosEdit.foto)
                     : editFormData.Alunos_Foto

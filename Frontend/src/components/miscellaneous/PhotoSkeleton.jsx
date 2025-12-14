@@ -32,13 +32,19 @@ function PhotoSkeleton({ foto, nome }) {
     img.onerror = () => setError(true);
   }, [foto]);
 
+  // URL do logo placeholder
+  const logoUrl = "/controle_pa/logo.png";
+
   if (!foto || error) {
     return (
       <div className="w-48 h-48 flex items-center justify-center bg-transparent rounded-md border-2 border-gray-300">
         <img
-          src="/controle_pa/logo.png"
+          src={logoUrl}
           alt="Logo placeholder"
           className="w-24 h-24 object-contain opacity-60"
+          onError={(e) => {
+            console.error("Erro ao carregar logo:", e.target.src);
+          }}
         />
       </div>
     );
@@ -56,7 +62,7 @@ function PhotoSkeleton({ foto, nome }) {
       {!loaded && (
         <div className="absolute inset-0 flex items-center justify-center bg-black rounded-md z-10 animate-pulse">
           <img
-            src="/controle_pa/logo.png"
+            src={logoUrl}
             alt="Logo placeholder"
             className="w-24 h-24 object-contain opacity-60"
           />

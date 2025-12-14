@@ -9,6 +9,7 @@ import PackagesSearch from "./components/Packages/PackagesSearch";
 import Financeiro from "./components/Financeiro";
 import Faturamento from "./components/Billing/Faturamento";
 import RegistrarPagamento from "./components/Billing/RegistrarPagamento";
+import ExtratoAluno from "./components/Billing/ExtratoAluno";
 import ProtectedRoute from "./components/Security/ProtectedRoute";
 import AdminDelete from "./components/Security/AdminDelete";
 import MobileMenu from "./components/miscellaneous/MobileMenu";
@@ -222,6 +223,10 @@ function App() {
                           <RegistrarPagamento
                             key={`registrar-pagamento-${registrarPagamentoKey}`}
                           />
+                        )}
+                      {activeComponent === "Financeiro" &&
+                        activeComponent2 === "ExtratoAluno" && (
+                          <ExtratoAluno key="extrato-aluno" />
                         )}
                       {activeComponent === "Financeiro" &&
                         (!activeComponent2 ||

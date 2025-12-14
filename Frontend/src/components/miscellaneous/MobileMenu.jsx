@@ -7,6 +7,8 @@ function MobileMenu({ onNavigate, ehAdmin }) {
   const [menuPresencaAberto, setMenuPresencaAberto] = useState(false);
   const [menuUsuariosAberto, setMenuUsuariosAberto] = useState(false);
   const [menuFinanceiroAberto, setMenuFinanceiroAberto] = useState(false);
+  const [menuGestaoFinanceiraAberto, setMenuGestaoFinanceiraAberto] =
+    useState(false);
   const [menuPlanosAberto, setMenuPlanosAberto] = useState(false);
 
   const handleNavigation = (component, subComponent) => {
@@ -471,25 +473,6 @@ function MobileMenu({ onNavigate, ehAdmin }) {
             >
               <div className="pb-3 space-y-2 pl-2">
                 <button
-                  onClick={() => handleNavigation("Financeiro", "Financeiro")}
-                  className="w-full flex items-center gap-3 px-4 py-3 bg-red-900/30 hover:bg-red-800/40 active:bg-red-700/50 rounded-lg text-white text-left transition-all border border-red-800/50"
-                >
-                  <svg
-                    className="w-5 h-5 shrink-0"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"
-                    />
-                  </svg>
-                  <span className="font-medium">Gestão Financeira</span>
-                </button>
-                <button
                   onClick={() => handleNavigation("Financeiro", "Faturamento")}
                   className="w-full flex items-center gap-3 px-4 py-3 bg-blue-900/30 hover:bg-blue-800/40 active:bg-blue-700/50 rounded-lg text-white text-left transition-all border border-blue-800/50"
                 >
@@ -529,6 +512,80 @@ function MobileMenu({ onNavigate, ehAdmin }) {
                   </svg>
                   <span className="font-medium">Registrar Pagamento</span>
                 </button>
+
+                {/* Submenu Gestão Financeira */}
+                <div className="mt-2">
+                  <button
+                    onClick={() =>
+                      setMenuGestaoFinanceiraAberto(!menuGestaoFinanceiraAberto)
+                    }
+                    className="w-full flex items-center justify-between px-4 py-3 bg-purple-900/30 hover:bg-purple-800/40 active:bg-purple-700/50 rounded-lg text-white text-left transition-all border border-purple-800/50"
+                  >
+                    <div className="flex items-center gap-3">
+                      <svg
+                        className="w-5 h-5 shrink-0"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+                        />
+                      </svg>
+                      <span className="font-medium">Gestão Financeira</span>
+                    </div>
+                    <svg
+                      className={`w-4 h-4 transition-transform duration-300 ${
+                        menuGestaoFinanceiraAberto ? "rotate-180" : ""
+                      }`}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </svg>
+                  </button>
+
+                  <div
+                    className={`overflow-hidden transition-all duration-300 ease-in-out ${
+                      menuGestaoFinanceiraAberto
+                        ? "max-h-48 opacity-100"
+                        : "max-h-0 opacity-0"
+                    }`}
+                  >
+                    <div className="pt-2 space-y-2 pl-4">
+                      <button
+                        onClick={() =>
+                          handleNavigation("Financeiro", "ExtratoAluno")
+                        }
+                        className="w-full flex items-center gap-3 px-4 py-3 bg-indigo-900/30 hover:bg-indigo-800/40 active:bg-indigo-700/50 rounded-lg text-white text-left transition-all border border-indigo-800/50"
+                      >
+                        <svg
+                          className="w-5 h-5 shrink-0"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                          />
+                        </svg>
+                        <span className="font-medium">Extrato do Aluno</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

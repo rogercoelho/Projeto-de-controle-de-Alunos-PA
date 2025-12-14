@@ -287,7 +287,47 @@ CadastrarPlano.propTypes = {
   disabled: PropTypes.bool,
   loading: PropTypes.bool,
 };
-/* Fim - Botao Cadastrar Aluno */
+/* Fim - Botao Cadastrar Plano */
+
+/* Inicio - Botao Extrato */
+function BotaoExtrato({ onClick, loading, disabled }) {
+  return (
+    <button
+      type="button"
+      className="bg-purple-600 rounded-md p-2 border-2 border-gray-300 font-bold hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+      onClick={onClick}
+      disabled={disabled || loading}
+    >
+      📄 {loading ? "Carregando..." : "Extrato"}
+    </button>
+  );
+}
+BotaoExtrato.propTypes = {
+  onClick: PropTypes.func,
+  loading: PropTypes.bool,
+  disabled: PropTypes.bool,
+};
+/* Fim - Botao Extrato */
+
+/* Inicio - Botao PDF */
+function BotaoPDF({ onClick, loading, disabled }) {
+  return (
+    <button
+      type="button"
+      className="bg-red-600 rounded-md p-2 border-2 border-gray-300 font-bold hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+      onClick={onClick}
+      disabled={disabled || loading}
+    >
+      📥 {loading ? "Gerando..." : "Salvar PDF"}
+    </button>
+  );
+}
+BotaoPDF.propTypes = {
+  onClick: PropTypes.func,
+  loading: PropTypes.bool,
+  disabled: PropTypes.bool,
+};
+/* Fim - Botao PDF */
 
 function DeletarAluno({ onClick }) {
   return (
@@ -390,6 +430,8 @@ export const Buttons = {
   CadastrarPlano,
   BotaoSalvarAlteracoes,
   BotaoVoltar,
+  BotaoExtrato,
+  BotaoPDF,
   DeletarAluno,
   ControleAulas,
   ControlePresenca,

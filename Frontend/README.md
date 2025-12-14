@@ -8,6 +8,7 @@ Sistema de gerenciamento para a Escola de Circo Plantando Alegria.
 - Vite 7.2.2
 - Tailwind CSS 4.1.13
 - ESLint
+- htmltopdf
 
 ## Scripts Disponíveis
 

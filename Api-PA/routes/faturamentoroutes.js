@@ -115,6 +115,105 @@ router.get("/pendentes", async (req, res) => {
   }
 });
 
+// GET /faturamento/extrato/:Aluno_Codigo/:ano
+// Retorna o extrato do aluno: informações do aluno, planos e pagamentos do ano
+router.get("/extrato/:Aluno_Codigo/:ano", async (req, res) => {
+  try {
+    const { Aluno_Codigo, ano } = req.params;
+    const { Op } = require("sequelize");
+
+    // Busca informações do aluno
+    const aluno = await Alunos_Cadastros.findOne({
+      where: { Alunos_Codigo: Aluno_Codigo },
+      raw: true,
+    });
+
+    if (!aluno) {
+      return res.status(404).json({ Erro: "Aluno não encontrado." });
+    }
+
+    // Busca faturamentos do aluno que tenham meses no ano selecionado
+    // Inclui faturamentos onde:
+    // - Faturamento_Inicio está no ano selecionado, OU
+    // - Faturamento_Fim está no ano selecionado, OU
+    // - O período atravessa o ano (inicio antes e fim depois)
+    const faturamentos = await Alunos_Faturamento.findAll({
+      where: {
+        Aluno_Codigo,
+        [Op.or]: [
+          // Faturamento começa no ano selecionado
+          {
+            Faturamento_Inicio: {
+              [Op.between]: [`${ano}-01-01`, `${ano}-12-31`],
+            },
+          },
+          // Faturamento termina no ano selecionado
+          {
+            Faturamento_Fim: {
+              [Op.between]: [`${ano}-01-01`, `${ano}-12-31`],
+            },
+          },
+          // Faturamento atravessa o ano (começa antes e termina depois)
+          {
+            [Op.and]: [
+              {
+                Faturamento_Inicio: {
+                  [Op.lt]: `${ano}-01-01`,
+                },
+              },
+              {
+                Faturamento_Fim: {
+                  [Op.gt]: `${ano}-12-31`,
+                },
+              },
+            ],
+          },
+        ],
+      },
+      raw: true,
+    });
+
+    // Agrupa faturamentos por plano
+    const planosMap = {};
+    for (const fat of faturamentos) {
+      const codigo = fat.Plano_Codigo;
+      if (!planosMap[codigo]) {
+        planosMap[codigo] = {
+          Plano_Codigo: codigo,
+          faturamentos: [],
+        };
+      }
+      planosMap[codigo].faturamentos.push(fat);
+    }
+
+    // Busca informações dos planos
+    const codigosPlanos = Object.keys(planosMap);
+    const planosInfo = await Planos_Cadastro.findAll({
+      where: { Plano_Codigo: codigosPlanos },
+      raw: true,
+    });
+
+    // Monta array de planos com informações completas
+    const planos = codigosPlanos.map((codigo) => {
+      const info = planosInfo.find((p) => p.Plano_Codigo === codigo) || {};
+      return {
+        ...planosMap[codigo],
+        Plano_Nome: info.Plano_Nome || "",
+        Plano_Pagamento: info.Plano_Pagamento || "",
+        Plano_Quantidade_Semana: info.Plano_Quantidade_Semana || "",
+      };
+    });
+
+    res.json({ aluno, planos });
+  } catch (error) {
+    console.error("Erro ao buscar extrato:", error);
+    res.status(500).json({
+      Erro: "Erro ao buscar extrato do aluno.",
+      Detalhes: error.message,
+    });
+  }
+});
+
 // Rota para buscar faturamentos pendentes de um aluno
 router.get("/pendentes/:Aluno_Codigo", async (req, res) => {
   try {

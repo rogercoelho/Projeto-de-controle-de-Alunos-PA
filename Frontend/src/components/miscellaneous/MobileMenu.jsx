@@ -243,7 +243,7 @@ function MobileMenu({ onNavigate, ehAdmin }) {
         )}
 
         {/* CONTROLE DE AULAS */}
-        {ehAdmin && (
+        {/*  {ehAdmin && (
           <div className="border-b border-gray-700">
             <button
               onClick={() => toggleMenu("aulas")}
@@ -330,10 +330,10 @@ function MobileMenu({ onNavigate, ehAdmin }) {
               </div>
             </div>
           </div>
-        )}
+        )} */}
 
         {/* CONTROLE DE PRESENÇA */}
-        {ehAdmin && (
+        {/*  {ehAdmin && (
           <div className="border-b border-gray-700">
             <button
               onClick={() => toggleMenu("presenca")}
@@ -422,7 +422,7 @@ function MobileMenu({ onNavigate, ehAdmin }) {
               </div>
             </div>
           </div>
-        )}
+        )} */}
 
         {/* FINANCEIRO */}
         {ehAdmin && (

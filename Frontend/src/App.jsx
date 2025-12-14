@@ -10,6 +10,7 @@ import Financeiro from "./components/Financeiro";
 import Faturamento from "./components/Billing/Faturamento";
 import RegistrarPagamento from "./components/Billing/RegistrarPagamento";
 import ExtratoAluno from "./components/Billing/ExtratoAluno";
+import Relatorio from "./components/Billing/Relatorio";
 import ProtectedRoute from "./components/Security/ProtectedRoute";
 import AdminDelete from "./components/Security/AdminDelete";
 import MobileMenu from "./components/miscellaneous/MobileMenu";
@@ -227,6 +228,10 @@ function App() {
                       {activeComponent === "Financeiro" &&
                         activeComponent2 === "ExtratoAluno" && (
                           <ExtratoAluno key="extrato-aluno" />
+                        )}
+                      {activeComponent === "Financeiro" &&
+                        activeComponent2 === "RelatorioMensal" && (
+                          <Relatorio key="relatorio-mensal" />
                         )}
                       {activeComponent === "Financeiro" &&
                         (!activeComponent2 ||

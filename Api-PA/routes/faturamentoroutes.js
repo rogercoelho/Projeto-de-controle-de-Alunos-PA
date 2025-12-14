@@ -378,4 +378,125 @@ router.patch(
   }
 );
 
+// GET /faturamento/relatorio-mensal/:mes/:ano
+// Retorna as parcelas que competem ao mês/ano informado (baseado no período do plano)
+// Só retorna faturamentos que já foram pagos
+router.get("/relatorio-mensal/:mes/:ano", async (req, res) => {
+  try {
+    const { mes, ano } = req.params;
+    const { Op } = require("sequelize");
+
+    const mesNum = parseInt(mes, 10);
+    const anoNum = parseInt(ano, 10);
+
+    // Calcula o primeiro e último dia do mês corretamente
+    const primeiroDia = `${anoNum}-${String(mesNum).padStart(2, "0")}-01`;
+    // Último dia do mês: cria data do próximo mês dia 1 e subtrai 1 dia
+    const ultimoDiaDate = new Date(anoNum, mesNum, 0); // dia 0 do próximo mês = último dia do mês atual
+    const ultimoDia = `${anoNum}-${String(mesNum).padStart(2, "0")}-${String(
+      ultimoDiaDate.getDate()
+    ).padStart(2, "0")}`;
+
+    // Busca faturamentos PAGOS que tenham parcelas no mês selecionado
+    // Similar ao extrato do aluno - busca por período do plano, não por data de pagamento
+    const faturamentos = await Alunos_Faturamento.findAll({
+      where: {
+        // Deve estar pago
+        Faturamento_Data_Pagamento: {
+          [Op.ne]: null,
+        },
+        // E ter parcelas que cubram o mês selecionado
+        [Op.or]: [
+          // Faturamento começa no ano/mês selecionado
+          {
+            [Op.and]: [
+              {
+                Faturamento_Inicio: {
+                  [Op.gte]: primeiroDia,
+                },
+              },
+              {
+                Faturamento_Inicio: {
+                  [Op.lte]: ultimoDia,
+                },
+              },
+            ],
+          },
+          // Faturamento termina no ano/mês selecionado
+          {
+            [Op.and]: [
+              {
+                Faturamento_Fim: {
+                  [Op.gte]: primeiroDia,
+                },
+              },
+              {
+                Faturamento_Fim: {
+                  [Op.lte]: ultimoDia,
+                },
+              },
+            ],
+          },
+          // Faturamento atravessa o mês (começa antes e termina depois)
+          {
+            [Op.and]: [
+              {
+                Faturamento_Inicio: {
+                  [Op.lt]: primeiroDia,
+                },
+              },
+              {
+                Faturamento_Fim: {
+                  [Op.gt]: ultimoDia,
+                },
+              },
+            ],
+          },
+        ],
+      },
+      raw: true,
+    });
+
+    if (faturamentos.length === 0) {
+      return res.json({ pagamentos: [], alunos: [], planos: [] });
+    }
+
+    // Busca informações dos alunos
+    const codigosAlunos = [...new Set(faturamentos.map((f) => f.Aluno_Codigo))];
+    const alunos = await Alunos_Cadastros.findAll({
+      where: { Alunos_Codigo: codigosAlunos },
+      attributes: ["Alunos_Codigo", "Alunos_Nome"],
+      raw: true,
+    });
+
+    // Busca informações dos planos
+    const codigosPlanos = [...new Set(faturamentos.map((f) => f.Plano_Codigo))];
+    const planos = await Planos_Cadastro.findAll({
+      where: { Plano_Codigo: codigosPlanos },
+      attributes: [
+        "Plano_Codigo",
+        "Plano_Nome",
+        "Plano_Pagamento",
+        "Plano_Valor",
+      ],
+      raw: true,
+    });
+
+    // Retorna os dados com o mês/ano selecionado para o frontend calcular a parcela correta
+    res.json({
+      pagamentos: faturamentos,
+      alunos,
+      planos,
+      mesSelecionado: mesNum,
+      anoSelecionado: anoNum,
+    });
+  } catch (error) {
+    console.error("Erro ao buscar relatório mensal:", error);
+    res.status(500).json({
+      Erro: "Erro ao buscar relatório mensal.",
+      Detalhes: error.message,
+    });
+  }
+});
+
 module.exports = router;

@@ -241,13 +241,19 @@ function ExtratoAluno() {
         );
 
         let mesY = y + 30;
-        for (const mesAno of mesesKeys) {
+        for (let i = 0; i < mesesKeys.length; i++) {
+          const mesAno = mesesKeys[i];
           const mesData = mesesFaturamento[mesAno];
           const valorMes = mesData.valor - mesData.desconto;
+          const parcela = `${mesData.parcela}/${mesData.totalParcelas}`;
 
           doc.setFontSize(9);
+          // Número da parcela
+          doc.setTextColor(192, 132, 252); // purple-400
+          doc.text(parcela, marginLeft + 8, mesY);
+          // Mês/Ano
           doc.setTextColor(...textWhite);
-          doc.text(nomeMes(mesAno), marginLeft + 8, mesY);
+          doc.text(nomeMes(mesAno), marginLeft + 22, mesY);
 
           doc.setTextColor(...textGreen);
           doc.text(`R$ ${valorMes.toFixed(2)}`, marginLeft + 45, mesY);
@@ -381,6 +387,8 @@ function ExtratoAluno() {
         mesesDoPlano.push({
           ano: mesData.getFullYear(),
           mes: mesData.getMonth() + 1,
+          parcela: i + 1, // número da parcela no plano completo
+          totalParcelas: qtdMesesPlano, // total de parcelas do plano
         });
       }
 
@@ -400,6 +408,8 @@ function ExtratoAluno() {
             pago: false,
             dataPagamento: null,
             faturamentos: [],
+            parcela: m.parcela,
+            totalParcelas: m.totalParcelas,
           };
         }
         meses[mesAno].valor += valorPorMes;
@@ -481,9 +491,6 @@ function ExtratoAluno() {
         {/* Botão Extrato */}
         <div className="flex flex-col sm:flex-row gap-4 pt-2">
           <Buttons.BotaoExtrato onClick={handleExtrato} loading={loading} />
-          {extrato && (
-            <Buttons.BotaoPDF onClick={handleGerarPDF} loading={loadingPdf} />
-          )}
         </div>
 
         {/* Resultados do Extrato */}
@@ -579,12 +586,16 @@ function ExtratoAluno() {
                             .map((mesAno) => {
                               const mesData = mesesFaturamento[mesAno];
                               const valorMes = mesData.valor - mesData.desconto;
+                              const parcela = `${mesData.parcela}/${mesData.totalParcelas}`;
                               return (
                                 <div
                                   key={mesAno}
                                   className="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-gray-800 rounded-lg p-2 border border-gray-600"
                                 >
                                   <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                                    <span className="text-purple-400 font-semibold text-sm">
+                                      {parcela}
+                                    </span>
                                     <span className="text-white font-semibold">
                                       {nomeMes(mesAno)}
                                     </span>
@@ -662,6 +673,11 @@ function ExtratoAluno() {
                 </span>
               </div>
             )}
+
+            {/* Botão Salvar PDF */}
+            <div className="flex justify-center pt-4">
+              <Buttons.BotaoPDF onClick={handleGerarPDF} loading={loadingPdf} />
+            </div>
           </div>
         )}
       </div>

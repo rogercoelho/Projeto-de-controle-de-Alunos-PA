@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import api from "../../services/api";
 import { formatarDataBR } from "../../utils/Utils";
 import MessageToast from "../miscellaneous/MessageToast";
 import CustomSelect from "../miscellaneous/CustomSelect";
+import Buttons from "../miscellaneous/Buttons";
 import useToast from "../../hooks/useToast";
 
 function RegistrarPagamento() {
@@ -15,6 +16,7 @@ function RegistrarPagamento() {
   const [descontos, setDescontos] = useState({});
   const [motivosDesconto, setMotivosDesconto] = useState({});
   const [comprovantes, setComprovantes] = useState({});
+  const comprovanteInputRefs = useRef({});
   const [messageToast, showToast] = useToast();
 
   // Função para buscar alunos com pendências
@@ -296,25 +298,44 @@ function RegistrarPagamento() {
                           </div>
                         </div>
                         {/* Campo de upload de comprovante */}
-                        <div className="flex items-center gap-2 w-full mt-2">
-                          <label className="text-gray-300 text-sm whitespace-nowrap">
-                            Comprovante:
-                          </label>
-                          <input
-                            type="file"
-                            accept="image/*,.pdf"
-                            onChange={(e) => {
-                              const file = e.target.files?.[0] || null;
-                              setComprovantes((prev) => ({
-                                ...prev,
-                                [fatId]: file,
-                              }));
-                            }}
-                            className="px-2 py-1 rounded bg-gray-600 text-white text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-sm file:bg-gray-500 file:text-white hover:file:bg-gray-400"
-                          />
+                        <div className="flex flex-col gap-1 w-full mt-2">
+                          <div className="flex items-center gap-2 w-full">
+                            <label className="text-gray-300 text-sm whitespace-nowrap">
+                              Comprovante:
+                            </label>
+                            <input
+                              ref={(el) =>
+                                (comprovanteInputRefs.current[fatId] = el)
+                              }
+                              type="file"
+                              accept="image/*,.pdf"
+                              required
+                              onChange={(e) => {
+                                const file = e.target.files?.[0] || null;
+                                setComprovantes((prev) => ({
+                                  ...prev,
+                                  [fatId]: file,
+                                }));
+                              }}
+                              className="px-2 py-1 rounded bg-gray-600 text-white text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-sm file:bg-gray-500 file:text-white hover:file:bg-gray-400"
+                            />
+                          </div>
                           {comprovantes[fatId] && (
-                            <span className="text-green-400 text-xs whitespace-nowrap">
-                              ✓ {comprovantes[fatId].name}
+                            <span className="text-sm text-green-400 flex items-center gap-2 ml-1">
+                              📄 {comprovantes[fatId].name} (
+                              {(comprovantes[fatId].size / 1024).toFixed(1)} KB)
+                              <Buttons.BotaoX
+                                onClick={() => {
+                                  setComprovantes((prev) => ({
+                                    ...prev,
+                                    [fatId]: null,
+                                  }));
+                                  if (comprovanteInputRefs.current[fatId]) {
+                                    comprovanteInputRefs.current[fatId].value =
+                                      "";
+                                  }
+                                }}
+                              />
                             </span>
                           )}
                         </div>

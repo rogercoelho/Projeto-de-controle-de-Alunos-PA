@@ -291,7 +291,15 @@ router.patch(
             : path.join(__dirname, "../uploads");
         const pastaFotos = path.join(baseDir, "fotos");
         const ext = path.extname(req.files.foto[0].originalname);
-        const novoNomeFoto = `${codigo}_foto_${Date.now()}${ext}`;
+        // Formato legível: codigo_foto_AAAAMMDD_HHMMSS_ms
+        const now = new Date();
+        const dataHora = now
+          .toISOString()
+          .slice(0, 19)
+          .replace(/[-:T]/g, "")
+          .replace(/(\d{8})(\d{6})/, "$1_$2");
+        const ms = now.getMilliseconds().toString().padStart(3, "0");
+        const novoNomeFoto = `${codigo}_foto_${dataHora}_${ms}${ext}`;
         const novoCaminhoFoto = path.join(pastaFotos, novoNomeFoto);
         // Renomeia o arquivo salvo pelo multer para o novo nome único
         fs.renameSync(req.files.foto[0].path, novoCaminhoFoto);
@@ -317,7 +325,18 @@ router.patch(
             : path.join(__dirname, "../uploads");
         const pastaContratos = path.join(baseDir, "contratos");
         const ext = path.extname(req.files.contrato[0].originalname);
-        const novoNomeContrato = `${codigo}_contrato_${Date.now()}${ext}`;
+        // Formato legível: codigo_contrato_AAAAMMDD_HHMMSS_ms
+        const nowContrato = new Date();
+        const dataHoraContrato = nowContrato
+          .toISOString()
+          .slice(0, 19)
+          .replace(/[-:T]/g, "")
+          .replace(/(\d{8})(\d{6})/, "$1_$2");
+        const msContrato = nowContrato
+          .getMilliseconds()
+          .toString()
+          .padStart(3, "0");
+        const novoNomeContrato = `${codigo}_contrato_${dataHoraContrato}_${msContrato}${ext}`;
         const novoCaminhoContrato = path.join(pastaContratos, novoNomeContrato);
         fs.renameSync(req.files.contrato[0].path, novoCaminhoContrato);
         // Remove contrato antigo se existir e for diferente do novo nome

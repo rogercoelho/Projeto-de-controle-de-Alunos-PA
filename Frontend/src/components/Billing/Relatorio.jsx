@@ -232,16 +232,18 @@ function Relatorio() {
       doc.setTextColor(...textWhite);
 
       const colX = {
-        aluno: marginLeft + 3,
-        plano: marginLeft + 60,
-        parcela: marginLeft + 100,
-        dataPag: marginLeft + 130,
-        valorMensal: marginLeft + 165,
-        valorDesc: marginLeft + 200,
-        valorWET: marginLeft + 235,
-        valorPA: marginLeft + 260,
+        codigo: marginLeft + 3,
+        aluno: marginLeft + 20,
+        plano: marginLeft + 70,
+        parcela: marginLeft + 110,
+        dataPag: marginLeft + 140,
+        valorMensal: marginLeft + 175,
+        valorDesc: marginLeft + 210,
+        valorWET: marginLeft + 245,
+        valorPA: marginLeft + 270,
       };
 
+      doc.text("Cód", colX.codigo, y + 5.5);
       doc.text("Aluno", colX.aluno, y + 5.5);
       doc.text("Plano", colX.plano, y + 5.5);
       doc.text("Parcela", colX.parcela, y + 5.5);
@@ -265,7 +267,8 @@ function Relatorio() {
 
         doc.setFontSize(8);
         doc.setTextColor(...textGray);
-        doc.text(item.alunoNome.substring(0, 30), colX.aluno, y);
+        doc.text(String(item.alunoCodigo), colX.codigo, y);
+        doc.text(item.alunoNome.substring(0, 25), colX.aluno, y);
         doc.text(item.planoNome.substring(0, 18), colX.plano, y);
         doc.setTextColor(...textPurple);
         doc.text(item.parcela, colX.parcela, y);
@@ -410,7 +413,8 @@ function Relatorio() {
                   <table className="w-full text-sm text-left">
                     <thead className="bg-gray-900 text-gray-300 uppercase text-xs">
                       <tr>
-                        <th className="px-3 py-3 rounded-tl-lg">Aluno</th>
+                        <th className="px-3 py-3 rounded-tl-lg">Cód</th>
+                        <th className="px-3 py-3">Aluno</th>
                         <th className="px-3 py-3">Plano</th>
                         <th className="px-3 py-3">Parcela</th>
                         <th className="px-3 py-3">Data Pgto</th>
@@ -432,6 +436,9 @@ function Relatorio() {
                             idx % 2 === 0 ? "bg-gray-800" : "bg-gray-750"
                           }`}
                         >
+                          <td className="px-3 py-2 text-gray-400">
+                            {item.alunoCodigo}
+                          </td>
                           <td className="px-3 py-2 text-white font-medium">
                             {item.alunoNome}
                           </td>
@@ -465,7 +472,7 @@ function Relatorio() {
                     {totais && (
                       <tfoot className="bg-gray-700">
                         <tr className="font-bold text-white">
-                          <td className="px-3 py-3 rounded-bl-lg" colSpan="4">
+                          <td className="px-3 py-3 rounded-bl-lg" colSpan="5">
                             TOTAL
                           </td>
                           <td className="px-3 py-3 text-green-400 text-right">

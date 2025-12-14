@@ -137,5 +137,6 @@ export function limparFormData() {
     Alunos_Telefone_Emergencia_1: "",
     Alunos_Telefone_Emergencia_2: "",
     Alunos_Data_Matricula: "",
+    Alunos_Observacoes: "",
   };
 }

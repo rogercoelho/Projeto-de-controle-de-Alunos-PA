@@ -142,6 +142,14 @@ function StudentDetails({ aluno, onEdit, onToggleSituacao, onBack }) {
             )}
           </div>
         </div>
+        {aluno.Alunos_Observacoes && (
+          <div className="text-sm md:text-base">
+            <div className="font-bold text-gray-400">Observações:</div>
+            <div className="whitespace-pre-wrap">
+              {aluno.Alunos_Observacoes}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -173,6 +181,7 @@ StudentDetails.propTypes = {
     Alunos_Situacao: PropTypes.string,
     Alunos_Foto: PropTypes.string,
     Alunos_Contrato: PropTypes.string,
+    Alunos_Observacoes: PropTypes.string,
   }),
   onEdit: PropTypes.func,
   onToggleSituacao: PropTypes.func,

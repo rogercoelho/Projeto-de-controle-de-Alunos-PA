@@ -103,6 +103,10 @@ const Alunos_Cadastros = db.sequelizeconnection.define(
       allowNull: false,
       defaultValue: "Ativo",
     },
+    Alunos_Observacoes: {
+      type: db.Sequelize.TEXT,
+      allowNull: true,
+    },
   },
   {
     timestamps: false, // ⛔ Desativa createdAt e updatedAt automaticos do Sequelize

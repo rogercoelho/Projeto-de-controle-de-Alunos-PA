@@ -565,6 +565,23 @@ function StudentEditForm({
             maxLength="15"
           />
         </div>
+
+        <div className="md:col-span-2">
+          <label className="block text-sm font-medium text-gray-300 mb-2">
+            Observações
+          </label>
+          <textarea
+            name="Alunos_Observacoes"
+            value={editFormData.Alunos_Observacoes || ""}
+            onChange={handleChange}
+            className={`w-full px-4 py-2 ${corCampoEditavel(
+              true
+            )} text-white rounded-md`}
+            placeholder="Observações sobre o aluno (opcional)"
+            rows="3"
+          />
+        </div>
+
         <div className="flex justify-center gap-4 pt-4">
           <Buttons.BotaoSalvarAlteracoes
             onClick={onclick}

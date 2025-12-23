@@ -51,7 +51,11 @@ function StudentEditForm({
   const handleChange = (e) => {
     const { name, value } = e.target;
     let newValue = value;
-    if (name === "Alunos_CPF" || name === "Alunos_CPF_Responsavel") {
+    if (
+      name === "Alunos_CPF" ||
+      name === "Alunos_CPF_Pai_Responsavel" ||
+      name === "Alunos_CPF_Mae_Responsavel"
+    ) {
       newValue = formatarCPF(value);
     }
     setEditFormData((prev) => ({ ...prev, [name]: newValue }));
@@ -64,14 +68,9 @@ function StudentEditForm({
   // CPF do aluno: obrigatório se maior de 18 anos
   const cpfAlunoObrigatorio = idade >= 18;
 
-  // Nome do responsável: editável e obrigatório se aluno for menor de idade e
-  // (não estiver preenchido ou for "Aluno Maior de Idade")
-  const nomeRespObrigatorio =
-    idade < 18 ||
-    !initialFormData.Alunos_Nome_Responsavel ||
-    initialFormData.Alunos_Nome_Responsavel === "Aluno Maior de Idade";
-
-  const cpfRespObrigatorio = idade < 18;
+  // Observação: validações específicas de pai/mãe para menores são
+  // realizadas no submit (exigem pai ou mãe com nome+CPF). Removidas
+  // flags legadas de `Responsavel`.
 
   /* Setloading para atualizar o estado de carregamento (botoes) */
   const [loadingbutton, setLoadingbutton] = React.useState(false);
@@ -83,7 +82,7 @@ function StudentEditForm({
           e.preventDefault();
           setLoadingbutton(true);
           try {
-            // Validação de CPF ao enviar
+            // Validação de CPF do aluno
             if (
               editFormData.Alunos_CPF &&
               !validarCPF(editFormData.Alunos_CPF)
@@ -91,25 +90,30 @@ function StudentEditForm({
               showToast({ type: "error", text: "CPF do aluno inválido" });
               return;
             }
-            if (
-              editFormData.Alunos_CPF_Responsavel &&
-              !validarCPF(editFormData.Alunos_CPF_Responsavel)
-            ) {
-              showToast({
-                type: "error",
-                text: "CPF do responsável inválido",
-              });
-              return;
+            // Para menores: exigir (pai nome + pai cpf válidos) OU (mae nome + mae cpf válidos)
+            if (calcularIdade(editFormData.Alunos_Data_Nascimento) < 18) {
+              const paiValido =
+                editFormData.Alunos_Nome_Pai_Responsavel &&
+                editFormData.Alunos_CPF_Pai_Responsavel &&
+                validarCPF(editFormData.Alunos_CPF_Pai_Responsavel);
+              const maeValida =
+                editFormData.Alunos_Nome_Mae_Responsavel &&
+                editFormData.Alunos_CPF_Mae_Responsavel &&
+                validarCPF(editFormData.Alunos_CPF_Mae_Responsavel);
+              if (!paiValido && !maeValida) {
+                showToast({
+                  type: "error",
+                  text: "Nome e CPF do pai ou nome e CPF da mãe são obrigatórios para menores de 18 anos.",
+                });
+                return;
+              }
             }
             const formDataConvertido = {
               ...editFormData,
               Alunos_Data_Nascimento: converterData(
                 editFormData.Alunos_Data_Nascimento
               ),
-              // Se o nome do responsável estiver vazio, grava "Aluno Maior de Idade"
-              Alunos_Nome_Responsavel:
-                editFormData.Alunos_Nome_Responsavel?.trim() ||
-                "Aluno Maior de Idade",
+              // Mantém campos de pai e mãe (não altera nomes aqui)
             };
             let response;
             if (arquivosEdit.foto || arquivosEdit.contrato) {
@@ -342,39 +346,85 @@ function StudentEditForm({
           />
         </div>
 
+        {/* Inicio - Pai / Responsavel */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
-            Nome do Responsável{nomeRespObrigatorio ? " *" : ""}
+            Nome do Pai / Responsavel
+            {calcularIdade(editFormData.Alunos_Data_Nascimento) < 18
+              ? " *"
+              : ""}
           </label>
           <input
             type="text"
-            name="Alunos_Nome_Responsavel"
-            value={editFormData.Alunos_Nome_Responsavel || ""}
+            name="Alunos_Nome_Pai_Responsavel"
+            value={editFormData.Alunos_Nome_Pai_Responsavel || ""}
             onChange={handleChange}
             className={`w-full px-4 py-2 ${corCampoEditavel(
               true
             )} text-white rounded-md`}
-            required={nomeRespObrigatorio}
+            placeholder="Deixe em branco se for maior de idade"
           />
         </div>
-
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
-            CPF do Responsável {cpfRespObrigatorio ? " *" : ""}
+            CPF do Pai / Responsavel
+            {calcularIdade(editFormData.Alunos_Data_Nascimento) < 18
+              ? " *"
+              : ""}
           </label>
           <input
             type="text"
-            name="Alunos_CPF_Responsavel"
-            value={editFormData.Alunos_CPF_Responsavel || ""}
+            name="Alunos_CPF_Pai_Responsavel"
+            value={editFormData.Alunos_CPF_Pai_Responsavel || ""}
             onChange={handleChange}
             className={`w-full px-4 py-2 ${corCampoEditavel(
               true
             )} text-white rounded-md`}
             placeholder="000.000.000-00"
             maxLength="14"
-            required={cpfRespObrigatorio}
           />
         </div>
+        {/* FIM - Pai */}
+
+        {/* Inicio - Mae / Responsavel */}
+        <div>
+          <label className="block text-sm font-medium text-gray-300 mb-2">
+            Nome da Mãe / Responsavel
+            {calcularIdade(editFormData.Alunos_Data_Nascimento) < 18
+              ? " *"
+              : ""}
+          </label>
+          <input
+            type="text"
+            name="Alunos_Nome_Mae_Responsavel"
+            value={editFormData.Alunos_Nome_Mae_Responsavel || ""}
+            onChange={handleChange}
+            className={`w-full px-4 py-2 ${corCampoEditavel(
+              true
+            )} text-white rounded-md`}
+            placeholder="Deixe em branco se for maior de idade"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-300 mb-2">
+            CPF da Mãe / Responsavel
+            {calcularIdade(editFormData.Alunos_Data_Nascimento) < 18
+              ? " *"
+              : ""}
+          </label>
+          <input
+            type="text"
+            name="Alunos_CPF_Mae_Responsavel"
+            value={editFormData.Alunos_CPF_Mae_Responsavel || ""}
+            onChange={handleChange}
+            className={`w-full px-4 py-2 ${corCampoEditavel(
+              true
+            )} text-white rounded-md`}
+            placeholder="000.000.000-00"
+            maxLength="14"
+          />
+        </div>
+        {/* FIM - Mae */}
 
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">

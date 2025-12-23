@@ -30,11 +30,19 @@ const Alunos_Cadastros = db.sequelizeconnection.define(
       allowNull: false,
       unique: true,
     },
-    Alunos_Nome_Responsavel: {
+    Alunos_Nome_Pai_Responsavel: {
       type: db.Sequelize.STRING,
-      allowNull: false,
+      allowNull: true,
     },
-    Alunos_CPF_Responsavel: {
+    Alunos_CPF_Pai_Responsavel: {
+      type: db.Sequelize.STRING,
+      allowNull: true,
+    },
+    Alunos_Nome_Mae_Responsavel: {
+      type: db.Sequelize.STRING,
+      allowNull: true,
+    },
+    Alunos_CPF_Mae_Responsavel: {
       type: db.Sequelize.STRING,
       allowNull: true,
     },

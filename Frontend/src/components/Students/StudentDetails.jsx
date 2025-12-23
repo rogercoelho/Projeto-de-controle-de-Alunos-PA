@@ -71,12 +71,28 @@ function StudentDetails({ aluno, onEdit, onToggleSituacao, onBack }) {
           <div>{aluno.Alunos_CPF}</div>
         </div>
         <div className="text-sm md:text-base">
-          <div className="font-bold text-gray-400">Nome do Responsável:</div>
-          <div>{aluno.Alunos_Nome_Responsavel}</div>
+          <div className="font-bold text-gray-400">
+            Nome do Pai / Responsavel:
+          </div>
+          <div>{aluno.Alunos_Nome_Pai_Responsavel || ""}</div>
         </div>
         <div className="text-sm md:text-base">
-          <div className="font-bold text-gray-400">CPF do Responsável:</div>
-          <div>{aluno.Alunos_CPF_Responsavel}</div>
+          <div className="font-bold text-gray-400">
+            CPF do Pai / Responsavel:
+          </div>
+          <div>{aluno.Alunos_CPF_Pai_Responsavel || ""}</div>
+        </div>
+        <div className="text-sm md:text-base">
+          <div className="font-bold text-gray-400">
+            Nome da Mãe / Responsavel:
+          </div>
+          <div>{aluno.Alunos_Nome_Mae_Responsavel || ""}</div>
+        </div>
+        <div className="text-sm md:text-base">
+          <div className="font-bold text-gray-400">
+            CPF da Mãe / Responsavel:
+          </div>
+          <div>{aluno.Alunos_CPF_Mae_Responsavel || ""}</div>
         </div>
         <div className="text-sm md:text-base">
           <div className="font-bold text-gray-400">CEP:</div>
@@ -133,6 +149,16 @@ function StudentDetails({ aluno, onEdit, onToggleSituacao, onBack }) {
           </div>
         </div>
         <div className="text-sm md:text-base">
+          <div className="font-bold text-gray-400">Data de Nascimento:</div>
+          <div>
+            {aluno.Alunos_Data_Nascimento ? (
+              new Date(aluno.Alunos_Data_Nascimento).toLocaleDateString("pt-BR")
+            ) : (
+              <span className="text-gray-500 italic">Não informada</span>
+            )}
+          </div>
+        </div>
+        <div className="text-sm md:text-base">
           <div className="font-bold text-gray-400">Data de Matrícula:</div>
           <div>
             {aluno.Alunos_Data_Matricula ? (
@@ -163,8 +189,10 @@ StudentDetails.propTypes = {
     Alunos_Nome: PropTypes.string,
     Alunos_CPF: PropTypes.string,
     Alunos_Data_Nascimento: PropTypes.string,
-    Alunos_Nome_Responsavel: PropTypes.string,
-    Alunos_CPF_Responsavel: PropTypes.string,
+    Alunos_Nome_Pai_Responsavel: PropTypes.string,
+    Alunos_CPF_Pai_Responsavel: PropTypes.string,
+    Alunos_Nome_Mae_Responsavel: PropTypes.string,
+    Alunos_CPF_Mae_Responsavel: PropTypes.string,
     Alunos_Endereco_CEP: PropTypes.string,
     Alunos_Endereco: PropTypes.string,
     Alunos_Endereco_Complemento: PropTypes.string,

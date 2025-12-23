@@ -217,17 +217,24 @@ function StudentForm({ aluno, onSaveSuccess }) {
       setLoading(false);
       return;
     }
-    if (
-      formData.Alunos_CPF_Responsavel &&
-      calcularIdade(formData.Alunos_Data_Nascimento) < 18 &&
-      !validarCPF(formData.Alunos_CPF_Responsavel)
-    ) {
-      showToast({
-        type: "error",
-        text: "CPF do responsável inválido.",
-      });
-      setLoading(false);
-      return;
+    // Para menores: exigir (pai nome + pai cpf válidos) OU (mae nome + mae cpf válidos)
+    if (calcularIdade(formData.Alunos_Data_Nascimento) < 18) {
+      const paiValido =
+        formData.Alunos_Nome_Pai_Responsavel &&
+        formData.Alunos_CPF_Pai_Responsavel &&
+        validarCPF(formData.Alunos_CPF_Pai_Responsavel);
+      const maeValida =
+        formData.Alunos_Nome_Mae_Responsavel &&
+        formData.Alunos_CPF_Mae_Responsavel &&
+        validarCPF(formData.Alunos_CPF_Mae_Responsavel);
+      if (!paiValido && !maeValida) {
+        showToast({
+          type: "error",
+          text: "Nome e CPF do pai ou nome e CPF da mãe são obrigatórios para menores de 18 anos.",
+        });
+        setLoading(false);
+        return;
+      }
     }
 
     /* Se estiver tudo ok, tenta enviar os dados para a API
@@ -527,43 +534,69 @@ function StudentForm({ aluno, onSaveSuccess }) {
           />
         </div>
         {/* FIM - CPF */}
-        {/* Inicio - Nome do Responsável */}
+        {/* Inicio - Pai / Responsável */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
-            Nome do Responsável
-            {/* Chama o utilitario calcularIdade para saber se o aluno é menor de idade */}
+            Nome do Pai / Responsavel
             {calcularIdade(formData.Alunos_Data_Nascimento) < 18 ? " *" : ""}
           </label>
           <input
             type="text"
-            name="Alunos_Nome_Responsavel"
-            value={formData.Alunos_Nome_Responsavel}
+            name="Alunos_Nome_Pai_Responsavel"
+            value={formData.Alunos_Nome_Pai_Responsavel || ""}
             onChange={handleChange}
             className="w-full px-4 py-2 bg-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="Deixe em branco se for maior de idade"
-            /* inclui o required para o campo */
-            required={calcularIdade(formData.Alunos_Data_Nascimento) < 18}
           />
         </div>
-        {/* FIM - Nome do Responsável */}
-        {/* Inicio - CPF do Responsável */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
-            CPF do Responsável
+            CPF do Pai / Responsavel
             {calcularIdade(formData.Alunos_Data_Nascimento) < 18 ? " *" : ""}
           </label>
           <input
             type="text"
-            name="Alunos_CPF_Responsavel"
-            value={formData.Alunos_CPF_Responsavel}
+            name="Alunos_CPF_Pai_Responsavel"
+            value={formData.Alunos_CPF_Pai_Responsavel || ""}
             onChange={handleCPFChange}
             className="w-full px-4 py-2 bg-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="000.000.000-00"
             maxLength="14"
-            required={calcularIdade(formData.Alunos_Data_Nascimento) < 18}
           />
         </div>
-        {/* FIM - CPF do Responsável */}
+        {/* FIM - Pai */}
+
+        {/* Inicio - Mãe / Responsável */}
+        <div>
+          <label className="block text-sm font-medium text-gray-300 mb-2">
+            Nome da Mãe / Responsavel
+            {calcularIdade(formData.Alunos_Data_Nascimento) < 18 ? " *" : ""}
+          </label>
+          <input
+            type="text"
+            name="Alunos_Nome_Mae_Responsavel"
+            value={formData.Alunos_Nome_Mae_Responsavel || ""}
+            onChange={handleChange}
+            className="w-full px-4 py-2 bg-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Deixe em branco se for maior de idade"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-300 mb-2">
+            CPF da Mãe / Responsavel
+            {calcularIdade(formData.Alunos_Data_Nascimento) < 18 ? " *" : ""}
+          </label>
+          <input
+            type="text"
+            name="Alunos_CPF_Mae_Responsavel"
+            value={formData.Alunos_CPF_Mae_Responsavel || ""}
+            onChange={handleCPFChange}
+            className="w-full px-4 py-2 bg-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="000.000.000-00"
+            maxLength="14"
+          />
+        </div>
+        {/* FIM - Mãe */}
         {/* CEP */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">

@@ -128,8 +128,10 @@ router.post(
         Alunos_Nome,
         Alunos_CPF,
         Alunos_Data_Nascimento,
-        Alunos_Nome_Responsavel,
-        Alunos_CPF_Responsavel,
+        Alunos_Nome_Pai_Responsavel,
+        Alunos_CPF_Pai_Responsavel,
+        Alunos_Nome_Mae_Responsavel,
+        Alunos_CPF_Mae_Responsavel,
         Alunos_Endereco_CEP,
         Alunos_Endereco,
         Alunos_Endereco_Complemento,
@@ -146,9 +148,56 @@ router.post(
         Alunos_Data_Matricula,
         Alunos_Observacoes,
       } = req.body;
-      // Se não vier preenchido, define como 'Aluno Maior de Idade'
-      if (!Alunos_Nome_Responsavel || Alunos_Nome_Responsavel.trim() === "") {
-        Alunos_Nome_Responsavel = "Aluno Maior de Idade";
+      // Se não vier preenchido, marca como 'Aluno Maior de Idade' nas duas posições
+      if (
+        !Alunos_Nome_Pai_Responsavel ||
+        Alunos_Nome_Pai_Responsavel.trim() === ""
+      ) {
+        Alunos_Nome_Pai_Responsavel = "Aluno Maior de Idade";
+      }
+      if (
+        !Alunos_Nome_Mae_Responsavel ||
+        Alunos_Nome_Mae_Responsavel.trim() === ""
+      ) {
+        Alunos_Nome_Mae_Responsavel = "Aluno Maior de Idade";
+      }
+
+      // Se for menor de idade, exigir pai ou mãe com CPF
+      const calcularIdadeFromString = (dataStr) => {
+        if (!dataStr) return 0;
+        let nascimento;
+        if (dataStr.includes("-")) {
+          const p = dataStr.split("-");
+          nascimento = new Date(p[0], p[1] - 1, p[2]);
+        } else if (dataStr.includes("/")) {
+          const p = dataStr.split("/");
+          nascimento = new Date(p[2], p[1] - 1, p[0]);
+        } else {
+          nascimento = new Date(dataStr);
+        }
+        const hoje = new Date();
+        let idade = hoje.getFullYear() - nascimento.getFullYear();
+        const m = hoje.getMonth() - nascimento.getMonth();
+        if (m < 0 || (m === 0 && hoje.getDate() < nascimento.getDate()))
+          idade--;
+        return idade;
+      };
+      const idade = calcularIdadeFromString(Alunos_Data_Nascimento);
+      if (idade < 18) {
+        const temPai =
+          Alunos_Nome_Pai_Responsavel &&
+          Alunos_CPF_Pai_Responsavel &&
+          Alunos_CPF_Pai_Responsavel.trim() !== "";
+        const temMae =
+          Alunos_Nome_Mae_Responsavel &&
+          Alunos_CPF_Mae_Responsavel &&
+          Alunos_CPF_Mae_Responsavel.trim() !== "";
+        if (!temPai && !temMae) {
+          return res.status(400).json({
+            Mensagem:
+              "Nome e CPF do pai ou nome e CPF da mãe são obrigatórios para menores de 18 anos.",
+          });
+        }
       }
 
       // Captura os caminhos dos arquivos enviados
@@ -163,8 +212,10 @@ router.post(
         Alunos_Nome,
         Alunos_CPF,
         Alunos_Data_Nascimento,
-        Alunos_Nome_Responsavel,
-        Alunos_CPF_Responsavel,
+        Alunos_Nome_Pai_Responsavel,
+        Alunos_CPF_Pai_Responsavel,
+        Alunos_Nome_Mae_Responsavel,
+        Alunos_CPF_Mae_Responsavel,
         Alunos_Endereco_CEP,
         Alunos_Endereco,
         Alunos_Endereco_Complemento,
@@ -269,13 +320,72 @@ router.patch(
       // Prepara os dados para atualização
       const dadosAtualizacao = { ...req.body };
 
-      // Se o nome do responsável estiver vazio, grava "Aluno Maior de Idade"
+      // Se os nomes de pai/mae vierem vazios explicitamente, marca como 'Aluno Maior de Idade'
       if (
-        dadosAtualizacao.Alunos_Nome_Responsavel !== undefined &&
-        (!dadosAtualizacao.Alunos_Nome_Responsavel ||
-          dadosAtualizacao.Alunos_Nome_Responsavel.trim() === "")
+        dadosAtualizacao.Alunos_Nome_Pai_Responsavel !== undefined &&
+        (!dadosAtualizacao.Alunos_Nome_Pai_Responsavel ||
+          dadosAtualizacao.Alunos_Nome_Pai_Responsavel.trim() === "")
       ) {
-        dadosAtualizacao.Alunos_Nome_Responsavel = "Aluno Maior de Idade";
+        dadosAtualizacao.Alunos_Nome_Pai_Responsavel = "Aluno Maior de Idade";
+      }
+      if (
+        dadosAtualizacao.Alunos_Nome_Mae_Responsavel !== undefined &&
+        (!dadosAtualizacao.Alunos_Nome_Mae_Responsavel ||
+          dadosAtualizacao.Alunos_Nome_Mae_Responsavel.trim() === "")
+      ) {
+        dadosAtualizacao.Alunos_Nome_Mae_Responsavel = "Aluno Maior de Idade";
+      }
+
+      // Validação: se aluno for menor de 18 anos (usando data nova ou atual), exigir pai ou mãe com CPF
+      const calcularIdadeFromString = (dataStr) => {
+        if (!dataStr) return 0;
+        let nascimento;
+        if (dataStr.includes("-")) {
+          const p = dataStr.split("-");
+          nascimento = new Date(p[0], p[1] - 1, p[2]);
+        } else if (dataStr.includes("/")) {
+          const p = dataStr.split("/");
+          nascimento = new Date(p[2], p[1] - 1, p[0]);
+        } else {
+          nascimento = new Date(dataStr);
+        }
+        const hoje = new Date();
+        let idade = hoje.getFullYear() - nascimento.getFullYear();
+        const m = hoje.getMonth() - nascimento.getMonth();
+        if (m < 0 || (m === 0 && hoje.getDate() < nascimento.getDate()))
+          idade--;
+        return idade;
+      };
+      const dataNascimento =
+        dadosAtualizacao.Alunos_Data_Nascimento ||
+        atualizaaluno.Alunos_Data_Nascimento;
+      const idade = calcularIdadeFromString(dataNascimento);
+      if (idade < 18) {
+        const paiNome =
+          dadosAtualizacao.Alunos_Nome_Pai_Responsavel !== undefined
+            ? dadosAtualizacao.Alunos_Nome_Pai_Responsavel
+            : atualizaaluno.Alunos_Nome_Pai_Responsavel;
+        const paiCpf =
+          dadosAtualizacao.Alunos_CPF_Pai_Responsavel !== undefined
+            ? dadosAtualizacao.Alunos_CPF_Pai_Responsavel
+            : atualizaaluno.Alunos_CPF_Pai_Responsavel;
+        const maeNome =
+          dadosAtualizacao.Alunos_Nome_Mae_Responsavel !== undefined
+            ? dadosAtualizacao.Alunos_Nome_Mae_Responsavel
+            : atualizaaluno.Alunos_Nome_Mae_Responsavel;
+        const maeCpf =
+          dadosAtualizacao.Alunos_CPF_Mae_Responsavel !== undefined
+            ? dadosAtualizacao.Alunos_CPF_Mae_Responsavel
+            : atualizaaluno.Alunos_CPF_Mae_Responsavel;
+
+        const temPai = paiNome && paiCpf && paiCpf.trim() !== "";
+        const temMae = maeNome && maeCpf && maeCpf.trim() !== "";
+        if (!temPai && !temMae) {
+          return res.status(400).json({
+            Mensagem:
+              "Nome e CPF do pai ou nome e CPF da mãe são obrigatórios para menores de 18 anos.",
+          });
+        }
       }
 
       // Guarda dados antigos para o log

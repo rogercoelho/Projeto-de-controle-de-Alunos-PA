@@ -64,7 +64,8 @@ function StudentEditForm({
   const idade = calcularIdade(editFormData.Alunos_Data_Nascimento);
 
   // CPF do aluno: readonly se já estava preenchido ao abrir
-  const cpfAlunoReadOnly = !!initialFormData.Alunos_CPF;
+  // Tornar CPF editável no formulário de edição conforme solicitado
+  const cpfAlunoReadOnly = false;
   // CPF do aluno: obrigatório se maior de 18 anos
   const cpfAlunoObrigatorio = idade >= 18;
 

@@ -27,7 +27,7 @@ const Alunos_Cadastros = db.sequelizeconnection.define(
     },
     Alunos_CPF: {
       type: db.Sequelize.STRING,
-      allowNull: false,
+      allowNull: true,
       unique: true,
     },
     Alunos_Nome_Pai_Responsavel: {

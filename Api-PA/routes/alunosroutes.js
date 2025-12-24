@@ -148,6 +148,10 @@ router.post(
         Alunos_Data_Matricula,
         Alunos_Observacoes,
       } = req.body;
+      // Se CPF vier vazio string, enviar null para o banco (evita conflito com índice UNIQUE sobre "")
+      if (Alunos_CPF !== undefined && typeof Alunos_CPF === "string") {
+        Alunos_CPF = Alunos_CPF.trim() === "" ? null : Alunos_CPF;
+      }
       // Se não vier preenchido, marca como 'Aluno Maior de Idade' nas duas posições
       if (
         !Alunos_Nome_Pai_Responsavel ||
@@ -319,6 +323,17 @@ router.patch(
 
       // Prepara os dados para atualização
       const dadosAtualizacao = { ...req.body };
+
+      // Se o CPF for enviado como string vazia no update, converte para null
+      if (
+        Object.prototype.hasOwnProperty.call(dadosAtualizacao, "Alunos_CPF") &&
+        typeof dadosAtualizacao.Alunos_CPF === "string"
+      ) {
+        dadosAtualizacao.Alunos_CPF =
+          dadosAtualizacao.Alunos_CPF.trim() === ""
+            ? null
+            : dadosAtualizacao.Alunos_CPF;
+      }
 
       // Se os nomes de pai/mae vierem vazios explicitamente, marca como 'Aluno Maior de Idade'
       if (

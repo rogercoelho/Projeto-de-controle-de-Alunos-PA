@@ -14,7 +14,7 @@ import Relatorio from "./components/Billing/Relatorio";
 import ProtectedRoute from "./components/Security/ProtectedRoute";
 import AdminDelete from "./components/Security/AdminDelete";
 import MobileMenu from "./components/miscellaneous/MobileMenu";
-import { logout, getUsuario, isAdmin } from "./services/auth";
+import { logout, getUsuario, isAdmin, getToken } from "./services/auth";
 
 import useToast from "./hooks/useToast";
 import MessageToast from "./components/miscellaneous/MessageToast";
@@ -32,6 +32,53 @@ function App() {
   // eslint-disable-next-line no-unused-vars
   const [ehAdmin, setEhAdmin] = useState(() => isAdmin());
   const [messageToast, showToast] = useToast();
+
+  // Token expiry countdown component
+  const TokenExpiry = () => {
+    const [remaining, setRemaining] = useState(null);
+
+    const decodeExp = (token) => {
+      if (!token) return null;
+      try {
+        const payload = token.split(".")[1];
+        if (!payload) return null;
+        const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
+        const json = JSON.parse(atob(base64));
+        return json.exp ? json.exp * 1000 : null;
+      } catch (e) {
+        return null;
+      }
+    };
+
+    useEffect(() => {
+      const token = getToken();
+      const expMs = decodeExp(token);
+      if (!expMs) return;
+
+      const update = () => {
+        const diff = Math.max(0, Math.floor((expMs - Date.now()) / 1000));
+        setRemaining(diff);
+        if (diff <= 0) {
+          window.dispatchEvent(
+            new CustomEvent("token-expired", { detail: "Sua sessão expirou." })
+          );
+        }
+      };
+
+      update();
+      const iv = setInterval(update, 1000);
+      return () => clearInterval(iv);
+    }, []);
+
+    if (remaining === null) return null;
+    const mm = String(Math.floor(remaining / 60)).padStart(2, "0");
+    const ss = String(remaining % 60).padStart(2, "0");
+    return (
+      <span className="text-xs text-gray-400 ml-2">
+        expira em - {mm}:{ss}
+      </span>
+    );
+  };
 
   const handleLogout = () => {
     if (confirm("Deseja realmente sair?")) {
@@ -108,24 +155,27 @@ function App() {
                   <div className="hidden md:flex absolute top-0 right-0 items-center gap-4">
                     <div className="text-right">
                       <p className="text-sm text-gray-300">Bem-vindo(a),</p>
-                      <button
-                        onClick={() =>
-                          ehAdmin && setShowAdminDelete(!showAdminDelete)
-                        }
-                        className={`font-bold ${
-                          ehAdmin
-                            ? "hover:text-red-500 cursor-pointer"
-                            : "cursor-default"
-                        }`}
-                        disabled={!ehAdmin}
-                      >
-                        {usuario?.nome}
-                      </button>
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() =>
+                            ehAdmin && setShowAdminDelete(!showAdminDelete)
+                          }
+                          className={`font-bold ${
+                            ehAdmin
+                              ? "hover:text-red-500 cursor-pointer"
+                              : "cursor-default"
+                          }`}
+                          disabled={!ehAdmin}
+                        >
+                          {usuario?.nome}
+                        </button>
+                      </div>
                       <p className="text-xs text-gray-400">
                         {usuario?.grupo === "Administrador"
                           ? "👑 Administrador"
                           : "👤 Aluno"}
                       </p>
+                        <TokenExpiry />
                     </div>
                     <button
                       onClick={handleLogout}
@@ -147,24 +197,27 @@ function App() {
                     <div className="flex items-center justify-between bg-gray-800 rounded-lg p-3 border border-gray-700">
                       <div className="flex-1">
                         <p className="text-xs text-gray-400">Bem-vindo(a),</p>
-                        <button
-                          onClick={() =>
-                            ehAdmin && setShowAdminDelete(!showAdminDelete)
-                          }
-                          className={`font-bold text-white ${
-                            ehAdmin
-                              ? "hover:text-red-500 cursor-pointer"
-                              : "cursor-default"
-                          }`}
-                          disabled={!ehAdmin}
-                        >
-                          {usuario?.nome}
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() =>
+                              ehAdmin && setShowAdminDelete(!showAdminDelete)
+                            }
+                            className={`font-bold text-white ${
+                              ehAdmin
+                                ? "hover:text-red-500 cursor-pointer"
+                                : "cursor-default"
+                            }`}
+                            disabled={!ehAdmin}
+                          >
+                            {usuario?.nome}
+                          </button>
+                        </div>
                         <p className="text-xs text-gray-400">
                           {usuario?.grupo === "Administrador"
                             ? "👑 Administrador"
                             : "👤 Aluno"}
                         </p>
+                        <TokenExpiry />
                       </div>
                       <button
                         onClick={handleLogout}

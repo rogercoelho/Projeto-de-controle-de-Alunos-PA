@@ -93,19 +93,48 @@ function StudentEditForm({
             }
             // Para menores: exigir (pai nome + pai cpf válidos) OU (mae nome + mae cpf válidos)
             if (calcularIdade(editFormData.Alunos_Data_Nascimento) < 18) {
-              const paiValido =
+              const paiHasName = !!(
                 editFormData.Alunos_Nome_Pai_Responsavel &&
+                editFormData.Alunos_Nome_Pai_Responsavel.trim()
+              );
+              const paiHasCpf = !!(
                 editFormData.Alunos_CPF_Pai_Responsavel &&
-                validarCPF(editFormData.Alunos_CPF_Pai_Responsavel);
-              const maeValida =
+                editFormData.Alunos_CPF_Pai_Responsavel.trim()
+              );
+              const paiCpfInvalid =
+                paiHasCpf &&
+                !validarCPF(editFormData.Alunos_CPF_Pai_Responsavel);
+              const paiValido = paiHasName && paiHasCpf && !paiCpfInvalid;
+
+              const maeHasName = !!(
                 editFormData.Alunos_Nome_Mae_Responsavel &&
+                editFormData.Alunos_Nome_Mae_Responsavel.trim()
+              );
+              const maeHasCpf = !!(
                 editFormData.Alunos_CPF_Mae_Responsavel &&
-                validarCPF(editFormData.Alunos_CPF_Mae_Responsavel);
+                editFormData.Alunos_CPF_Mae_Responsavel.trim()
+              );
+              const maeCpfInvalid =
+                maeHasCpf &&
+                !validarCPF(editFormData.Alunos_CPF_Mae_Responsavel);
+              const maeValida = maeHasName && maeHasCpf && !maeCpfInvalid;
+
               if (!paiValido && !maeValida) {
-                showToast({
-                  type: "error",
-                  text: "Nome e CPF do pai ou nome e CPF da mãe são obrigatórios para menores de 18 anos.",
-                });
+                if (paiCpfInvalid && !maeCpfInvalid) {
+                  showToast({ type: "error", text: "CPF do pai inválido" });
+                } else if (maeCpfInvalid && !paiCpfInvalid) {
+                  showToast({ type: "error", text: "CPF da mãe inválido" });
+                } else if (paiCpfInvalid && maeCpfInvalid) {
+                  showToast({
+                    type: "error",
+                    text: "CPF do pai inválido e CPF da mãe inválido",
+                  });
+                } else {
+                  showToast({
+                    type: "error",
+                    text: "Nome e CPF do pai ou nome e CPF da mãe são obrigatórios para menores de 18 anos.",
+                  });
+                }
                 return;
               }
             }

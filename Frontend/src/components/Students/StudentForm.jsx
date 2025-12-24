@@ -219,19 +219,47 @@ function StudentForm({ aluno, onSaveSuccess }) {
     }
     // Para menores: exigir (pai nome + pai cpf válidos) OU (mae nome + mae cpf válidos)
     if (calcularIdade(formData.Alunos_Data_Nascimento) < 18) {
-      const paiValido =
+      const paiHasName = !!(
         formData.Alunos_Nome_Pai_Responsavel &&
+        formData.Alunos_Nome_Pai_Responsavel.trim()
+      );
+      const paiHasCpf = !!(
         formData.Alunos_CPF_Pai_Responsavel &&
-        validarCPF(formData.Alunos_CPF_Pai_Responsavel);
-      const maeValida =
+        formData.Alunos_CPF_Pai_Responsavel.trim()
+      );
+      const paiCpfInvalid =
+        paiHasCpf && !validarCPF(formData.Alunos_CPF_Pai_Responsavel);
+      const paiValido = paiHasName && paiHasCpf && !paiCpfInvalid;
+
+      const maeHasName = !!(
         formData.Alunos_Nome_Mae_Responsavel &&
+        formData.Alunos_Nome_Mae_Responsavel.trim()
+      );
+      const maeHasCpf = !!(
         formData.Alunos_CPF_Mae_Responsavel &&
-        validarCPF(formData.Alunos_CPF_Mae_Responsavel);
+        formData.Alunos_CPF_Mae_Responsavel.trim()
+      );
+      const maeCpfInvalid =
+        maeHasCpf && !validarCPF(formData.Alunos_CPF_Mae_Responsavel);
+      const maeValida = maeHasName && maeHasCpf && !maeCpfInvalid;
+
       if (!paiValido && !maeValida) {
-        showToast({
-          type: "error",
-          text: "Nome e CPF do pai ou nome e CPF da mãe são obrigatórios para menores de 18 anos.",
-        });
+        // Se algum CPF informado for inválido, mostrar mensagem específica
+        if (paiCpfInvalid && !maeCpfInvalid) {
+          showToast({ type: "error", text: "CPF do PAI invalido" });
+        } else if (maeCpfInvalid && !paiCpfInvalid) {
+          showToast({ type: "error", text: "CPF da MAE invalido" });
+        } else if (paiCpfInvalid && maeCpfInvalid) {
+          showToast({
+            type: "error",
+            text: "CPF do PAI invalido e CPF da MAE invalido",
+          });
+        } else {
+          showToast({
+            type: "error",
+            text: "Nome e CPF do pai ou nome e CPF da mãe são obrigatórios para menores de 18 anos.",
+          });
+        }
         setLoading(false);
         return;
       }

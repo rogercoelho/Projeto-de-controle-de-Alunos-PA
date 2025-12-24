@@ -243,23 +243,46 @@ function StudentForm({ aluno, onSaveSuccess }) {
         maeHasCpf && !validarCPF(formData.Alunos_CPF_Mae_Responsavel);
       const maeValida = maeHasName && maeHasCpf && !maeCpfInvalid;
 
-      if (!paiValido && !maeValida) {
-        // Se algum CPF informado for inválido, mostrar mensagem específica
+      // Validações conforme regras: se ambos CPFs preenchidos, valida ambos; se apenas um preenchido, valida esse
+      if (paiHasCpf && maeHasCpf) {
         if (paiCpfInvalid && !maeCpfInvalid) {
-          showToast({ type: "error", text: "CPF do PAI invalido" });
-        } else if (maeCpfInvalid && !paiCpfInvalid) {
-          showToast({ type: "error", text: "CPF da MAE invalido" });
-        } else if (paiCpfInvalid && maeCpfInvalid) {
-          showToast({
-            type: "error",
-            text: "CPF do PAI invalido e CPF da MAE invalido",
-          });
-        } else {
-          showToast({
-            type: "error",
-            text: "Nome e CPF do pai ou nome e CPF da mãe são obrigatórios para menores de 18 anos.",
-          });
+          showToast({ type: "error", text: "CPF do pai inválido" });
+          setLoading(false);
+          return;
         }
+        if (maeCpfInvalid && !paiCpfInvalid) {
+          showToast({ type: "error", text: "CPF da mãe inválido" });
+          setLoading(false);
+          return;
+        }
+        if (paiCpfInvalid && maeCpfInvalid) {
+          showToast({
+            type: "error",
+            text: "CPF do pai inválido e CPF da mãe inválido",
+          });
+          setLoading(false);
+          return;
+        }
+      } else if (paiHasCpf && !maeHasCpf) {
+        if (paiCpfInvalid) {
+          showToast({ type: "error", text: "CPF do pai inválido" });
+          setLoading(false);
+          return;
+        }
+      } else if (maeHasCpf && !paiHasCpf) {
+        if (maeCpfInvalid) {
+          showToast({ type: "error", text: "CPF da mãe inválido" });
+          setLoading(false);
+          return;
+        }
+      }
+
+      // Se não há CPFs inválidos, garantir que ao menos uma combinação nome+cpf válida exista
+      if (!paiValido && !maeValida) {
+        showToast({
+          type: "error",
+          text: "Nome e CPF do pai ou nome e CPF da mãe são obrigatórios para menores de 18 anos.",
+        });
         setLoading(false);
         return;
       }

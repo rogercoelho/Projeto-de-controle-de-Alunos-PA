@@ -1,6 +1,7 @@
 import PropTypes from "prop-types";
 import PhotoSkeleton from "../miscellaneous/PhotoSkeleton";
 import Buttons from "../miscellaneous/Buttons";
+import { formatarDataBR } from "../../utils/Utils";
 
 function StudentDetails({ aluno, onEdit, onToggleSituacao, onBack }) {
   if (!aluno) return null;
@@ -152,7 +153,7 @@ function StudentDetails({ aluno, onEdit, onToggleSituacao, onBack }) {
           <div className="font-bold text-gray-400">Data de Nascimento:</div>
           <div>
             {aluno.Alunos_Data_Nascimento ? (
-              new Date(aluno.Alunos_Data_Nascimento).toLocaleDateString("pt-BR")
+              formatarDataBR(aluno.Alunos_Data_Nascimento)
             ) : (
               <span className="text-gray-500 italic">Não informada</span>
             )}
@@ -162,7 +163,7 @@ function StudentDetails({ aluno, onEdit, onToggleSituacao, onBack }) {
           <div className="font-bold text-gray-400">Data de Matrícula:</div>
           <div>
             {aluno.Alunos_Data_Matricula ? (
-              new Date(aluno.Alunos_Data_Matricula).toLocaleDateString("pt-BR")
+              formatarDataBR(aluno.Alunos_Data_Matricula)
             ) : (
               <span className="text-gray-500 italic">Não informada</span>
             )}

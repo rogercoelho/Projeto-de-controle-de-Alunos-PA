@@ -152,19 +152,8 @@ router.post(
       if (Alunos_CPF !== undefined && typeof Alunos_CPF === "string") {
         Alunos_CPF = Alunos_CPF.trim() === "" ? null : Alunos_CPF;
       }
-      // Se não vier preenchido, marca como 'Aluno Maior de Idade' nas duas posições
-      if (
-        !Alunos_Nome_Pai_Responsavel ||
-        Alunos_Nome_Pai_Responsavel.trim() === ""
-      ) {
-        Alunos_Nome_Pai_Responsavel = "Aluno Maior de Idade";
-      }
-      if (
-        !Alunos_Nome_Mae_Responsavel ||
-        Alunos_Nome_Mae_Responsavel.trim() === ""
-      ) {
-        Alunos_Nome_Mae_Responsavel = "Aluno Maior de Idade";
-      }
+      // NOTE: do not assign 'Aluno Maior de Idade' here unconditionally.
+      // We'll set these placeholders only after determining the student's age.
 
       // Se for menor de idade, exigir pai ou mãe com CPF
       const calcularIdadeFromString = (dataStr) => {
@@ -187,6 +176,23 @@ router.post(
         return idade;
       };
       const idade = calcularIdadeFromString(Alunos_Data_Nascimento);
+
+      // If student is adult (>=18) ensure both parent name fields are set to placeholder.
+      if (idade >= 18) {
+        if (
+          !Alunos_Nome_Pai_Responsavel ||
+          Alunos_Nome_Pai_Responsavel.trim() === ""
+        ) {
+          Alunos_Nome_Pai_Responsavel = "Aluno Maior de Idade";
+        }
+        if (
+          !Alunos_Nome_Mae_Responsavel ||
+          Alunos_Nome_Mae_Responsavel.trim() === ""
+        ) {
+          Alunos_Nome_Mae_Responsavel = "Aluno Maior de Idade";
+        }
+      }
+
       if (idade < 18) {
         const temPai =
           Alunos_Nome_Pai_Responsavel &&
@@ -335,21 +341,7 @@ router.patch(
             : dadosAtualizacao.Alunos_CPF;
       }
 
-      // Se os nomes de pai/mae vierem vazios explicitamente, marca como 'Aluno Maior de Idade'
-      if (
-        dadosAtualizacao.Alunos_Nome_Pai_Responsavel !== undefined &&
-        (!dadosAtualizacao.Alunos_Nome_Pai_Responsavel ||
-          dadosAtualizacao.Alunos_Nome_Pai_Responsavel.trim() === "")
-      ) {
-        dadosAtualizacao.Alunos_Nome_Pai_Responsavel = "Aluno Maior de Idade";
-      }
-      if (
-        dadosAtualizacao.Alunos_Nome_Mae_Responsavel !== undefined &&
-        (!dadosAtualizacao.Alunos_Nome_Mae_Responsavel ||
-          dadosAtualizacao.Alunos_Nome_Mae_Responsavel.trim() === "")
-      ) {
-        dadosAtualizacao.Alunos_Nome_Mae_Responsavel = "Aluno Maior de Idade";
-      }
+      // Removed automatic placeholder assignment here; decide after computing age below.
 
       // Validação: se aluno for menor de 18 anos (usando data nova ou atual), exigir pai ou mãe com CPF
       const calcularIdadeFromString = (dataStr) => {
@@ -375,6 +367,13 @@ router.patch(
         dadosAtualizacao.Alunos_Data_Nascimento ||
         atualizaaluno.Alunos_Data_Nascimento;
       const idade = calcularIdadeFromString(dataNascimento);
+
+      // If student is adult (>=18) set both parent name fields to placeholder.
+      if (idade >= 18) {
+        dadosAtualizacao.Alunos_Nome_Pai_Responsavel = "Aluno Maior de Idade";
+        dadosAtualizacao.Alunos_Nome_Mae_Responsavel = "Aluno Maior de Idade";
+      }
+
       if (idade < 18) {
         const paiNome =
           dadosAtualizacao.Alunos_Nome_Pai_Responsavel !== undefined

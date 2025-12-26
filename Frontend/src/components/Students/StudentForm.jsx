@@ -450,6 +450,7 @@ function StudentForm({ aluno, onSaveSuccess }) {
         }
         showToast({ type: "error", text: msg });
       }
+    } finally {
       setLoading(false);
     }
   };

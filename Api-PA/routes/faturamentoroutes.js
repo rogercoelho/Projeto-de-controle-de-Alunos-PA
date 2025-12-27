@@ -203,7 +203,38 @@ router.get("/extrato/:Aluno_Codigo/:ano", async (req, res) => {
       };
     });
 
-    res.json({ aluno, planos });
+    // Busca faturamentos pendentes (não pagos) do aluno
+    const faturamentosPendentes = await Alunos_Faturamento.findAll({
+      where: { Aluno_Codigo, Faturamento_Data_Pagamento: null },
+      raw: true,
+    });
+
+    // Monta lista de planos que possuem parcelas pendentes
+    let planosPendentes = [];
+    if (faturamentosPendentes.length > 0) {
+      const codigosPlanosPendentes = [
+        ...new Set(faturamentosPendentes.map((f) => f.Plano_Codigo)),
+      ];
+      const planosInfoPendentes = await Planos_Cadastro.findAll({
+        where: { Plano_Codigo: codigosPlanosPendentes },
+        raw: true,
+      });
+
+      planosPendentes = codigosPlanosPendentes.map((codigo) => {
+        const info =
+          planosInfoPendentes.find((p) => p.Plano_Codigo === codigo) || {};
+        return {
+          Plano_Codigo: codigo,
+          Plano_Nome: info.Plano_Nome || "",
+          Plano_Valor: info.Plano_Valor || null,
+          faturamentos: faturamentosPendentes.filter(
+            (f) => f.Plano_Codigo === codigo
+          ),
+        };
+      });
+    }
+
+    res.json({ aluno, planos, faturamentosPendentes, planosPendentes });
   } catch (error) {
     console.error("Erro ao buscar extrato:", error);
     res.status(500).json({

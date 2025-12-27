@@ -675,6 +675,81 @@ function ExtratoAluno() {
             )}
 
             {/* Botão Salvar PDF */}
+            {/* Pendências: faturamentos e planos com parcelas em aberto */}
+            {extrato.faturamentosPendentes &&
+              extrato.faturamentosPendentes.length > 0 && (
+                <div className="bg-gray-900 rounded-xl p-4 border border-yellow-600 mt-4">
+                  <h3 className="text-lg font-bold text-yellow-300 mb-2">
+                    Pendências / Faturamentos em Aberto
+                  </h3>
+                  <div className="space-y-3">
+                    {extrato.planosPendentes &&
+                      extrato.planosPendentes.map((pp, pidx) => (
+                        <div
+                          key={pidx}
+                          className="bg-gray-800 rounded-lg p-3 border border-gray-700"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="text-white font-semibold">
+                                Plano: {pp.Plano_Codigo} - {pp.Plano_Nome}
+                              </div>
+                              {pp.Plano_Valor !== null && (
+                                <div className="text-yellow-200 text-sm">
+                                  Valor do Plano: R$ {pp.Plano_Valor}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="mt-2 space-y-1">
+                            {pp.faturamentos && pp.faturamentos.length > 0 ? (
+                              pp.faturamentos.map((f) => (
+                                <div
+                                  key={f.id || f.Faturamento_ID}
+                                  className="flex items-center justify-between text-sm text-gray-200 bg-gray-700 p-2 rounded"
+                                >
+                                  <div>
+                                    <div>
+                                      <b>ID:</b> {f.id || f.Faturamento_ID}
+                                    </div>
+                                    <div>
+                                      <b>Período:</b>{" "}
+                                      {f.Faturamento_Inicio
+                                        ? formatarDataBR(f.Faturamento_Inicio)
+                                        : "-"}{" "}
+                                      -{" "}
+                                      {f.Faturamento_Fim
+                                        ? formatarDataBR(f.Faturamento_Fim)
+                                        : "-"}
+                                    </div>
+                                  </div>
+                                  <div className="text-right">
+                                    <div className="text-yellow-300 font-semibold">
+                                      R${" "}
+                                      {(
+                                        parseFloat(f.Faturamento_Valor_Total) ||
+                                        0
+                                      ).toFixed(2)}
+                                    </div>
+                                    <div className="text-xs text-gray-400">
+                                      Status: Pendente
+                                    </div>
+                                  </div>
+                                </div>
+                              ))
+                            ) : (
+                              <div className="text-sm text-gray-300">
+                                Nenhum faturamento listado.
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+
             <div className="flex justify-center pt-4">
               <Buttons.BotaoPDF onClick={handleGerarPDF} loading={loadingPdf} />
             </div>

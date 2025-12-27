@@ -552,35 +552,25 @@ function StudentSearch() {
               {/* Inicio - Paginacao e botoes de controle - anterior e proximo */}
               {totalPages > 1 && (
                 <div className="flex justify-center items-center gap-2 mt-6">
-                  <button
+                  <Buttons.BotaoPaginacaoAnterior
                     onClick={() => handlePageChange(currentPage - 1)}
                     disabled={currentPage === 1}
-                    className="px-4 py-2 bg-gray-700 text-white rounded-md disabled:bg-gray-600 disabled:opacity-50 hover:bg-gray-600 transition-colors"
-                  >
-                    ← Anterior
-                  </button>
+                  />
                   <div className="flex gap-1">
                     {[...Array(totalPages)].map((_, index) => (
-                      <button
+                      <Buttons.BotaoToggle
                         key={index}
                         onClick={() => handlePageChange(index + 1)}
-                        className={`px-3 py-1 rounded-md ${
-                          currentPage === index + 1
-                            ? "bg-blue-600 text-white"
-                            : "bg-gray-700 text-gray-300 hover:bg-gray-600"
-                        }`}
+                        active={currentPage === index + 1}
                       >
                         {index + 1}
-                      </button>
+                      </Buttons.BotaoToggle>
                     ))}
                   </div>
-                  <button
+                  <Buttons.BotaoPaginacaoProxima
                     onClick={() => handlePageChange(currentPage + 1)}
                     disabled={currentPage === totalPages}
-                    className="px-4 py-2 bg-gray-700 text-white rounded-md disabled:bg-gray-600 disabled:opacity-50 hover:bg-gray-600 transition-colors"
-                  >
-                    Próxima →
-                  </button>
+                  />
                 </div>
               )}
               {/* Fim - Paginacao e botoes de controle - anterior e proximo */}

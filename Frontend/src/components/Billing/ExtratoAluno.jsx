@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import api from "../../services/api";
-import { formatarDataBR } from "../../utils/Utils";
+import { formatarDataBR, formatarData, formatarHora } from "../../utils/Utils";
 import MessageToast from "../miscellaneous/MessageToast";
 import CustomSelect from "../miscellaneous/CustomSelect";
 import Buttons from "../miscellaneous/Buttons";
@@ -331,9 +331,9 @@ function ExtratoAluno() {
       doc.setFontSize(8);
       doc.setTextColor(...textGray);
       doc.text(
-        `Gerado em: ${new Date().toLocaleDateString(
-          "pt-BR"
-        )} às ${new Date().toLocaleTimeString("pt-BR")}`,
+        `Gerado em: ${formatarData(new Date().toISOString())} às ${formatarHora(
+          new Date().toISOString()
+        )}`,
         105,
         290,
         { align: "center" }

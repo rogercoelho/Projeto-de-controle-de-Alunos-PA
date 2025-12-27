@@ -15,6 +15,8 @@ import ProtectedRoute from "./components/Security/ProtectedRoute";
 import AdminDelete from "./components/Security/AdminDelete";
 import MobileMenu from "./components/miscellaneous/MobileMenu";
 import { logout, getUsuario, isAdmin, getToken } from "./services/auth";
+import api from "./services/api";
+import ExpiringModal from "./components/miscellaneous/ExpiringModal";
 
 import useToast from "./hooks/useToast";
 import MessageToast from "./components/miscellaneous/MessageToast";
@@ -32,6 +34,8 @@ function App() {
   // eslint-disable-next-line no-unused-vars
   const [ehAdmin, setEhAdmin] = useState(() => isAdmin());
   const [messageToast, showToast] = useToast();
+  const [expiringList, setExpiringList] = useState([]);
+  const [showExpiring, setShowExpiring] = useState(false);
 
   // Token expiry countdown component
   const TokenExpiry = () => {
@@ -94,6 +98,25 @@ function App() {
       setEhAdmin(isAdmin());
     };
     window.addEventListener("login", updateUserState);
+    // Ao logar, buscar alunos com planos vencendo no mês
+    const handleLoginFetchExpiring = async () => {
+      try {
+        const res = await api.get("/faturamento/expirando");
+        const alunos = res.data?.alunos || [];
+        if (alunos && alunos.length > 0) {
+          setExpiringList(alunos);
+          setShowExpiring(true);
+        }
+      } catch (err) {
+        // não bloquear o login por erro na busca
+        console.error("Erro ao buscar expirando:", err);
+      }
+    };
+    window.addEventListener("login", handleLoginFetchExpiring);
+    // Se já estiver logado ao montar, busca também
+    if (getToken()) {
+      handleLoginFetchExpiring();
+    }
     window.addEventListener("logout", updateUserState);
     updateUserState();
 
@@ -116,6 +139,7 @@ function App() {
       window.removeEventListener("logout", updateUserState);
       window.removeEventListener("token-expired", handleTokenExpired);
       window.removeEventListener("logout", handleLogout);
+      window.removeEventListener("login", handleLoginFetchExpiring);
     };
   }, [showToast]);
 
@@ -143,6 +167,11 @@ function App() {
   return (
     <>
       <MessageToast messageToast={messageToast} />
+      <ExpiringModal
+        open={showExpiring}
+        onClose={() => setShowExpiring(false)}
+        items={expiringList}
+      />
       <Routes>
         <Route path="/security/login" element={<Login />} />
         <Route

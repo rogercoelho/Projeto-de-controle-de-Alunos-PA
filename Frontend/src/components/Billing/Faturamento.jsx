@@ -3,7 +3,7 @@ import api from "../../services/api";
 import MessageToast from "../miscellaneous/MessageToast";
 import CustomSelect from "../miscellaneous/CustomSelect";
 import useToast from "../../hooks/useToast";
-import { formatarDataBR } from "../../utils/Utils";
+import { formatarDataBR, toISODate } from "../../utils/Utils";
 
 function Faturamento() {
   const [formData, setFormData] = useState({
@@ -148,7 +148,7 @@ function Faturamento() {
         Aluno_Codigo: formData.codigoAluno,
         Plano_Codigo: formData.codigoPlano,
         Faturamento_Inicio: formData.dataVencimento,
-        Faturamento_Fim: fim.toISOString().slice(0, 10),
+        Faturamento_Fim: toISODate(fim),
         Faturamento_Valor_Total: valorTotal,
       });
 

@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import api from "../../services/api";
-import { formatarDataBR } from "../../utils/Utils";
+import { formatarDataBR, formatarData, formatarHora } from "../../utils/Utils";
 import MessageToast from "../miscellaneous/MessageToast";
 import CustomSelect from "../miscellaneous/CustomSelect";
 import Buttons from "../miscellaneous/Buttons";
@@ -315,9 +315,9 @@ function Relatorio() {
       doc.setFontSize(8);
       doc.setTextColor(...textGray);
       doc.text(
-        `Gerado em: ${new Date().toLocaleDateString(
-          "pt-BR"
-        )} às ${new Date().toLocaleTimeString("pt-BR")}`,
+        `Gerado em: ${formatarData(new Date().toISOString())} às ${formatarHora(
+          new Date().toISOString()
+        )}`,
         148.5,
         200,
         { align: "center" }
@@ -335,6 +335,56 @@ function Relatorio() {
 
   const dados = relatorio ? processarDados() : [];
   const totais = dados.length > 0 ? calcularTotais(dados) : null;
+
+  const [sortBy, setSortBy] = useState(null);
+  const [sortDir, setSortDir] = useState("desc");
+
+  const handleHeaderClick = (field) => {
+    if (sortBy === field) {
+      setSortDir((d) => (d === "desc" ? "asc" : "desc"));
+    } else {
+      setSortBy(field);
+      setSortDir("desc");
+    }
+  };
+
+  const sortedDados = useMemo(() => {
+    if (!dados || dados.length === 0) return [];
+    if (!sortBy) return dados;
+    const copy = [...dados];
+    copy.sort((a, b) => {
+      let va = a[sortBy];
+      let vb = b[sortBy];
+
+      // normalize values based on field
+      if (sortBy === "alunoCodigo") {
+        va = Number(va) || 0;
+        vb = Number(vb) || 0;
+      } else if (sortBy === "alunoNome" || sortBy === "planoNome") {
+        va = (va || "").toString().toLowerCase();
+        vb = (vb || "").toString().toLowerCase();
+      } else if (sortBy === "parcela") {
+        // parcela format "X/Y"
+        va = parseInt((va || "").toString().split("/")[0], 10) || 0;
+        vb = parseInt((vb || "").toString().split("/")[0], 10) || 0;
+      } else if (sortBy === "dataPagamento") {
+        va = va ? new Date(va).getTime() : 0;
+        vb = vb ? new Date(vb).getTime() : 0;
+      } else if (
+        ["valorMensal", "valorComDesconto", "valorWET", "valorPA"].includes(
+          sortBy
+        )
+      ) {
+        va = Number(va) || 0;
+        vb = Number(vb) || 0;
+      }
+
+      if (va < vb) return sortDir === "desc" ? 1 : -1;
+      if (va > vb) return sortDir === "desc" ? -1 : 1;
+      return 0;
+    });
+    return copy;
+  }, [dados, sortBy, sortDir]);
 
   return (
     <div className="w-full h-auto">
@@ -413,23 +463,109 @@ function Relatorio() {
                   <table className="w-full text-sm text-left">
                     <thead className="bg-gray-900 text-gray-300 uppercase text-xs">
                       <tr>
-                        <th className="px-3 py-3 rounded-tl-lg">Cód</th>
-                        <th className="px-3 py-3">Aluno</th>
-                        <th className="px-3 py-3">Plano</th>
-                        <th className="px-3 py-3">Parcela</th>
-                        <th className="px-3 py-3">Data Pgto</th>
-                        <th className="px-3 py-3 text-right">Valor Mensal</th>
-                        <th className="px-3 py-3 text-right">
-                          Valor c/ Desc ({percentualDesconto}%)
+                        <th
+                          className="px-3 py-3 rounded-tl-lg cursor-pointer"
+                          onClick={() => handleHeaderClick("alunoCodigo")}
+                        >
+                          Cód{" "}
+                          {sortBy === "alunoCodigo"
+                            ? sortDir === "desc"
+                              ? "▼"
+                              : "▲"
+                            : ""}
                         </th>
-                        <th className="px-3 py-3 text-right">WET (50%)</th>
-                        <th className="px-3 py-3 text-right rounded-tr-lg">
-                          PA (50%)
+                        <th
+                          className="px-3 py-3 cursor-pointer"
+                          onClick={() => handleHeaderClick("alunoNome")}
+                        >
+                          Aluno{" "}
+                          {sortBy === "alunoNome"
+                            ? sortDir === "desc"
+                              ? "▼"
+                              : "▲"
+                            : ""}
+                        </th>
+                        <th
+                          className="px-3 py-3 cursor-pointer"
+                          onClick={() => handleHeaderClick("planoNome")}
+                        >
+                          Plano{" "}
+                          {sortBy === "planoNome"
+                            ? sortDir === "desc"
+                              ? "▼"
+                              : "▲"
+                            : ""}
+                        </th>
+                        <th
+                          className="px-3 py-3 cursor-pointer"
+                          onClick={() => handleHeaderClick("parcela")}
+                        >
+                          Parcela{" "}
+                          {sortBy === "parcela"
+                            ? sortDir === "desc"
+                              ? "▼"
+                              : "▲"
+                            : ""}
+                        </th>
+                        <th
+                          className="px-3 py-3 cursor-pointer"
+                          onClick={() => handleHeaderClick("dataPagamento")}
+                        >
+                          Data Pgto{" "}
+                          {sortBy === "dataPagamento"
+                            ? sortDir === "desc"
+                              ? "▼"
+                              : "▲"
+                            : ""}
+                        </th>
+                        <th
+                          className="px-3 py-3 text-right cursor-pointer"
+                          onClick={() => handleHeaderClick("valorMensal")}
+                        >
+                          Valor Mensal{" "}
+                          {sortBy === "valorMensal"
+                            ? sortDir === "desc"
+                              ? "▼"
+                              : "▲"
+                            : ""}
+                        </th>
+                        <th
+                          className="px-3 py-3 text-right cursor-pointer"
+                          onClick={() => handleHeaderClick("valorComDesconto")}
+                        >
+                          Valor c/ Desc ({percentualDesconto}%){" "}
+                          {sortBy === "valorComDesconto"
+                            ? sortDir === "desc"
+                              ? "▼"
+                              : "▲"
+                            : ""}
+                        </th>
+                        <th
+                          className="px-3 py-3 text-right cursor-pointer"
+                          onClick={() => handleHeaderClick("valorWET")}
+                        >
+                          WET (50%){" "}
+                          {sortBy === "valorWET"
+                            ? sortDir === "desc"
+                              ? "▼"
+                              : "▲"
+                            : ""}
+                        </th>
+                        <th
+                          className="px-3 py-3 text-right rounded-tr-lg cursor-pointer"
+                          onClick={() => handleHeaderClick("valorPA")}
+                        >
+                          PA (50%){" "}
+                          {sortBy === "valorPA"
+                            ? sortDir === "desc"
+                              ? "▼"
+                              : "▲"
+                            : ""}
                         </th>
                       </tr>
                     </thead>
                     <tbody>
-                      {dados.map((item, idx) => (
+                      {sortedDados.map((item, idx) => (
                         <tr
                           key={item.id}
                           className={`border-b border-gray-700 ${

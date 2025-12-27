@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const Planos_Cadastro = require("../models/Planos_Cadastro");
+const { registrarLog, getUsuarioFromReq } = require("../utils/logger");
 
 // Cadastrar novo plano
 router.post("/create", async (req, res) => {
@@ -34,6 +35,18 @@ router.post("/create", async (req, res) => {
       Plano_Valor: valor,
       Plano_Ativo: "Ativo",
     });
+
+    // Registra log de criação do plano
+    const usuarioLog = getUsuarioFromReq(req);
+    await registrarLog(
+      usuarioLog,
+      "CREATE",
+      "Planos_Cadastro",
+      codigo,
+      `Plano ${nome} cadastrado`,
+      null,
+      novoPlano.toJSON()
+    );
 
     res.status(201).json({
       Mensagem: "Plano cadastrado com sucesso!",
@@ -140,6 +153,8 @@ router.patch("/update/:codigo", async (req, res) => {
       });
     }
 
+    const dadosAntigos = plano.toJSON();
+
     await plano.update({
       ...(nome && { Plano_Nome: nome }),
       ...(quantidadeSemana && { Plano_Quantidade_Semana: quantidadeSemana }),
@@ -147,6 +162,18 @@ router.patch("/update/:codigo", async (req, res) => {
       ...(valor && { Plano_Valor: valor }),
       ...(ativo && { Plano_Ativo: ativo }),
     });
+
+    // Registra log de atualização do plano
+    const usuarioLog = getUsuarioFromReq(req);
+    await registrarLog(
+      usuarioLog,
+      "UPDATE",
+      "Planos_Cadastro",
+      plano.Plano_Codigo,
+      `Plano ${plano.Plano_Codigo} atualizado`,
+      dadosAntigos,
+      plano.toJSON()
+    );
 
     res.status(200).json({
       Mensagem: "Plano atualizado com sucesso!",
@@ -174,7 +201,20 @@ router.delete("/delete/:codigo", async (req, res) => {
       });
     }
 
+    const dadosApagados = plano.toJSON();
     await plano.destroy();
+
+    // Registra log de exclusão do plano
+    const usuarioLog = getUsuarioFromReq(req);
+    await registrarLog(
+      usuarioLog,
+      "DELETE",
+      "Planos_Cadastro",
+      plano.Plano_Codigo,
+      `Plano ${plano.Plano_Codigo} excluído`,
+      dadosApagados,
+      null
+    );
 
     res.status(200).json({
       Mensagem: "Plano deletado com sucesso!",

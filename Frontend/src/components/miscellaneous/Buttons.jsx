@@ -419,6 +419,101 @@ ListarUsuarios.propTypes = {
   onClick: PropTypes.func,
 };
 
+/* Inicio - Botao OK (genérico) */
+function BotaoOK({ onClick, disabled, type = "button", children }) {
+  const label = children || "OK";
+  return (
+    <button
+      type={type}
+      onClick={onClick}
+      disabled={disabled}
+      className="bg-blue-600 rounded-md p-2 border-2 border-gray-300 font-bold hover:bg-blue-700"
+    >
+      {label}
+    </button>
+  );
+}
+BotaoOK.propTypes = {
+  onClick: PropTypes.func,
+  disabled: PropTypes.bool,
+  type: PropTypes.string,
+  children: PropTypes.node,
+};
+/* Fim - Botao OK */
+
+/* Inicio - Botao Primario genérico (ex: Entrar, Confirmar) */
+function BotaoPrimario({
+  children,
+  onClick,
+  type = "button",
+  disabled,
+  loading,
+}) {
+  const label = children || "OK";
+  return (
+    <button
+      type={type}
+      onClick={onClick}
+      disabled={disabled}
+      className="bg-red-600 rounded-md p-2 border-2 border-gray-300 font-bold hover:bg-red-700 disabled:bg-gray-500 disabled:cursor-not-allowed"
+    >
+      {loading ? "Aguarde..." : label}
+    </button>
+  );
+}
+BotaoPrimario.propTypes = {
+  children: PropTypes.node,
+  onClick: PropTypes.func,
+  type: PropTypes.string,
+  disabled: PropTypes.bool,
+  loading: PropTypes.bool,
+};
+/* Fim - Botao Primario */
+
+/* Inicio - Botao Icon (pequeno, para ícones como mostrar/ocultar senha) */
+function BotaoIcon({ onClick, children, disabled, className = "" }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={`p-1 rounded ${className}`}
+    >
+      {children}
+    </button>
+  );
+}
+BotaoIcon.propTypes = {
+  onClick: PropTypes.func,
+  children: PropTypes.node,
+  disabled: PropTypes.bool,
+  className: PropTypes.string,
+};
+/* Fim - Botao Icon */
+
+/* Inicio - Botao Toggle (pequeno, usado para opções de ordenação) */
+function BotaoToggle({ children, onClick, active }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`px-3 py-1 rounded-md transition-colors ${
+        active
+          ? "bg-blue-600 text-white"
+          : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+BotaoToggle.propTypes = {
+  children: PropTypes.node,
+  onClick: PropTypes.func,
+  active: PropTypes.bool,
+};
+/* Fim - Botao Toggle */
+
 export const Buttons = {
   BotaoCadastrar,
   BotaoEditar,
@@ -441,6 +536,10 @@ export const Buttons = {
   BotaoPaginacaoAnterior,
   BotaoPaginacaoProxima,
   SelectOrdenacao,
+  BotaoOK,
+  BotaoPrimario,
+  BotaoIcon,
+  BotaoToggle,
 };
 
 export default Buttons;

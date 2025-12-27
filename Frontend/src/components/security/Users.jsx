@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import api from "../../services/api";
+import Buttons from "../miscellaneous/Buttons";
 
 function Users() {
   return (
@@ -307,21 +308,10 @@ function UserForm() {
 
         {/* Botões */}
         <div className="flex justify-center gap-4 pt-4">
-          <button
-            type="submit"
-            disabled={loading}
-            className="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
-          >
+          <Buttons.BotaoCadastrar disabled={loading} loading={loading}>
             {loading ? "Criando..." : "Criar Usuário"}
-          </button>
-          <button
-            type="button"
-            onClick={handleReset}
-            disabled={loading}
-            className="bg-gray-600 text-white px-6 py-2 rounded-md hover:bg-gray-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
-          >
-            Limpar
-          </button>
+          </Buttons.BotaoCadastrar>
+          <Buttons.BotaoLimpar onClick={handleReset} disabled={loading} />
         </div>
       </form>
     </div>
@@ -640,12 +630,7 @@ function UserList() {
       {/* Se um usuário foi selecionado, mostra os detalhes */}
       {selectedUsuario ? (
         <div className="w-full h-auto">
-          <button
-            onClick={handleBackToList}
-            className="mb-4 bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700"
-          >
-            ← Voltar para Lista
-          </button>
+          <Buttons.BotaoVoltar onBack={handleBackToList} />
 
           <h3 className="text-xl font-bold text-white mb-4">
             {editMode ? "Editar Usuário" : "Detalhes do Usuário"}
@@ -756,8 +741,7 @@ function UserList() {
                     placeholder="Deixe em branco para não alterar"
                     minLength="6"
                   />
-                  <button
-                    type="button"
+                  <Buttons.BotaoIcon
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-800"
                   >
@@ -797,7 +781,7 @@ function UserList() {
                         />
                       </svg>
                     )}
-                  </button>
+                  </Buttons.BotaoIcon>
                 </div>
                 <div></div>
                 <p className="text-sm text-gray-400">
@@ -811,14 +795,12 @@ function UserList() {
             <div className="flex justify-center gap-4 pt-4">
               {editMode ? (
                 <>
-                  <button
+                  <Buttons.BotaoSalvarAlteracoes
                     onClick={handleSaveEdit}
                     disabled={loading}
-                    className="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
-                  >
-                    {loading ? "Salvando..." : "💾 Salvar Alterações"}
-                  </button>
-                  <button
+                    loading={loading}
+                  />
+                  <Buttons.BotaoCancelar
                     onClick={() => {
                       setEditMode(false);
                       setEditData({
@@ -830,26 +812,18 @@ function UserList() {
                       setShowPassword(false);
                     }}
                     disabled={loading}
-                    className="bg-gray-600 text-white px-6 py-2 rounded-md hover:bg-gray-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
-                  >
-                    ❌ Cancelar
-                  </button>
+                  />
                 </>
               ) : (
                 <>
-                  <button
-                    onClick={() => setEditMode(true)}
-                    className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700"
-                  >
-                    ✏️ Editar Usuário
-                  </button>
-                  <button
+                  <Buttons.BotaoEditar onClick={() => setEditMode(true)} />
+                  <Buttons.BotaoPrimario
                     onClick={handleDeleteUsuario}
                     disabled={loading}
-                    className="bg-red-600 text-white px-6 py-2 rounded-md hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                    loading={loading}
                   >
                     🗑️ Excluir Usuário
-                  </button>
+                  </Buttons.BotaoPrimario>
                 </>
               )}
             </div>
@@ -907,21 +881,17 @@ function UserList() {
 
             {/* Botões */}
             <div className="flex justify-center gap-4 pt-4">
-              <button
-                type="submit"
+              <Buttons.BotaoPesquisar
                 disabled={loading}
-                className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                loading={loading}
+                type="submit"
               >
                 {loading ? "Pesquisando..." : "Pesquisar"}
-              </button>
-              <button
-                type="button"
+              </Buttons.BotaoPesquisar>
+              <Buttons.BotaoLimpar
                 onClick={handleClearSearch}
                 disabled={loading}
-                className="bg-gray-600 text-white px-6 py-2 rounded-md hover:bg-gray-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
-              >
-                Limpar
-              </button>
+              />
             </div>
           </form>
 
@@ -951,36 +921,24 @@ function UserList() {
                   <span className="text-white self-center mr-2">
                     Ordenar por:
                   </span>
-                  <button
+                  <Buttons.BotaoToggle
                     onClick={() => handleSortChange("id")}
-                    className={`px-4 py-2 rounded-md transition-colors ${
-                      sortBy === "id"
-                        ? "bg-blue-600 text-white"
-                        : "bg-gray-700 text-gray-300 hover:bg-gray-600"
-                    }`}
+                    active={sortBy === "id"}
                   >
                     🔢 ID
-                  </button>
-                  <button
+                  </Buttons.BotaoToggle>
+                  <Buttons.BotaoToggle
                     onClick={() => handleSortChange("login")}
-                    className={`px-4 py-2 rounded-md transition-colors ${
-                      sortBy === "login"
-                        ? "bg-blue-600 text-white"
-                        : "bg-gray-700 text-gray-300 hover:bg-gray-600"
-                    }`}
+                    active={sortBy === "login"}
                   >
                     👤 Login
-                  </button>
-                  <button
+                  </Buttons.BotaoToggle>
+                  <Buttons.BotaoToggle
                     onClick={() => handleSortChange("nome")}
-                    className={`px-4 py-2 rounded-md transition-colors ${
-                      sortBy === "nome"
-                        ? "bg-blue-600 text-white"
-                        : "bg-gray-700 text-gray-300 hover:bg-gray-600"
-                    }`}
+                    active={sortBy === "nome"}
                   >
                     🔤 Nome
-                  </button>
+                  </Buttons.BotaoToggle>
                 </div>
               </div>
 
@@ -995,36 +953,24 @@ function UserList() {
                     Ordenar por:
                   </span>
                   <div className="flex gap-2">
-                    <button
+                    <Buttons.BotaoToggle
                       onClick={() => handleSortChange("id")}
-                      className={`flex-1 px-3 py-2 rounded-md transition-colors text-sm ${
-                        sortBy === "id"
-                          ? "bg-blue-600 text-white"
-                          : "bg-gray-700 text-gray-300 active:bg-gray-600"
-                      }`}
+                      active={sortBy === "id"}
                     >
                       🔢 ID
-                    </button>
-                    <button
+                    </Buttons.BotaoToggle>
+                    <Buttons.BotaoToggle
                       onClick={() => handleSortChange("login")}
-                      className={`flex-1 px-3 py-2 rounded-md transition-colors text-sm ${
-                        sortBy === "login"
-                          ? "bg-blue-600 text-white"
-                          : "bg-gray-700 text-gray-300 active:bg-gray-600"
-                      }`}
+                      active={sortBy === "login"}
                     >
                       👤 Login
-                    </button>
-                    <button
+                    </Buttons.BotaoToggle>
+                    <Buttons.BotaoToggle
                       onClick={() => handleSortChange("nome")}
-                      className={`flex-1 px-3 py-2 rounded-md transition-colors text-sm ${
-                        sortBy === "nome"
-                          ? "bg-blue-600 text-white"
-                          : "bg-gray-700 text-gray-300 active:bg-gray-600"
-                      }`}
+                      active={sortBy === "nome"}
                     >
                       🔤 Nome
-                    </button>
+                    </Buttons.BotaoToggle>
                   </div>
                 </div>
               </div>
@@ -1053,13 +999,13 @@ function UserList() {
           )}
 
           <div className="flex justify-center mt-6">
-            <button
+            <Buttons.BotaoPrimario
               onClick={carregarUsuarios}
               disabled={loading}
-              className="bg-purple-600 text-white px-6 py-2 rounded-md hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+              loading={loading}
             >
               🔄 Recarregar Lista
-            </button>
+            </Buttons.BotaoPrimario>
           </div>
         </div>
       )}

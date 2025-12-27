@@ -9,6 +9,7 @@ const jwt = require("jsonwebtoken"); // Importa o pacote jsonwebtoken para manip
 const bcrypt = require("bcryptjs"); // Importa bcryptjs para hash de senhas
 const Usuarios = require("../models/Usuarios"); // Importa o modelo de Usuários
 const Alunos_Cadastros = require("../models/Alunos_Cadastro"); // Importa o modelo de Alunos
+const { registrarLog, getUsuarioFromReq } = require("../utils/logger");
 
 const router = express.Router(); // Cria uma variavel constante para uma instância do roteador do Express
 
@@ -245,6 +246,18 @@ router.post(
         }`
       );
 
+      // Registra log de criação de usuário
+      const usuarioLog = getUsuarioFromReq(req);
+      await registrarLog(
+        usuarioLog,
+        "CREATE",
+        "Usuarios",
+        novoUsuario.Usuario_ID,
+        `Usuário ${novoUsuario.Usuario_Login} criado`,
+        null,
+        novoUsuario.toJSON()
+      );
+
       return res.status(201).json({
         statusCode: 201,
         Mensagem: "Usuário criado com sucesso!",
@@ -361,6 +374,19 @@ router.patch(
         `✅ Usuário atualizado: ${usuario.Usuario_Login} (${usuario.Usuario_Grupo})`
       );
 
+      // Registra log de atualização de usuário
+      const usuarioLog = getUsuarioFromReq(req);
+      const dadosNovos = usuario.toJSON();
+      await registrarLog(
+        usuarioLog,
+        "UPDATE",
+        "Usuarios",
+        usuario.Usuario_ID,
+        `Usuário ${usuario.Usuario_Login} atualizado`,
+        null,
+        dadosNovos
+      );
+
       return res.status(200).json({
         statusCode: 200,
         Mensagem: "Usuário atualizado com sucesso!",
@@ -406,9 +432,22 @@ router.delete(
       const nomeUsuario = usuario.Usuario_Nome;
 
       // Exclui o usuário
+      const dadosExcluidos = usuario.toJSON();
       await usuario.destroy();
 
       console.log(`✅ Usuário excluído: ${loginUsuario} (${nomeUsuario})`);
+
+      // Registra log de exclusão do usuário
+      const usuarioLog = getUsuarioFromReq(req);
+      await registrarLog(
+        usuarioLog,
+        "DELETE",
+        "Usuarios",
+        usuario.Usuario_ID,
+        `Usuário ${loginUsuario} excluído`,
+        dadosExcluidos,
+        null
+      );
 
       return res.status(200).json({
         statusCode: 200,

@@ -1,14 +1,14 @@
 const express = require("express");
 const Alunos_Cadastros = require("../models/Alunos_Cadastro");
 const Usuarios = require("../models/Usuarios");
-const { registrarLog } = require("../utils/logger");
+const { registrarLog, getUsuarioFromReq } = require("../utils/logger");
 const router = express.Router();
 
 // Rota genérica para exclusão administrativa com log
 router.delete("/delete/:tabela/:id", async (req, res) => {
   try {
     const { tabela, id } = req.params;
-    const usuario = req.body.usuario || "Sistema";
+    const usuario = getUsuarioFromReq(req);
     let registro = null;
     let nomeTabela = "";
     let descricao = "";

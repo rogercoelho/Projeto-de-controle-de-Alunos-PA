@@ -4,7 +4,7 @@ const { Error, Op } = require("sequelize"); // Importando o objeto Error e Op do
 const multer = require("multer"); // Importando multer para upload de arquivos
 const path = require("path"); // Importando path para manipular caminhos de arquivos
 const fs = require("fs"); // Importando fs para manipular arquivos
-const { registrarLog } = require("../utils/logger"); // Importando função para registrar logs
+const { registrarLog, getUsuarioFromReq } = require("../utils/logger"); // Importando função para registrar logs
 const router = express.Router(); //// Criando uma instância do roteador do Express
 
 // Configuração do multer para upload de arquivos
@@ -246,8 +246,9 @@ router.post(
       });
 
       // Registra log de criação
+      const usuarioLog = getUsuarioFromReq(req);
       await registrarLog(
-        req.body.usuario || "Sistema",
+        usuarioLog,
         "CREATE",
         "Alunos_Cadastros",
         Alunos_Codigo,
@@ -497,8 +498,9 @@ router.patch(
       }
 
       // Registra log de atualização
+      const usuarioLog = getUsuarioFromReq(req);
       await registrarLog(
-        req.body.usuario || "Sistema",
+        usuarioLog,
         acao,
         "Alunos_Cadastros",
         codigo,
@@ -675,8 +677,9 @@ router.delete("/delete/:aluno_codigo", async (req, res) => {
     await aluno.destroy(); // Apaga do banco
 
     // Registra log de exclusão
+    const usuarioLog = getUsuarioFromReq(req);
     await registrarLog(
-      req.body.usuario || "Sistema",
+      usuarioLog,
       "DELETE",
       "Alunos_Cadastros",
       aluno_codigo,

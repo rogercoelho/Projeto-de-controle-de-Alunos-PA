@@ -126,26 +126,21 @@ function AdminDelete() {
               </span>
             )}
             <div className="flex flex-col sm:flex-row gap-2 w-full mt-2">
-              <button
+              <Buttons.BotaoPrimario
                 onClick={handleConfirmSenha}
-                className="bg-red-600 text-white w-full sm:w-auto px-4 py-2 rounded-lg font-semibold hover:bg-red-700 disabled:bg-gray-400 transition-colors"
                 disabled={loading || !senha}
-                style={{ fontSize: 16 }}
+                loading={loading}
               >
                 {loading ? "Validando..." : "Confirmar e Excluir"}
-              </button>
-              <button
+              </Buttons.BotaoPrimario>
+              <Buttons.BotaoCancelar
                 onClick={() => {
                   setShowSenhaModal(false);
                   setSenha("");
                   setSenhaError("");
                 }}
-                className="bg-gray-600 text-white w-full sm:w-auto px-4 py-2 rounded-lg font-semibold hover:bg-gray-700 transition-colors"
                 disabled={loading}
-                style={{ fontSize: 16 }}
-              >
-                Cancelar
-              </button>
+              />
             </div>
           </div>
         </div>

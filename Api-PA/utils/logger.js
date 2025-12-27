@@ -43,4 +43,25 @@ const registrarLog = async (
   }
 };
 
-module.exports = { registrarLog };
+/**
+ * Extrai o usuário responsável a partir do objeto de request.
+ * Prioriza `req.user.usuario` ou `req.user.nome` (decodificado do token),
+ * depois `req.body.usuario` e por último retorna "Sistema" como fallback.
+ */
+const getUsuarioFromReq = (req) => {
+  try {
+    if (!req) return "Sistema";
+    const fromUser = req.user && (req.user.usuario || req.user.nome);
+    if (fromUser) return fromUser;
+    if (req.body && req.body.usuario) return req.body.usuario;
+    // opcional: checar header customizado
+    if (req.headers && (req.headers.x_usuario || req.headers["x-usuario"])) {
+      return req.headers.x_usuario || req.headers["x-usuario"];
+    }
+    return "Sistema";
+  } catch (err) {
+    return "Sistema";
+  }
+};
+
+module.exports = { registrarLog, getUsuarioFromReq };

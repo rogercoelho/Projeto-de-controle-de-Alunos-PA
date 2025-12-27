@@ -110,6 +110,72 @@ export function formatarDataBR(dataISO) {
   return `${dia.padStart(2, "0")}/${mes.padStart(2, "0")}/${ano}`;
 }
 
+export function formatarData(dataInput) {
+  // Aceita: Date object, ISO string (YYYY-MM-DD ou YYYY-MM-DDTHH:MM:SS),
+  // ou já DD/MM/YYYY e retorna no formato DD/MM/YYYY
+  if (!dataInput) return "";
+
+  // Date object
+  if (dataInput instanceof Date) {
+    const d = dataInput;
+    const dia = String(d.getDate()).padStart(2, "0");
+    const mes = String(d.getMonth() + 1).padStart(2, "0");
+    const ano = String(d.getFullYear());
+    return `${dia}/${mes}/${ano}`;
+  }
+
+  // String handling
+  const s = String(dataInput);
+  // Já no formato BR
+  if (s.includes("/")) return s;
+
+  // Se for ISO com tempo 'YYYY-MM-DDTHH:MM:SS...' usamos a parte da data
+  if (s.includes("T")) {
+    const datePart = s.split("T")[0];
+    return formatarDataBR(datePart);
+  }
+
+  // Se for 'YYYY-MM-DD hh:mm:ss' ou similar, pega os 10 primeiros caracteres
+  if (s.includes("-") && s.length >= 10) {
+    return formatarDataBR(s.substring(0, 10));
+  }
+
+  return s;
+}
+
+export function formatarHora(dataInput) {
+  if (!dataInput) return "";
+  // aceita Date ou string
+  let d;
+  if (dataInput instanceof Date) d = dataInput;
+  else {
+    try {
+      d = new Date(dataInput);
+    } catch (e) {
+      return "";
+    }
+  }
+  if (isNaN(d.getTime())) return "";
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mm = String(d.getMinutes()).padStart(2, "0");
+  const ss = String(d.getSeconds()).padStart(2, "0");
+  return `${hh}:${mm}:${ss}`;
+}
+
+export function toISODate(dataInput) {
+  if (!dataInput) return "";
+  let d;
+  if (dataInput instanceof Date) d = dataInput;
+  else {
+    d = new Date(dataInput);
+  }
+  if (isNaN(d.getTime())) return "";
+  const ano = d.getFullYear();
+  const mes = String(d.getMonth() + 1).padStart(2, "0");
+  const dia = String(d.getDate()).padStart(2, "0");
+  return `${ano}-${mes}-${dia}`;
+}
+
 export function validarCodigoPlano(codigoPlano) {
   return codigoPlano
     .toUpperCase() // Converte para caixa alta

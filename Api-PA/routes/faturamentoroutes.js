@@ -6,6 +6,7 @@ const fs = require("fs");
 const Planos_Cadastro = require("../models/Planos_Cadastro");
 const Alunos_Cadastros = require("../models/Alunos_Cadastro");
 const Alunos_Faturamento = require("../models/Alunos_Faturamento");
+const { registrarLog, getUsuarioFromReq } = require("../utils/logger");
 
 // Configuração do multer para upload de comprovantes
 const storageComprovante = multer.diskStorage({
@@ -274,6 +275,18 @@ router.post("/registrar-faturamento", async (req, res) => {
       Faturamento_Valor_Total: Faturamento_Valor_Total ?? null,
     });
 
+    // Registra log de criação do faturamento
+    const usuarioLog = getUsuarioFromReq(req);
+    await registrarLog(
+      usuarioLog,
+      "CREATE",
+      "Alunos_Faturamento",
+      novoFaturamento.id || novoFaturamento.Faturamento_ID,
+      `Faturamento registrado para aluno ${Aluno_Codigo}`,
+      null,
+      novoFaturamento.toJSON()
+    );
+
     res.status(201).json({
       Mensagem: "Faturamento registrado com sucesso!",
       Faturamento: novoFaturamento,
@@ -342,6 +355,9 @@ router.patch(
         } = pag;
         if (!id) continue;
 
+        // captura estado antes do update para fins de log
+        const faturamentoAntes = await Alunos_Faturamento.findByPk(id);
+
         const updateData = {
           Faturamento_Data_Pagamento: Faturamento_Data_Pagamento || null,
           Faturamento_Desconto: Faturamento_Desconto || null,
@@ -364,6 +380,20 @@ router.patch(
           atualizado: !!updated,
           comprovante: arquivosMap[id] || null,
         });
+
+        if (updated) {
+          const faturamentoDepois = await Alunos_Faturamento.findByPk(id);
+          const usuarioLog = getUsuarioFromReq(req);
+          await registrarLog(
+            usuarioLog,
+            "UPDATE",
+            "Alunos_Faturamento",
+            id,
+            `Pagamento registrado para faturamento ${id}`,
+            faturamentoAntes ? faturamentoAntes.toJSON() : null,
+            faturamentoDepois ? faturamentoDepois.toJSON() : null
+          );
+        }
       }
       res.json({ Mensagem: "Pagamentos registrados.", resultados });
     } catch (error) {
@@ -498,3 +528,66 @@ router.get("/relatorio-mensal/:mes/:ano", async (req, res) => {
 });
 
 module.exports = router;
+
+// Rota para buscar alunos com planos vencendo no mês atual
+router.get("/expirando", async (req, res) => {
+  try {
+    const { Op } = require("sequelize");
+    const hoje = new Date();
+    const ano = hoje.getFullYear();
+    const mes = hoje.getMonth() + 1; // 1-12
+
+    const primeiroDia = `${ano}-${String(mes).padStart(2, "0")}-01`;
+    const ultimoDiaDate = new Date(ano, mes, 0);
+    const ultimoDia = `${ano}-${String(mes).padStart(2, "0")}-${String(
+      ultimoDiaDate.getDate()
+    ).padStart(2, "0")}`;
+
+    // Busca faturamentos cujo Faturamento_Fim esteja dentro do mês atual
+    const faturamentos = await Alunos_Faturamento.findAll({
+      where: {
+        Faturamento_Fim: {
+          [Op.between]: [primeiroDia, ultimoDia],
+        },
+      },
+      raw: true,
+    });
+
+    if (faturamentos.length === 0) {
+      return res.json({ alunos: [] });
+    }
+
+    // Busca dados dos alunos relacionados
+    const codigosAlunos = [...new Set(faturamentos.map((f) => f.Aluno_Codigo))];
+    const alunos = await Alunos_Cadastros.findAll({
+      where: { Alunos_Codigo: codigosAlunos },
+      attributes: [
+        "Alunos_Codigo",
+        "Alunos_Nome",
+        "Alunos_CPF",
+        "Alunos_Telefone",
+      ],
+      raw: true,
+    });
+
+    // Junta faturamento relevante com aluno
+    const resultado = faturamentos.map((fat) => {
+      const aluno =
+        alunos.find((a) => a.Alunos_Codigo === fat.Aluno_Codigo) || {};
+      return {
+        Alunos_Codigo: fat.Aluno_Codigo,
+        Alunos_Nome: aluno.Alunos_Nome || null,
+        Alunos_CPF: aluno.Alunos_CPF || null,
+        Alunos_Telefone: aluno.Alunos_Telefone || null,
+        Plano_Codigo: fat.Plano_Codigo,
+        Faturamento_Fim: fat.Faturamento_Fim,
+        Faturamento_ID: fat.id || fat.Faturamento_ID,
+      };
+    });
+
+    res.json({ alunos: resultado });
+  } catch (error) {
+    console.error("Erro ao buscar faturamentos expirando:", error);
+    res.status(500).json({ Erro: "Erro ao buscar faturamentos expirando." });
+  }
+});

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { login } from "../../services/auth";
 import { useNavigate } from "react-router-dom";
+import Buttons from "../miscellaneous/Buttons";
 
 function Login() {
   const [formData, setFormData] = useState({
@@ -153,13 +154,13 @@ function Login() {
           </div>
 
           {/* Botão */}
-          <button
+          <Buttons.BotaoPrimario
             type="submit"
             disabled={loading}
-            className="w-full bg-red-600 text-white py-2 rounded-md hover:bg-red-700 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors"
+            loading={loading}
           >
             {loading ? "Entrando..." : "Entrar"}
-          </button>
+          </Buttons.BotaoPrimario>
         </form>
       </div>
     </div>

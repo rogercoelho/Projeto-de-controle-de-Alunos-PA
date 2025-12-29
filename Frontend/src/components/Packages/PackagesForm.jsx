@@ -23,7 +23,7 @@ function PackagesForm() {
   });
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
 
     // Se for o campo código, valida para aceitar apenas números e letras em caixa alta
     if (name === "codigo") {
@@ -50,6 +50,12 @@ function PackagesForm() {
       }));
       return;
     }
+    // checkbox handling
+    if (type === "checkbox") {
+      setFormData((prev) => ({ ...prev, [name]: checked }));
+      return;
+    }
+
     setFormData((prev) => ({
       ...prev,
       [name]: value,
@@ -65,6 +71,9 @@ function PackagesForm() {
         quantidadeSemana: formData.quantidadeSemana,
         tipoPagamento: formData.tipoPagamento,
         valor: formData.valor,
+        contador_habilitado: formData.contador_habilitado || false,
+        contador_limite: formData.contador_limite || null,
+        wet_value: formData.wet_value || null,
       });
       showToast({
         type: "success",
@@ -76,6 +85,9 @@ function PackagesForm() {
         quantidadeSemana: "",
         tipoPagamento: "",
         valor: "",
+        contador_habilitado: false,
+        contador_limite: "",
+        wet_value: "",
       });
     } catch (error) {
       // Se for erro 401, o interceptor global já trata
@@ -200,6 +212,59 @@ function PackagesForm() {
             className="w-full px-4 py-2 bg-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
+        {/* Habilitar contador */}
+        <div className="flex items-center gap-3">
+          <input
+            type="checkbox"
+            name="contador_habilitado"
+            checked={!!formData.contador_habilitado}
+            onChange={handleChange}
+            id="contador_habilitado"
+            className="h-4 w-4 text-indigo-600 bg-gray-700 border-gray-600 rounded"
+          />
+          <label
+            htmlFor="contador_habilitado"
+            className="text-sm text-gray-300"
+          >
+            Habilitar contador
+          </label>
+        </div>
+
+        {formData.contador_habilitado && (
+          <>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Limite do Contador *
+              </label>
+              <input
+                type="number"
+                name="contador_limite"
+                value={formData.contador_limite}
+                onChange={handleChange}
+                required
+                min="1"
+                placeholder="Ex: 4"
+                className="w-full px-4 py-2 bg-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Valor a ser registrado (WET) (R$) *
+              </label>
+              <input
+                type="number"
+                name="wet_value"
+                value={formData.wet_value}
+                onChange={handleChange}
+                required
+                min="0"
+                step="0.01"
+                placeholder="Ex: 50.00"
+                className="w-full px-4 py-2 bg-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </>
+        )}
         {/* Botões */}
         <div className="flex justify-center gap-6 pt-4">
           <Buttons.BotaoCadastrar

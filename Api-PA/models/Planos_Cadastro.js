@@ -29,6 +29,22 @@ const Planos_Cadastro = db.sequelizeconnection.define(
       allowNull: false,
       comment: "Valor do plano",
     },
+    Plano_Contador_Habilitado: {
+      type: db.Sequelize.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+      comment: "Indica se o contador WET está habilitado para este plano",
+    },
+    Plano_Contador_Limite: {
+      type: db.Sequelize.INTEGER,
+      allowNull: true,
+      comment: "Limite do contador para gerar cobrança WET",
+    },
+    Plano_Wet_Valor: {
+      type: db.Sequelize.DECIMAL(10, 2),
+      allowNull: true,
+      comment: "Valor fixo a ser registrado quando contador atingir o limite",
+    },
     Plano_Ativo: {
       type: db.Sequelize.ENUM("Ativo", "Inativo"),
       allowNull: false,

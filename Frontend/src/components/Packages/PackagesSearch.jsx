@@ -134,7 +134,11 @@ function PackagesSearch() {
   };
 
   const handleEditChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
+    if (type === "checkbox") {
+      setEditFormData((prev) => ({ ...prev, [name]: !!checked }));
+      return;
+    }
     setEditFormData((prev) => ({
       ...prev,
       [name]: value,
@@ -153,6 +157,17 @@ function PackagesSearch() {
       Plano_Valor: editFormData.Plano_Valor,
       Plano_Ativo: editFormData.Plano_Ativo,
     };
+
+    // Incluir campos do contador/WET se presentes
+    if (editFormData.Plano_Contador_Habilitado !== undefined) {
+      dados.contador_habilitado = !!editFormData.Plano_Contador_Habilitado;
+    }
+    if (editFormData.Plano_Contador_Limite !== undefined) {
+      dados.contador_limite = editFormData.Plano_Contador_Limite;
+    }
+    if (editFormData.Plano_Wet_Valor !== undefined) {
+      dados.wet_value = editFormData.Plano_Wet_Valor;
+    }
 
     console.log("📤 Dados sendo enviados:", dados);
     console.log("📤 URL:", `/planos/update/${selectedPlano.Plano_Codigo}`);

@@ -6,13 +6,32 @@ const { registrarLog, getUsuarioFromReq } = require("../utils/logger");
 // Cadastrar novo plano
 router.post("/create", async (req, res) => {
   try {
-    const { codigo, nome, quantidadeSemana, tipoPagamento, valor } = req.body;
+    const {
+      codigo,
+      nome,
+      quantidadeSemana,
+      tipoPagamento,
+      valor,
+      contador_habilitado,
+      contador_limite,
+      wet_value,
+    } = req.body;
 
-    // Validações
+    // Validações básicas
     if (!codigo || !nome || !quantidadeSemana || !tipoPagamento || !valor) {
       return res.status(400).json({
         Erro: "Todos os campos são obrigatórios.",
       });
+    }
+
+    // Se contador habilitado, obrigar limite e valor
+    const contadorHabilitadoBool = !!contador_habilitado;
+    if (contadorHabilitadoBool) {
+      if (!contador_limite || !wet_value) {
+        return res.status(400).json({
+          Erro: "Quando o contador está habilitado, informe 'contador_limite' e 'wet_value'.",
+        });
+      }
     }
 
     // Verifica se o código já existe
@@ -33,6 +52,9 @@ router.post("/create", async (req, res) => {
       Plano_Quantidade_Semana: quantidadeSemana,
       Plano_Pagamento: tipoPagamento,
       Plano_Valor: valor,
+      Plano_Contador_Habilitado: contadorHabilitadoBool,
+      Plano_Contador_Limite: contador_limite || null,
+      Plano_Wet_Valor: wet_value || null,
       Plano_Ativo: "Ativo",
     });
 
@@ -141,7 +163,16 @@ router.get("/:codigo", async (req, res) => {
 // Atualizar plano
 router.patch("/update/:codigo", async (req, res) => {
   try {
-    const { nome, quantidadeSemana, tipoPagamento, valor, ativo } = req.body;
+    const {
+      nome,
+      quantidadeSemana,
+      tipoPagamento,
+      valor,
+      ativo,
+      contador_habilitado,
+      contador_limite,
+      wet_value,
+    } = req.body;
 
     const plano = await Planos_Cadastro.findOne({
       where: { Plano_Codigo: req.params.codigo },
@@ -161,6 +192,13 @@ router.patch("/update/:codigo", async (req, res) => {
       ...(tipoPagamento && { Plano_Pagamento: tipoPagamento }),
       ...(valor && { Plano_Valor: valor }),
       ...(ativo && { Plano_Ativo: ativo }),
+      ...(contador_habilitado !== undefined && {
+        Plano_Contador_Habilitado: !!contador_habilitado,
+      }),
+      ...(contador_limite !== undefined && {
+        Plano_Contador_Limite: contador_limite,
+      }),
+      ...(wet_value !== undefined && { Plano_Wet_Valor: wet_value }),
     });
 
     // Registra log de atualização do plano

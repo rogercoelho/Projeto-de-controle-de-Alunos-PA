@@ -112,6 +112,58 @@ function PackagesEditForm({
         </select>
       </div>
 
+      {/* Habilitar contador */}
+      <div className="flex items-center gap-3">
+        <input
+          type="checkbox"
+          name="Plano_Contador_Habilitado"
+          checked={!!editFormData.Plano_Contador_Habilitado}
+          onChange={onChangeEdit}
+          id="Plano_Contador_Habilitado"
+          className="h-4 w-4 text-indigo-600 bg-gray-700 border-gray-600 rounded"
+        />
+        <label
+          htmlFor="Plano_Contador_Habilitado"
+          className="text-sm text-gray-300"
+        >
+          Habilitar contador
+        </label>
+      </div>
+
+      {editFormData.Plano_Contador_Habilitado && (
+        <>
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Limite do Contador *
+            </label>
+            <input
+              type="number"
+              name="Plano_Contador_Limite"
+              value={editFormData.Plano_Contador_Limite || ""}
+              onChange={onChangeEdit}
+              required
+              min="1"
+              className="w-full px-4 py-2 bg-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Valor a ser registrado (WET) (R$) *
+            </label>
+            <input
+              type="number"
+              name="Plano_Wet_Valor"
+              value={editFormData.Plano_Wet_Valor || ""}
+              onChange={onChangeEdit}
+              required
+              min="0"
+              step="0.01"
+              className="w-full px-4 py-2 bg-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+        </>
+      )}
+
       {/* Botões */}
       <div className="flex gap-4 pt-4">
         <Buttons.BotaoSalvarAlteracoes
@@ -140,6 +192,12 @@ PackagesEditForm.propTypes = {
     Plano_Pagamento: PropTypes.string,
     Plano_Valor: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     Plano_Ativo: PropTypes.string,
+    Plano_Contador_Habilitado: PropTypes.bool,
+    Plano_Contador_Limite: PropTypes.oneOfType([
+      PropTypes.string,
+      PropTypes.number,
+    ]),
+    Plano_Wet_Valor: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   }).isRequired,
   loading: PropTypes.bool,
   onSave: PropTypes.func.isRequired,

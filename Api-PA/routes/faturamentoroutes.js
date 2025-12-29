@@ -89,7 +89,6 @@ const uploadComprovante = multer({
 // Rota para buscar todos os alunos com faturamentos pendentes
 router.get("/pendentes", async (req, res) => {
   try {
-    // Busca todos os Aluno_Codigo distintos com Faturamento_Data_Pagamento nulo
     const pendentes = await Alunos_Faturamento.findAll({
       where: { Faturamento_Data_Pagamento: null },
       attributes: ["Aluno_Codigo"],
@@ -414,6 +413,105 @@ router.patch(
 
         if (updated) {
           const faturamentoDepois = await Alunos_Faturamento.findByPk(id);
+
+          // Lógica do contador/repasse: utilizar códigos (Aluno_Codigo e Plano_Codigo),
+          // não usar ID para a verificação do contador.
+          try {
+            if (faturamentoDepois) {
+              const alunoCodigo = faturamentoDepois.Aluno_Codigo;
+              const planoCodigo = faturamentoDepois.Plano_Codigo;
+
+              // Busca configuração do plano
+              const planoConfig = await Planos_Cadastro.findOne({
+                where: { Plano_Codigo: planoCodigo },
+                raw: true,
+              });
+
+              if (planoConfig && !!planoConfig.Plano_Contador_Habilitado) {
+                // Buscar último registro de faturamento do mesmo aluno+plano com inicio anterior
+                const { Op } = require("sequelize");
+
+                const registroAnterior = await Alunos_Faturamento.findOne({
+                  where: {
+                    Aluno_Codigo: alunoCodigo,
+                    Plano_Codigo: planoCodigo,
+                    id: { [Op.ne]: faturamentoDepois.id },
+                  },
+                  order: [
+                    ["Faturamento_Inicio", "DESC"],
+                    ["id", "DESC"],
+                  ],
+                });
+
+                // Debug
+                console.log(
+                  "[contador] aluno",
+                  alunoCodigo,
+                  "plano",
+                  planoCodigo
+                );
+                console.log(
+                  "[contador] registroAnterior id:",
+                  registroAnterior
+                    ? registroAnterior.id || registroAnterior.Faturamento_ID
+                    : null
+                );
+                console.log(
+                  "[contador] registroAnterior contador:",
+                  registroAnterior
+                    ? registroAnterior.Faturamento_Contador
+                    : null
+                );
+
+                const contadorAtual =
+                  registroAnterior &&
+                  registroAnterior.Faturamento_Contador != null
+                    ? parseInt(registroAnterior.Faturamento_Contador, 10)
+                    : 0;
+
+                const limite =
+                  planoConfig.Plano_Contador_Limite != null
+                    ? parseInt(planoConfig.Plano_Contador_Limite, 10)
+                    : null;
+
+                // Nova sequência desejada:
+                // - Se o registro anterior já estava no limite, zera o anterior e grava 1 no novo registro.
+                // - Caso contrário, grava contador = registroAnterior.contador + 1 no novo registro.
+                // - Se o novo registro atinge o limite (==), grava também o repasse no novo registro (mantendo o contador nesse valor).
+                if (
+                  registroAnterior &&
+                  registroAnterior.Faturamento_Contador != null &&
+                  limite !== null &&
+                  parseInt(registroAnterior.Faturamento_Contador, 10) === limite
+                ) {
+                  // Registro anterior estava no limite: não alteramos históricos.
+                  // Gravamos contador = 1 no novo registro.
+                  await faturamentoDepois.update({ Faturamento_Contador: 1 });
+                } else {
+                  // incremento normal
+                  const novoContador = contadorAtual + 1;
+
+                  if (limite !== null && novoContador === limite) {
+                    // atinge o limite: grava repasse e mantém o contador no valor do limite
+                    await faturamentoDepois.update({
+                      Faturamento_Repasse:
+                        planoConfig.Plano_Wet_Valor != null
+                          ? planoConfig.Plano_Wet_Valor
+                          : null,
+                      Faturamento_Contador: novoContador,
+                    });
+                  } else {
+                    await faturamentoDepois.update({
+                      Faturamento_Contador: novoContador,
+                    });
+                  }
+                }
+              }
+            }
+          } catch (contadorErr) {
+            console.error("Erro na lógica de contador/repasse:", contadorErr);
+          }
+
           const usuarioLog = getUsuarioFromReq(req);
           await registrarLog(
             usuarioLog,

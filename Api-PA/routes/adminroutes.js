@@ -1,6 +1,8 @@
 const express = require("express");
 const Alunos_Cadastros = require("../models/Alunos_Cadastro");
 const Usuarios = require("../models/Usuarios");
+const Alunos_Faturamento = require("../models/Alunos_Faturamento");
+const bcrypt = require("bcryptjs");
 const { registrarLog, getUsuarioFromReq } = require("../utils/logger");
 const router = express.Router();
 
@@ -9,6 +11,35 @@ router.delete("/delete/:tabela/:id", async (req, res) => {
   try {
     const { tabela, id } = req.params;
     const usuario = getUsuarioFromReq(req);
+    const { senha } = req.body || {};
+
+    // Validação server-side: senha obrigatória para exclusões administrativas
+    if (!senha) {
+      return res.status(400).json({
+        statusCode: 400,
+        Mensagem: "Senha é obrigatória para confirmação da exclusão.",
+      });
+    }
+
+    // Usa o usuário do token como referência (mais confiável que valor enviado pelo cliente)
+    const usuarioLogin = req.user?.usuario || usuario;
+    const usuarioEncontrado = await Usuarios.findOne({
+      where: { Usuario_Login: usuarioLogin, Usuario_Ativo: true },
+    });
+    if (!usuarioEncontrado) {
+      return res
+        .status(401)
+        .json({ statusCode: 401, Mensagem: "Usuário inválido." });
+    }
+    const senhaValida = await bcrypt.compare(
+      senha,
+      usuarioEncontrado.Usuario_Senha
+    );
+    if (!senhaValida) {
+      return res
+        .status(401)
+        .json({ statusCode: 401, Mensagem: "Senha incorreta." });
+    }
     let registro = null;
     let nomeTabela = "";
     let descricao = "";
@@ -54,6 +85,28 @@ router.delete("/delete/:tabela/:id", async (req, res) => {
         nomeTabela = "Usuarios";
         if (registro) {
           descricao = `Usuário ${registro.Usuario_Nome} (ID: ${id}) excluído via painel admin`;
+        }
+        break;
+
+      case "faturamento":
+      case "Alunos_Faturamento":
+        registro = await Alunos_Faturamento.findByPk(parseInt(id, 10));
+        console.log(
+          `📋 Registro encontrado (Faturamento):`,
+          registro ? "SIM" : "NÃO"
+        );
+        if (registro) {
+          console.log(`📄 Dados do faturamento:`, {
+            id: registro.id || registro.Faturamento_ID,
+            aluno: registro.Aluno_Codigo,
+            plano: registro.Plano_Codigo,
+          });
+        }
+        nomeTabela = "Alunos_Faturamento";
+        if (registro) {
+          descricao = `Faturamento ${
+            registro.id || registro.Faturamento_ID
+          } (Aluno: ${registro.Aluno_Codigo}) excluído via painel admin`;
         }
         break;
 

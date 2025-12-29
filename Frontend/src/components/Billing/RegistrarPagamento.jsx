@@ -12,6 +12,7 @@ function RegistrarPagamento() {
   const [loading, setLoading] = useState(false);
   const [alunoInfo, setAlunoInfo] = useState(null);
   const [faturamentos, setFaturamentos] = useState([]);
+  const [planosMap, setPlanosMap] = useState({});
   const [datasPagamento, setDatasPagamento] = useState({});
   const [descontos, setDescontos] = useState({});
   const [motivosDesconto, setMotivosDesconto] = useState({});
@@ -32,6 +33,21 @@ function RegistrarPagamento() {
   // Busca inicial ao montar
   useEffect(() => {
     fetchAlunosComPendencia();
+    // Busca planos para lógica de contador/WET
+    const fetchPlanos = async () => {
+      try {
+        const res = await api.get("/planos/");
+        const planos = res.data.Planos || [];
+        const map = {};
+        planos.forEach((p) => {
+          map[p.Plano_Codigo] = p;
+        });
+        setPlanosMap(map);
+      } catch {
+        setPlanosMap({});
+      }
+    };
+    fetchPlanos();
   }, []);
 
   useEffect(() => {
@@ -78,11 +94,40 @@ function RegistrarPagamento() {
     // Monta array de pagamentos conforme esperado pelo backend
     const pagamentos = faturamentos.map((fat) => {
       const fatId = fat.id || fat.Faturamento_ID;
+
+      // Lógica de contador/repasse executada no momento do pagamento
+      const plano = planosMap[fat.Plano_Codigo];
+
+      let novoContador = fat.Faturamento_Contador ?? null;
+      let repasse = null;
+      if (plano && plano.Plano_Contador_Habilitado) {
+        const limite = parseInt(plano.Plano_Contador_Limite, 10);
+        const atual =
+          typeof fat.Faturamento_Contador !== "undefined" &&
+          fat.Faturamento_Contador !== null
+            ? parseInt(fat.Faturamento_Contador, 10)
+            : 0;
+
+        if (!isNaN(limite) && atual === limite) {
+          // atingiu o limite -> gravar repasse e zerar contador
+          repasse =
+            plano.Plano_Wet_Valor != null
+              ? parseFloat(plano.Plano_Wet_Valor)
+              : null;
+          novoContador = 0;
+        } else {
+          // incrementa contador
+          novoContador = atual + 1;
+        }
+      }
+
       return {
         id: fatId,
         Faturamento_Data_Pagamento: datasPagamento[fatId] || null,
         Faturamento_Desconto: descontos[fatId] || null,
         Faturamento_Motivo: motivosDesconto[fatId] || null,
+        ...(novoContador !== null && { Faturamento_Contador: novoContador }),
+        ...(repasse !== null && { Faturamento_Repasse: repasse }),
       };
     });
 
@@ -145,7 +190,7 @@ function RegistrarPagamento() {
       <MessageToast messageToast={messageToast} />
       <form
         onSubmit={handleSubmit}
-        className="bg-gray-800 rounded-xl p-0 sm:p-6 space-y-4 w-full h-full min-h-[80vh] shadow-lg border-2 border-gray-700"
+        className="bg-gray-800 rounded-xl p-4 sm:p-6 space-y-4 w-full h-full min-h-[80vh] shadow-lg border-2 border-gray-700"
         style={{ minWidth: 0, maxWidth: "100vw" }}
       >
         <div className="flex flex-col gap-1">

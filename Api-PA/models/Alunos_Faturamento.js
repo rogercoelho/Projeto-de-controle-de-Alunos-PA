@@ -32,6 +32,16 @@ const Alunos_Faturamento = db.sequelizeconnection.define(
       allowNull: true,
       comment: "Valor total do faturamento",
     },
+    Faturamento_Contador: {
+      type: db.Sequelize.INTEGER,
+      allowNull: true,
+      comment: "Contador utilizado para lógica de WET",
+    },
+    Faturamento_Repasse: {
+      type: db.Sequelize.DECIMAL(10, 2),
+      allowNull: true,
+      comment: "Valor do repasse a ser enviado para WET",
+    },
     Faturamento_Data_Pagamento: {
       type: db.Sequelize.DATEONLY,
       allowNull: true,

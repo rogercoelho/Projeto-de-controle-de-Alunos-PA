@@ -1,6 +1,7 @@
 import { useState } from "react";
 import api from "../../services/api";
 import { getUsuario } from "../../services/auth";
+import Buttons from "../miscellaneous/Buttons";
 
 function AdminDelete() {
   const [tabela, setTabela] = useState("");
@@ -47,12 +48,13 @@ function AdminDelete() {
         usuario: usuarioLogado?.login || usuarioLogado?.usuario,
         senha,
       });
-      // Se sucesso, prossegue com exclusão
+      // Se sucesso na verificação, prossegue com exclusão (envia senha também para validação server-side)
       const response = await api.delete(
         `/admin/delete/${tabela}/${registroId}`,
         {
           data: {
             usuario: usuarioLogado?.login || usuarioLogado?.nome || "Sistema",
+            senha,
           },
         }
       );

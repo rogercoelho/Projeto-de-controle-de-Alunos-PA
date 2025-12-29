@@ -586,7 +586,7 @@ function MobileMenu({ onNavigate, ehAdmin }) {
 
                       <button
                         onClick={() =>
-                          handleNavigation("Financeiro", "RelatorioMensal")
+                          handleNavigation("Financeiro", "RelatorioMensalPA")
                         }
                         className="w-full flex items-center gap-3 px-4 py-3 bg-indigo-900/30 hover:bg-indigo-800/40 active:bg-indigo-700/50 rounded-lg text-white text-left transition-all border border-indigo-800/50"
                       >
@@ -603,7 +603,33 @@ function MobileMenu({ onNavigate, ehAdmin }) {
                             d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                           />
                         </svg>
-                        <span className="font-medium">Relatório Mensal</span>
+                        <span className="font-medium">
+                          Relatório Mensal (PA)
+                        </span>
+                      </button>
+
+                      <button
+                        onClick={() =>
+                          handleNavigation("Financeiro", "RelatorioMensalWET")
+                        }
+                        className="w-full flex items-center gap-3 px-4 py-3 bg-indigo-900/30 hover:bg-indigo-800/40 active:bg-indigo-700/50 rounded-lg text-white text-left transition-all border border-indigo-800/50"
+                      >
+                        <svg
+                          className="w-5 h-5 shrink-0"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                          />
+                        </svg>
+                        <span className="font-medium">
+                          Relatório Mensal (WET)
+                        </span>
                       </button>
                     </div>
                   </div>

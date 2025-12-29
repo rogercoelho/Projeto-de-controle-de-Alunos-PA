@@ -10,7 +10,8 @@ import Financeiro from "./components/Financeiro";
 import Faturamento from "./components/Billing/Faturamento";
 import RegistrarPagamento from "./components/Billing/RegistrarPagamento";
 import ExtratoAluno from "./components/Billing/ExtratoAluno";
-import Relatorio from "./components/Billing/Relatorio";
+import Relatorio_PA from "./components/Billing/Relatorio_PA";
+import Relatorio_WET from "./components/Billing/Relatorio_WET";
 import ProtectedRoute from "./components/Security/ProtectedRoute";
 import AdminDelete from "./components/Security/AdminDelete";
 import MobileMenu from "./components/miscellaneous/MobileMenu";
@@ -312,8 +313,12 @@ function App() {
                           <ExtratoAluno key="extrato-aluno" />
                         )}
                       {activeComponent === "Financeiro" &&
-                        activeComponent2 === "RelatorioMensal" && (
-                          <Relatorio key="relatorio-mensal" />
+                        activeComponent2 === "RelatorioMensalPA" && (
+                          <Relatorio_PA key="relatorio-mensal-pa" />
+                        )}
+                      {activeComponent === "Financeiro" &&
+                        activeComponent2 === "RelatorioMensalWET" && (
+                          <Relatorio_WET key="relatorio-mensal-wet" />
                         )}
                       {activeComponent === "Financeiro" &&
                         (!activeComponent2 ||

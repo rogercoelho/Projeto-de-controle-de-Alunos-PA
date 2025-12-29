@@ -6,7 +6,7 @@ import CustomSelect from "../miscellaneous/CustomSelect";
 import Buttons from "../miscellaneous/Buttons";
 import useToast from "../../hooks/useToast";
 
-function Relatorio() {
+function Relatorio_PA() {
   const [mes, setMes] = useState("");
   const [ano, setAno] = useState("");
   const [percentualDesconto, setPercentualDesconto] = useState(15);
@@ -189,7 +189,7 @@ function Relatorio() {
       const doc = new jsPDF("l", "mm", "a4"); // Landscape para caber mais colunas
 
       const nomeMesLabel = meses.find((m) => m.value === mes)?.label || mes;
-      const filename = `Relatorio_${nomeMesLabel}_${ano}.pdf`;
+      const filename = `Relatorio_PA_${nomeMesLabel}_${ano}.pdf`;
 
       // Cores
       const bgDark = [31, 41, 55];
@@ -211,7 +211,7 @@ function Relatorio() {
       // Título
       doc.setFontSize(16);
       doc.setTextColor(...textWhite);
-      doc.text(`Relatório Mensal - ${nomeMesLabel}/${ano}`, 148.5, y + 8, {
+      doc.text(`Relatório Mensal PA - ${nomeMesLabel}/${ano}`, 148.5, y + 8, {
         align: "center",
       });
       y += 18;
@@ -393,7 +393,9 @@ function Relatorio() {
         className="bg-gray-800 rounded-xl p-3 sm:p-6 space-y-4 w-full h-full min-h-[80vh] shadow-lg border-2 border-gray-700"
         style={{ minWidth: 0, maxWidth: "100vw" }}
       >
-        <h2 className="text-xl font-bold text-white mb-4">Relatório Mensal</h2>
+        <h2 className="text-xl font-bold text-white mb-4">
+          Relatório Mensal PA
+        </h2>
 
         {/* Dropdowns e Campo de Desconto */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -651,4 +653,4 @@ function Relatorio() {
   );
 }
 
-export default Relatorio;
+export default Relatorio_PA;

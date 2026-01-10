@@ -115,48 +115,101 @@ function Relatorio_PA() {
       relatorio;
     const desconto = parseFloat(percentualDesconto) || 0;
 
-    return pagamentos.map((pag) => {
+    const resultado = [];
+
+    for (const pag of pagamentos) {
       const aluno =
         alunos.find((a) => a.Alunos_Codigo === pag.Aluno_Codigo) || {};
       const plano =
         planos.find((p) => p.Plano_Codigo === pag.Plano_Codigo) || {};
 
-      // Valor total do faturamento
       const valorTotalFaturamento =
         parseFloat(pag.Faturamento_Valor_Total) || 0;
-
-      // Calcula valor mensal baseado no tipo de plano
       const mesesPlano = getMesesPorTipoPlano(plano.Plano_Pagamento);
       const valorMensal = valorTotalFaturamento / mesesPlano;
 
-      // Aplica percentual de desconto
       const valorComDesconto = valorMensal * (1 - desconto / 100);
-      const valorWET = valorComDesconto / 2;
-      const valorPA = valorMensal - valorWET;
+      const valorWETPadrao = valorComDesconto / 2;
 
-      // Calcula a parcela
-      const { parcela, totalParcelas } = calcularParcela(
-        pag.Faturamento_Inicio,
-        plano.Plano_Pagamento,
-        mesSelecionado || parseInt(mes, 10),
-        anoSelecionado || parseInt(ano, 10)
-      );
+      // Nova lógica: se houver contador
+      if (pag.Faturamento_Contador != null) {
+        if (pag.Faturamento_Repasse != null) {
+          const repasse = parseFloat(pag.Faturamento_Repasse) || 0;
+          const { parcela, totalParcelas } = calcularParcela(
+            pag.Faturamento_Inicio,
+            plano.Plano_Pagamento,
+            mesSelecionado || parseInt(mes, 10),
+            anoSelecionado || parseInt(ano, 10)
+          );
 
-      return {
-        id: pag.id,
-        alunoNome: aluno.Alunos_Nome || "-",
-        alunoCodigo: pag.Aluno_Codigo,
-        planoCodigo: pag.Plano_Codigo,
-        planoNome: plano.Plano_Nome || "-",
-        planoTipo: plano.Plano_Pagamento || "-",
-        dataPagamento: pag.Faturamento_Data_Pagamento,
-        parcela: `${parcela}/${totalParcelas}`,
-        valorMensal,
-        valorComDesconto,
-        valorWET,
-        valorPA,
-      };
-    });
+          // Quando há repasse, exibimos repasse em WET e PA = valorMensal - repasse
+          resultado.push({
+            id: pag.id,
+            alunoNome: aluno.Alunos_Nome || "-",
+            alunoCodigo: pag.Aluno_Codigo,
+            planoCodigo: pag.Plano_Codigo,
+            planoNome: plano.Plano_Nome || "-",
+            planoTipo: plano.Plano_Pagamento || "-",
+            dataPagamento: pag.Faturamento_Data_Pagamento,
+            parcela: `${parcela}/${totalParcelas}`,
+            valorMensal,
+            valorComDesconto,
+            valorWET: repasse,
+            valorPA: valorMensal - repasse,
+          });
+        } else {
+          // contador presente mas sem repasse: WET = '-', PA mantém cálculo padrão (valorComDesconto/2)
+          const { parcela, totalParcelas } = calcularParcela(
+            pag.Faturamento_Inicio,
+            plano.Plano_Pagamento,
+            mesSelecionado || parseInt(mes, 10),
+            anoSelecionado || parseInt(ano, 10)
+          );
+
+          resultado.push({
+            id: pag.id,
+            alunoNome: aluno.Alunos_Nome || "-",
+            alunoCodigo: pag.Aluno_Codigo,
+            planoCodigo: pag.Plano_Codigo,
+            planoNome: plano.Plano_Nome || "-",
+            planoTipo: plano.Plano_Pagamento || "-",
+            dataPagamento: pag.Faturamento_Data_Pagamento,
+            parcela: `${parcela}/${totalParcelas}`,
+            valorMensal,
+            valorComDesconto,
+            valorWET: "-",
+            valorPA: valorMensal,
+          });
+        }
+      } else {
+        // comportamento padrão
+        const valorWET = valorWETPadrao;
+        const valorPA = valorComDesconto / 2;
+        const { parcela, totalParcelas } = calcularParcela(
+          pag.Faturamento_Inicio,
+          plano.Plano_Pagamento,
+          mesSelecionado || parseInt(mes, 10),
+          anoSelecionado || parseInt(ano, 10)
+        );
+
+        resultado.push({
+          id: pag.id,
+          alunoNome: aluno.Alunos_Nome || "-",
+          alunoCodigo: pag.Aluno_Codigo,
+          planoCodigo: pag.Plano_Codigo,
+          planoNome: plano.Plano_Nome || "-",
+          planoTipo: plano.Plano_Pagamento || "-",
+          dataPagamento: pag.Faturamento_Data_Pagamento,
+          parcela: `${parcela}/${totalParcelas}`,
+          valorMensal,
+          valorComDesconto,
+          valorWET,
+          valorPA,
+        });
+      }
+    }
+
+    return resultado;
   };
 
   // Calcular totais
@@ -280,12 +333,12 @@ function Relatorio_PA() {
         );
 
         doc.setTextColor(...textGreen);
-        doc.text(`R$ ${item.valorMensal.toFixed(2)}`, colX.valorMensal, y);
+        doc.text(`R$ ${Number(item.valorMensal||0).toFixed(2)}`, colX.valorMensal, y);
         doc.setTextColor(...textYellow);
-        doc.text(`R$ ${item.valorComDesconto.toFixed(2)}`, colX.valorDesc, y);
+        doc.text(`R$ ${Number(item.valorComDesconto||0).toFixed(2)}`, colX.valorDesc, y);
         doc.setTextColor(...textWhite);
-        doc.text(`R$ ${item.valorWET.toFixed(2)}`, colX.valorWET, y);
-        doc.text(`R$ ${item.valorPA.toFixed(2)}`, colX.valorPA, y);
+        doc.text(`R$ ${Number(item.valorWET||0).toFixed(2)}`, colX.valorWET, y);
+        doc.text(`R$ ${Number(item.valorPA||0).toFixed(2)}`, colX.valorPA, y);
 
         y += 6;
       }
@@ -300,16 +353,16 @@ function Relatorio_PA() {
       doc.text("TOTAL", colX.aluno, y + 4);
 
       doc.setTextColor(...textGreen);
-      doc.text(`R$ ${totais.valorMensal.toFixed(2)}`, colX.valorMensal, y + 4);
+      doc.text(`R$ ${Number(totais.valorMensal||0).toFixed(2)}`, colX.valorMensal, y + 4);
       doc.setTextColor(...textYellow);
       doc.text(
-        `R$ ${totais.valorComDesconto.toFixed(2)}`,
+        `R$ ${Number(totais.valorComDesconto||0).toFixed(2)}`,
         colX.valorDesc,
         y + 4
       );
       doc.setTextColor(...textWhite);
-      doc.text(`R$ ${totais.valorWET.toFixed(2)}`, colX.valorWET, y + 4);
-      doc.text(`R$ ${totais.valorPA.toFixed(2)}`, colX.valorPA, y + 4);
+      doc.text(`R$ ${Number(totais.valorWET||0).toFixed(2)}`, colX.valorWET, y + 4);
+      doc.text(`R$ ${Number(totais.valorPA||0).toFixed(2)}`, colX.valorPA, y + 4);
 
       // Rodapé
       doc.setFontSize(8);
@@ -592,16 +645,16 @@ function Relatorio_PA() {
                               : "-"}
                           </td>
                           <td className="px-3 py-2 text-green-400 text-right font-semibold">
-                            R$ {item.valorMensal.toFixed(2)}
+                            R$  {Number(item.valorMensal||0).toFixed(2)} 
                           </td>
                           <td className="px-3 py-2 text-yellow-400 text-right font-semibold">
-                            R$ {item.valorComDesconto.toFixed(2)}
+                            R$  {Number(item.valorComDesconto||0).toFixed(2)} 
                           </td>
                           <td className="px-3 py-2 text-blue-400 text-right font-semibold">
-                            R$ {item.valorWET.toFixed(2)}
+                            {typeof item.valorWET === 'number' ? `R$ ${Number(item.valorWET||0).toFixed(2)}` : '-'}
                           </td>
                           <td className="px-3 py-2 text-purple-400 text-right font-semibold">
-                            R$ {item.valorPA.toFixed(2)}
+                            R$  {Number(item.valorPA||0).toFixed(2)} 
                           </td>
                         </tr>
                       ))}
@@ -614,16 +667,16 @@ function Relatorio_PA() {
                             TOTAL
                           </td>
                           <td className="px-3 py-3 text-green-400 text-right">
-                            R$ {totais.valorMensal.toFixed(2)}
+                            R$  {Number(totais.valorMensal||0).toFixed(2)} 
                           </td>
                           <td className="px-3 py-3 text-yellow-400 text-right">
-                            R$ {totais.valorComDesconto.toFixed(2)}
+                            R$  {Number(totais.valorComDesconto||0).toFixed(2)} 
                           </td>
                           <td className="px-3 py-3 text-blue-400 text-right">
-                            R$ {totais.valorWET.toFixed(2)}
+                            R$  {Number(totais.valorWET||0).toFixed(2)} 
                           </td>
                           <td className="px-3 py-3 text-purple-400 text-right rounded-br-lg">
-                            R$ {totais.valorPA.toFixed(2)}
+                            R$  {Number(totais.valorPA||0).toFixed(2)} 
                           </td>
                         </tr>
                       </tfoot>

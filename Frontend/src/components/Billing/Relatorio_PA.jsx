@@ -132,7 +132,7 @@ function Relatorio_PA() {
       // Aplica percentual de desconto
       const valorComDesconto = valorMensal * (1 - desconto / 100);
       const valorWET = valorComDesconto / 2;
-      const valorPA = valorComDesconto / 2;
+      const valorPA = valorMensal - valorWET;
 
       // Calcula a parcela
       const { parcela, totalParcelas } = calcularParcela(
@@ -202,7 +202,7 @@ function Relatorio_PA() {
 
       let y = 10;
       const marginLeft = 10;
-      const pageWidth = 275;
+      const pageWidth = 280;
 
       // Fundo geral
       doc.setFillColor(...bgDark);
@@ -251,7 +251,7 @@ function Relatorio_PA() {
       doc.text("Valor Mensal", colX.valorMensal, y + 5.5);
       doc.text(`Valor c/ Desc`, colX.valorDesc, y + 5.5);
       doc.text("WET (50%)", colX.valorWET, y + 5.5);
-      doc.text("PA (50%)", colX.valorPA, y + 5.5);
+      doc.text("PA (50% + 15%)", colX.valorPA, y + 5.5);
 
       y += 12;
 
@@ -557,7 +557,7 @@ function Relatorio_PA() {
                           className="px-3 py-3 text-right rounded-tr-lg cursor-pointer"
                           onClick={() => handleHeaderClick("valorPA")}
                         >
-                          PA (50%){" "}
+                          PA (50% + 15%){" "}
                           {sortBy === "valorPA"
                             ? sortDir === "desc"
                               ? "▼"

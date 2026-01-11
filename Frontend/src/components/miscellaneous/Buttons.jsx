@@ -514,6 +514,26 @@ BotaoToggle.propTypes = {
 };
 /* Fim - Botao Toggle */
 
+/* Inicio - Botao Comprovante */
+function BotaoComprovante({ onClick, disabled }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className="px-2 py-0.5 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded font-semibold transition disabled:bg-gray-400 disabled:cursor-not-allowed"
+      title="Ver comprovante"
+    >
+      Comprovante
+    </button>
+  );
+}
+BotaoComprovante.propTypes = {
+  onClick: PropTypes.func,
+  disabled: PropTypes.bool,
+};
+/* Fim - Botao Comprovante */
+
 export const Buttons = {
   BotaoCadastrar,
   BotaoEditar,
@@ -540,6 +560,7 @@ export const Buttons = {
   BotaoPrimario,
   BotaoIcon,
   BotaoToggle,
+  BotaoComprovante,
 };
 
 export default Buttons;

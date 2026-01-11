@@ -15,6 +15,7 @@ function ExtratoAluno() {
   const [loadingPdf, setLoadingPdf] = useState(false);
   const [extrato, setExtrato] = useState(null);
   const [messageToast, showToast] = useToast();
+  const [comprovanteModal, setComprovanteModal] = useState(null);
 
   // Gera lista de anos (de 2020 até o próximo ano)
   useEffect(() => {
@@ -360,12 +361,13 @@ function ExtratoAluno() {
   };
 
   // Gera os meses baseado no tipo de plano e mês de início
+  // ALTERADO: cada lançamento aparece como linha separada (não agrupa por mês)
   const gerarMesesFaturamento = (
     faturamentos,
     anoSelecionado,
     tipoPagamento
   ) => {
-    const meses = {};
+    const lancamentos = {};
     const qtdMesesPlano = getMesesPorTipoPlano(tipoPagamento);
 
     for (const fat of faturamentos) {
@@ -376,7 +378,6 @@ function ExtratoAluno() {
       const desconto = parseFloat(fat.Faturamento_Desconto) || 0;
       const pago = fat.Faturamento_Data_Pagamento ? true : false;
 
-      // Gera os meses a partir do mês de início, baseado no tipo de plano
       const mesesDoPlano = [];
       for (let i = 0; i < qtdMesesPlano; i++) {
         const mesData = new Date(
@@ -387,43 +388,34 @@ function ExtratoAluno() {
         mesesDoPlano.push({
           ano: mesData.getFullYear(),
           mes: mesData.getMonth() + 1,
-          parcela: i + 1, // número da parcela no plano completo
-          totalParcelas: qtdMesesPlano, // total de parcelas do plano
+          parcela: i + 1,
+          totalParcelas: qtdMesesPlano,
         });
       }
 
-      // Valor por mês (proporcional)
       const valorPorMes = valorTotal / qtdMesesPlano;
       const descontoPorMes = desconto / qtdMesesPlano;
 
       for (const m of mesesDoPlano) {
-        // Filtra apenas os meses do ano selecionado
         if (String(m.ano) !== String(anoSelecionado)) continue;
 
         const mesAno = `${m.ano}-${String(m.mes).padStart(2, "0")}`;
-        if (!meses[mesAno]) {
-          meses[mesAno] = {
-            valor: 0,
-            desconto: 0,
-            pago: false,
-            dataPagamento: null,
-            faturamentos: [],
-            parcela: m.parcela,
-            totalParcelas: m.totalParcelas,
-          };
-        }
-        meses[mesAno].valor += valorPorMes;
-        meses[mesAno].desconto += descontoPorMes;
-        // Se tem data de pagamento, TODOS os meses do plano ficam como pago
-        if (pago) {
-          meses[mesAno].pago = true;
-          meses[mesAno].dataPagamento = fat.Faturamento_Data_Pagamento;
-        }
-        meses[mesAno].faturamentos.push(fat);
+        const chaveUnica = `${mesAno}-${fat.id || fat.Faturamento_ID || Math.random()}`;
+
+        lancamentos[chaveUnica] = {
+          valor: valorPorMes,
+          desconto: descontoPorMes,
+          pago: pago,
+          dataPagamento: fat.Faturamento_Data_Pagamento,
+          faturamentos: [fat],
+          parcela: m.parcela,
+          totalParcelas: m.totalParcelas,
+          mesAno: mesAno,
+        };
       }
     }
 
-    return meses;
+    return lancamentos;
   };
 
   // Nomes dos meses
@@ -593,11 +585,14 @@ function ExtratoAluno() {
                                   className="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-gray-800 rounded-lg p-2 border border-gray-600"
                                 >
                                   <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                                    <span className="text-gray-500 font-mono text-sm">
+                                      #{mesData.faturamentos?.[0]?.Faturamento_ID || mesData.faturamentos?.[0]?.id || '-'}
+                                    </span>
                                     <span className="text-purple-400 font-semibold text-sm">
                                       {parcela}
                                     </span>
                                     <span className="text-white font-semibold">
-                                      {nomeMes(mesAno)}
+                                      {nomeMes(mesData.mesAno || mesAno)}
                                     </span>
                                     <span className="text-green-400 text-sm">
                                       R$ {valorMes.toFixed(2)}
@@ -623,6 +618,13 @@ function ExtratoAluno() {
                                     {mesData.desconto > 0 && (
                                       <span className="text-yellow-400 ml-2">
                                         (desc: R$ {mesData.desconto.toFixed(2)})
+                                      </span>
+                                    )}
+                                    {mesData.faturamentos?.[0]?.Faturamento_Comprovante && (
+                                      <span className="ml-2">
+                                        <Buttons.BotaoComprovante
+                                        onClick={() => setComprovanteModal(mesData.faturamentos[0].Faturamento_Comprovante)}
+                                        />
                                       </span>
                                     )}
                                   </div>
@@ -756,6 +758,37 @@ function ExtratoAluno() {
           </div>
         )}
       </div>
+
+      {/* Modal de Comprovante */}
+      {comprovanteModal && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50"
+          onClick={() => setComprovanteModal(null)}
+        >
+          <div 
+            className="bg-gray-800 rounded-xl p-4 max-w-3xl max-h-[90vh] overflow-auto border border-gray-600"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-white font-bold text-lg">Comprovante de Pagamento</h3>
+              <button
+                type="button"
+                onClick={() => setComprovanteModal(null)}
+                className="text-gray-400 hover:text-white text-2xl font-bold"
+              >
+                &times;
+              </button>
+            </div>
+            <div className="flex justify-center">
+              <img 
+                src={`${import.meta.env.VITE_API_URL || "https://api2.plantandoalegria.com.br"}/uploads/comprovantes/${comprovanteModal}`} 
+                alt="Comprovante" 
+                className="max-w-full max-h-[70vh] rounded-lg"
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

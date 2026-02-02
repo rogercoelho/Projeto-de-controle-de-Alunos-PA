@@ -35,7 +35,7 @@ router.delete("/delete/:tabela/:id", async (req, res) => {
     }
     const senhaValida = await bcrypt.compare(
       senha,
-      usuarioEncontrado.Usuario_Senha
+      usuarioEncontrado.Usuario_Senha,
     );
     if (!senhaValida) {
       return res
@@ -54,7 +54,7 @@ router.delete("/delete/:tabela/:id", async (req, res) => {
         registro = await Alunos_Cadastros.findByPk(parseInt(id, 10));
         console.log(
           `📋 Registro encontrado (Alunos):`,
-          registro ? "SIM" : "NÃO"
+          registro ? "SIM" : "NÃO",
         );
         if (registro) {
           console.log(`📄 Dados do aluno:`, {
@@ -75,7 +75,7 @@ router.delete("/delete/:tabela/:id", async (req, res) => {
         });
         console.log(
           `📋 Registro encontrado (Usuários):`,
-          registro ? "SIM" : "NÃO"
+          registro ? "SIM" : "NÃO",
         );
         if (registro) {
           console.log(`📄 Dados do usuário:`, {
@@ -95,7 +95,7 @@ router.delete("/delete/:tabela/:id", async (req, res) => {
         registro = await Alunos_Faturamento.findByPk(parseInt(id, 10));
         console.log(
           `📋 Registro encontrado (Faturamento):`,
-          registro ? "SIM" : "NÃO"
+          registro ? "SIM" : "NÃO",
         );
         if (registro) {
           console.log(`📄 Dados do faturamento:`, {
@@ -121,7 +121,7 @@ router.delete("/delete/:tabela/:id", async (req, res) => {
 
     if (!registro) {
       console.log(
-        `❌ REGISTRO NÃO ENCONTRADO - ID ${id} não existe na tabela ${tabela}`
+        `❌ REGISTRO NÃO ENCONTRADO - ID ${id} não existe na tabela ${tabela}`,
       );
       return res.status(404).json({
         statusCode: 404,
@@ -135,20 +135,31 @@ router.delete("/delete/:tabela/:id", async (req, res) => {
     const dadosExcluidos = registro.toJSON();
 
     // Se for faturamento, exclui o comprovante associado (se existir)
-    if ((tabela === "faturamento" || tabela === "Alunos_Faturamento") && registro.Faturamento_Comprovante) {
+    if (
+      (tabela === "faturamento" || tabela === "Alunos_Faturamento") &&
+      registro.Faturamento_Comprovante
+    ) {
       try {
         const baseDir =
           process.env.NODE_ENV === "production"
             ? "/home2/goutechc/wwwplantandoalegria_API/uploads"
             : path.join(__dirname, "../uploads");
-        
-        const comprovantePath = path.join(baseDir, "comprovantes", registro.Faturamento_Comprovante);
-        
+
+        const comprovantePath = path.join(
+          baseDir,
+          "comprovantes",
+          registro.Faturamento_Comprovante,
+        );
+
         if (fs.existsSync(comprovantePath)) {
           fs.unlinkSync(comprovantePath);
-          console.log(`🗑️ Comprovante excluído: ${registro.Faturamento_Comprovante}`);
+          console.log(
+            `🗑️ Comprovante excluído: ${registro.Faturamento_Comprovante}`,
+          );
         } else {
-          console.log(`⚠️ Comprovante não encontrado no disco: ${registro.Faturamento_Comprovante}`);
+          console.log(
+            `⚠️ Comprovante não encontrado no disco: ${registro.Faturamento_Comprovante}`,
+          );
         }
       } catch (fileError) {
         console.error(`❌ Erro ao excluir comprovante: ${fileError.message}`);
@@ -168,7 +179,7 @@ router.delete("/delete/:tabela/:id", async (req, res) => {
       parseInt(id, 10),
       descricao,
       dadosExcluidos,
-      null
+      null,
     );
     console.log(`📝 Log registrado com sucesso`);
 

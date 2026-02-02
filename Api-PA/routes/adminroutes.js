@@ -1,4 +1,6 @@
 const express = require("express");
+const path = require("path");
+const fs = require("fs");
 const Alunos_Cadastros = require("../models/Alunos_Cadastro");
 const Usuarios = require("../models/Usuarios");
 const Alunos_Faturamento = require("../models/Alunos_Faturamento");
@@ -131,6 +133,28 @@ router.delete("/delete/:tabela/:id", async (req, res) => {
 
     // Guarda os dados antes de excluir
     const dadosExcluidos = registro.toJSON();
+
+    // Se for faturamento, exclui o comprovante associado (se existir)
+    if ((tabela === "faturamento" || tabela === "Alunos_Faturamento") && registro.Faturamento_Comprovante) {
+      try {
+        const baseDir =
+          process.env.NODE_ENV === "production"
+            ? "/home2/goutechc/wwwplantandoalegria_API/uploads"
+            : path.join(__dirname, "../uploads");
+        
+        const comprovantePath = path.join(baseDir, "comprovantes", registro.Faturamento_Comprovante);
+        
+        if (fs.existsSync(comprovantePath)) {
+          fs.unlinkSync(comprovantePath);
+          console.log(`🗑️ Comprovante excluído: ${registro.Faturamento_Comprovante}`);
+        } else {
+          console.log(`⚠️ Comprovante não encontrado no disco: ${registro.Faturamento_Comprovante}`);
+        }
+      } catch (fileError) {
+        console.error(`❌ Erro ao excluir comprovante: ${fileError.message}`);
+        // Continua com a exclusão do registro mesmo se falhar ao excluir o arquivo
+      }
+    }
 
     // Exclui o registro
     await registro.destroy();

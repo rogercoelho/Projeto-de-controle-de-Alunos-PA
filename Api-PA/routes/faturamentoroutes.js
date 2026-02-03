@@ -73,9 +73,9 @@ const fileFilterComprovante = (req, file, cb) => {
   } else {
     cb(
       new Error(
-        "Apenas arquivos PDF ou imagens são permitidos para comprovante!"
+        "Apenas arquivos PDF ou imagens são permitidos para comprovante!",
       ),
-      false
+      false,
     );
   }
 };
@@ -227,7 +227,7 @@ router.get("/extrato/:Aluno_Codigo/:ano", async (req, res) => {
           Plano_Nome: info.Plano_Nome || "",
           Plano_Valor: info.Plano_Valor || null,
           faturamentos: faturamentosPendentes.filter(
-            (f) => f.Plano_Codigo === codigo
+            (f) => f.Plano_Codigo === codigo,
           ),
         };
       });
@@ -314,7 +314,7 @@ router.post("/registrar-faturamento", async (req, res) => {
       novoFaturamento.id || novoFaturamento.Faturamento_ID,
       `Faturamento registrado para aluno ${Aluno_Codigo}`,
       null,
-      novoFaturamento.toJSON()
+      novoFaturamento.toJSON(),
     );
 
     res.status(201).json({
@@ -368,7 +368,7 @@ router.patch(
           const fatId = faturamentoIds[i];
           arquivosMap[fatId] = req.files[i].filename;
           console.log(
-            `Mapeando arquivo ${req.files[i].filename} para faturamento ${fatId}`
+            `Mapeando arquivo ${req.files[i].filename} para faturamento ${fatId}`,
           );
         }
       }
@@ -398,7 +398,7 @@ router.patch(
         if (arquivosMap[id]) {
           updateData.Faturamento_Comprovante = arquivosMap[id];
           console.log(
-            `Salvando comprovante ${arquivosMap[id]} para faturamento ${id}`
+            `Salvando comprovante ${arquivosMap[id]} para faturamento ${id}`,
           );
         }
 
@@ -448,19 +448,19 @@ router.patch(
                   "[contador] aluno",
                   alunoCodigo,
                   "plano",
-                  planoCodigo
+                  planoCodigo,
                 );
                 console.log(
                   "[contador] registroAnterior id:",
                   registroAnterior
                     ? registroAnterior.id || registroAnterior.Faturamento_ID
-                    : null
+                    : null,
                 );
                 console.log(
                   "[contador] registroAnterior contador:",
                   registroAnterior
                     ? registroAnterior.Faturamento_Contador
-                    : null
+                    : null,
                 );
 
                 const contadorAtual =
@@ -520,7 +520,7 @@ router.patch(
             id,
             `Pagamento registrado para faturamento ${id}`,
             faturamentoAntes ? faturamentoAntes.toJSON() : null,
-            faturamentoDepois ? faturamentoDepois.toJSON() : null
+            faturamentoDepois ? faturamentoDepois.toJSON() : null,
           );
         }
       }
@@ -532,7 +532,7 @@ router.patch(
         Detalhes: error.message,
       });
     }
-  }
+  },
 );
 
 // GET /faturamento/relatorio-mensal/:mes/:ano
@@ -551,7 +551,7 @@ router.get("/relatorio-mensal/:mes/:ano", async (req, res) => {
     // Último dia do mês: cria data do próximo mês dia 1 e subtrai 1 dia
     const ultimoDiaDate = new Date(anoNum, mesNum, 0); // dia 0 do próximo mês = último dia do mês atual
     const ultimoDia = `${anoNum}-${String(mesNum).padStart(2, "0")}-${String(
-      ultimoDiaDate.getDate()
+      ultimoDiaDate.getDate(),
     ).padStart(2, "0")}`;
 
     // Busca faturamentos PAGOS que tenham parcelas no mês selecionado
@@ -639,9 +639,31 @@ router.get("/relatorio-mensal/:mes/:ano", async (req, res) => {
       raw: true,
     });
 
+    // Para planos mensais, o mês "mandante" é o do Faturamento_Inicio
+    // Filtra faturamentos mensais que não pertencem ao mês selecionado
+    const faturamentosFiltrados = faturamentos.filter((fat) => {
+      const plano = planos.find((p) => p.Plano_Codigo === fat.Plano_Codigo);
+      const tipoPagamento = (plano?.Plano_Pagamento || "").toLowerCase();
+
+      // Se for plano mensal, só inclui se Faturamento_Inicio está no mês/ano selecionado
+      if (
+        tipoPagamento.includes("mensal") ||
+        tipoPagamento.includes("unitário") ||
+        tipoPagamento.includes("unitario")
+      ) {
+        const inicio = new Date(fat.Faturamento_Inicio);
+        const mesInicio = inicio.getMonth() + 1;
+        const anoInicio = inicio.getFullYear();
+        return mesInicio === mesNum && anoInicio === anoNum;
+      }
+
+      // Para outros planos (trimestral, semestral, anual), mantém o comportamento atual
+      return true;
+    });
+
     // Retorna os dados com o mês/ano selecionado para o frontend calcular a parcela correta
     res.json({
-      pagamentos: faturamentos,
+      pagamentos: faturamentosFiltrados,
       alunos,
       planos,
       mesSelecionado: mesNum,
@@ -669,7 +691,7 @@ router.get("/expirando", async (req, res) => {
     const primeiroDia = `${ano}-${String(mes).padStart(2, "0")}-01`;
     const ultimoDiaDate = new Date(ano, mes, 0);
     const ultimoDia = `${ano}-${String(mes).padStart(2, "0")}-${String(
-      ultimoDiaDate.getDate()
+      ultimoDiaDate.getDate(),
     ).padStart(2, "0")}`;
 
     // Busca faturamentos cujo Faturamento_Fim esteja dentro do mês atual

@@ -81,6 +81,16 @@ function Relatorio_PA() {
     return 1;
   };
 
+  // Extrai mês e ano de uma data string (YYYY-MM-DD) sem problemas de timezone
+  const extrairMesAno = (dataString) => {
+    if (!dataString) return { mes: 1, ano: 2000 };
+    const partes = String(dataString).split("T")[0].split("-");
+    return {
+      ano: parseInt(partes[0], 10),
+      mes: parseInt(partes[1], 10),
+    };
+  };
+
   // Calcular qual é a parcela do mês selecionado
   const calcularParcela = (
     faturamentoInicio,
@@ -88,15 +98,22 @@ function Relatorio_PA() {
     mesSelecionado,
     anoSelecionado,
   ) => {
-    const inicio = new Date(faturamentoInicio);
-    const mesInicio = inicio.getMonth() + 1; // 1-12
-    const anoInicio = inicio.getFullYear();
+    const { mes: mesInicio, ano: anoInicio } = extrairMesAno(faturamentoInicio);
     const totalParcelas = getMesesPorTipoPlano(tipoPagamento);
 
+    // Se o plano for unitário (1 parcela), sempre retorno 1/1
+    if (totalParcelas === 1) {
+      return { parcela: 1, totalParcelas };
+    }
+
     // Calcula quantos meses se passaram desde o início
-    const mesesPassados =
+    let mesesPassados =
       (anoSelecionado - anoInicio) * 12 + (mesSelecionado - mesInicio);
-    const parcela = mesesPassados + 1;
+    let parcela = mesesPassados + 1;
+
+    // Garante limites entre 1 e totalParcelas
+    if (parcela < 1) parcela = 1;
+    if (parcela > totalParcelas) parcela = totalParcelas;
 
     return { parcela, totalParcelas };
   };
@@ -158,7 +175,7 @@ function Relatorio_PA() {
             valorPA: valorMensal - repasse,
           });
         } else {
-          // contador presente mas sem repasse: WET = '-', PA mantém cálculo padrão (valorComDesconto/2)
+          // contador presente mas sem repasse: WET = '-', PA = valorMensal
           const { parcela, totalParcelas } = calcularParcela(
             pag.Faturamento_Inicio,
             plano.Plano_Pagamento,
@@ -182,9 +199,9 @@ function Relatorio_PA() {
           });
         }
       } else {
-        // comportamento padrão
+        // comportamento padrão: PA = valorMensal - valorWET
         const valorWET = valorWETPadrao;
-        const valorPA = valorComDesconto / 2;
+        const valorPA = valorMensal - valorWET;
         const { parcela, totalParcelas } = calcularParcela(
           pag.Faturamento_Inicio,
           plano.Plano_Pagamento,
@@ -438,8 +455,13 @@ function Relatorio_PA() {
         va = Number(va) || 0;
         vb = Number(vb) || 0;
       } else if (sortBy === "alunoNome" || sortBy === "planoNome") {
-        va = (va || "").toString().toLowerCase();
-        vb = (vb || "").toString().toLowerCase();
+        // Usa localeCompare para ordenar corretamente com acentos
+        const strA = (va || "").toString();
+        const strB = (vb || "").toString();
+        const comparison = strA.localeCompare(strB, "pt-BR", {
+          sensitivity: "base",
+        });
+        return sortDir === "desc" ? -comparison : comparison;
       } else if (sortBy === "parcela") {
         // parcela format "X/Y"
         va = parseInt((va || "").toString().split("/")[0], 10) || 0;

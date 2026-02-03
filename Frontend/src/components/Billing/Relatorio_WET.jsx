@@ -104,6 +104,16 @@ function Relatorio_WET() {
     return 1;
   };
 
+  // Extrai mês e ano de uma data string (YYYY-MM-DD) sem problemas de timezone
+  const extrairMesAno = (dataString) => {
+    if (!dataString) return { mes: 1, ano: 2000 };
+    const partes = String(dataString).split("T")[0].split("-");
+    return {
+      ano: parseInt(partes[0], 10),
+      mes: parseInt(partes[1], 10),
+    };
+  };
+
   // Calcular qual é a parcela do mês selecionado
   const calcularParcela = (
     faturamentoInicio,
@@ -111,9 +121,7 @@ function Relatorio_WET() {
     mesSelecionado,
     anoSelecionado,
   ) => {
-    const inicio = new Date(faturamentoInicio);
-    const mesInicio = inicio.getMonth() + 1; // 1-12
-    const anoInicio = inicio.getFullYear();
+    const { mes: mesInicio, ano: anoInicio } = extrairMesAno(faturamentoInicio);
     const totalParcelas = getMesesPorTipoPlano(tipoPagamento);
 
     // Se o plano for unitário (1 parcela), sempre retorno 1/1
@@ -433,8 +441,13 @@ function Relatorio_WET() {
         va = Number(va) || 0;
         vb = Number(vb) || 0;
       } else if (sortBy === "alunoNome" || sortBy === "planoNome") {
-        va = (va || "").toString().toLowerCase();
-        vb = (vb || "").toString().toLowerCase();
+        // Usa localeCompare para ordenar corretamente com acentos
+        const strA = (va || "").toString();
+        const strB = (vb || "").toString();
+        const comparison = strA.localeCompare(strB, "pt-BR", {
+          sensitivity: "base",
+        });
+        return sortDir === "desc" ? -comparison : comparison;
       } else if (sortBy === "parcela") {
         // parcela format "X/Y"
         va = parseInt((va || "").toString().split("/")[0], 10) || 0;

@@ -86,7 +86,7 @@ function Relatorio_PA() {
     faturamentoInicio,
     tipoPagamento,
     mesSelecionado,
-    anoSelecionado
+    anoSelecionado,
   ) => {
     const inicio = new Date(faturamentoInicio);
     const mesInicio = inicio.getMonth() + 1; // 1-12
@@ -139,7 +139,7 @@ function Relatorio_PA() {
             pag.Faturamento_Inicio,
             plano.Plano_Pagamento,
             mesSelecionado || parseInt(mes, 10),
-            anoSelecionado || parseInt(ano, 10)
+            anoSelecionado || parseInt(ano, 10),
           );
 
           // Quando há repasse, exibimos repasse em WET e PA = valorMensal - repasse
@@ -163,7 +163,7 @@ function Relatorio_PA() {
             pag.Faturamento_Inicio,
             plano.Plano_Pagamento,
             mesSelecionado || parseInt(mes, 10),
-            anoSelecionado || parseInt(ano, 10)
+            anoSelecionado || parseInt(ano, 10),
           );
 
           resultado.push({
@@ -189,7 +189,7 @@ function Relatorio_PA() {
           pag.Faturamento_Inicio,
           plano.Plano_Pagamento,
           mesSelecionado || parseInt(mes, 10),
-          anoSelecionado || parseInt(ano, 10)
+          anoSelecionado || parseInt(ano, 10),
         );
 
         resultado.push({
@@ -221,7 +221,7 @@ function Relatorio_PA() {
         valorWET: acc.valorWET + item.valorWET,
         valorPA: acc.valorPA + item.valorPA,
       }),
-      { valorMensal: 0, valorComDesconto: 0, valorWET: 0, valorPA: 0 }
+      { valorMensal: 0, valorComDesconto: 0, valorWET: 0, valorPA: 0 },
     );
   };
 
@@ -329,16 +329,28 @@ function Relatorio_PA() {
         doc.text(
           item.dataPagamento ? formatarDataBR(item.dataPagamento) : "-",
           colX.dataPag,
-          y
+          y,
         );
 
         doc.setTextColor(...textGreen);
-        doc.text(`R$ ${Number(item.valorMensal||0).toFixed(2)}`, colX.valorMensal, y);
+        doc.text(
+          `R$ ${Number(item.valorMensal || 0).toFixed(2)}`,
+          colX.valorMensal,
+          y,
+        );
         doc.setTextColor(...textYellow);
-        doc.text(`R$ ${Number(item.valorComDesconto||0).toFixed(2)}`, colX.valorDesc, y);
+        doc.text(
+          `R$ ${Number(item.valorComDesconto || 0).toFixed(2)}`,
+          colX.valorDesc,
+          y,
+        );
         doc.setTextColor(...textWhite);
-        doc.text(`R$ ${Number(item.valorWET||0).toFixed(2)}`, colX.valorWET, y);
-        doc.text(`R$ ${Number(item.valorPA||0).toFixed(2)}`, colX.valorPA, y);
+        doc.text(
+          `R$ ${Number(item.valorWET || 0).toFixed(2)}`,
+          colX.valorWET,
+          y,
+        );
+        doc.text(`R$ ${Number(item.valorPA || 0).toFixed(2)}`, colX.valorPA, y);
 
         y += 6;
       }
@@ -353,27 +365,39 @@ function Relatorio_PA() {
       doc.text("TOTAL", colX.aluno, y + 4);
 
       doc.setTextColor(...textGreen);
-      doc.text(`R$ ${Number(totais.valorMensal||0).toFixed(2)}`, colX.valorMensal, y + 4);
+      doc.text(
+        `R$ ${Number(totais.valorMensal || 0).toFixed(2)}`,
+        colX.valorMensal,
+        y + 4,
+      );
       doc.setTextColor(...textYellow);
       doc.text(
-        `R$ ${Number(totais.valorComDesconto||0).toFixed(2)}`,
+        `R$ ${Number(totais.valorComDesconto || 0).toFixed(2)}`,
         colX.valorDesc,
-        y + 4
+        y + 4,
       );
       doc.setTextColor(...textWhite);
-      doc.text(`R$ ${Number(totais.valorWET||0).toFixed(2)}`, colX.valorWET, y + 4);
-      doc.text(`R$ ${Number(totais.valorPA||0).toFixed(2)}`, colX.valorPA, y + 4);
+      doc.text(
+        `R$ ${Number(totais.valorWET || 0).toFixed(2)}`,
+        colX.valorWET,
+        y + 4,
+      );
+      doc.text(
+        `R$ ${Number(totais.valorPA || 0).toFixed(2)}`,
+        colX.valorPA,
+        y + 4,
+      );
 
       // Rodapé
       doc.setFontSize(8);
       doc.setTextColor(...textGray);
       doc.text(
         `Gerado em: ${formatarData(new Date().toISOString())} às ${formatarHora(
-          new Date().toISOString()
+          new Date().toISOString(),
         )}`,
         148.5,
         200,
-        { align: "center" }
+        { align: "center" },
       );
 
       doc.save(filename);
@@ -425,7 +449,7 @@ function Relatorio_PA() {
         vb = vb ? new Date(vb).getTime() : 0;
       } else if (
         ["valorMensal", "valorComDesconto", "valorWET", "valorPA"].includes(
-          sortBy
+          sortBy,
         )
       ) {
         va = Number(va) || 0;
@@ -633,8 +657,13 @@ function Relatorio_PA() {
                           <td className="px-3 py-2 text-white font-medium">
                             {item.alunoNome}
                           </td>
-                          <td className="px-3 py-2 text-gray-300">
-                            {item.planoNome}
+                          <td className="px-3 py-2">
+                            <span className="text-white font-medium">
+                              {item.planoNome}
+                            </span>
+                            <span className="text-slate-400 text-sm ml-2">
+                              ({item.planoCodigo})
+                            </span>
                           </td>
                           <td className="px-3 py-2 text-purple-400 font-semibold">
                             {item.parcela}
@@ -645,16 +674,18 @@ function Relatorio_PA() {
                               : "-"}
                           </td>
                           <td className="px-3 py-2 text-green-400 text-right font-semibold">
-                            R$  {Number(item.valorMensal||0).toFixed(2)} 
+                            R$ {Number(item.valorMensal || 0).toFixed(2)}
                           </td>
                           <td className="px-3 py-2 text-yellow-400 text-right font-semibold">
-                            R$  {Number(item.valorComDesconto||0).toFixed(2)} 
+                            R$ {Number(item.valorComDesconto || 0).toFixed(2)}
                           </td>
                           <td className="px-3 py-2 text-blue-400 text-right font-semibold">
-                            {typeof item.valorWET === 'number' ? `R$ ${Number(item.valorWET||0).toFixed(2)}` : '-'}
+                            {typeof item.valorWET === "number"
+                              ? `R$ ${Number(item.valorWET || 0).toFixed(2)}`
+                              : "-"}
                           </td>
                           <td className="px-3 py-2 text-purple-400 text-right font-semibold">
-                            R$  {Number(item.valorPA||0).toFixed(2)} 
+                            R$ {Number(item.valorPA || 0).toFixed(2)}
                           </td>
                         </tr>
                       ))}
@@ -667,16 +698,16 @@ function Relatorio_PA() {
                             TOTAL
                           </td>
                           <td className="px-3 py-3 text-green-400 text-right">
-                            R$  {Number(totais.valorMensal||0).toFixed(2)} 
+                            R$ {Number(totais.valorMensal || 0).toFixed(2)}
                           </td>
                           <td className="px-3 py-3 text-yellow-400 text-right">
-                            R$  {Number(totais.valorComDesconto||0).toFixed(2)} 
+                            R$ {Number(totais.valorComDesconto || 0).toFixed(2)}
                           </td>
                           <td className="px-3 py-3 text-blue-400 text-right">
-                            R$  {Number(totais.valorWET||0).toFixed(2)} 
+                            R$ {Number(totais.valorWET || 0).toFixed(2)}
                           </td>
                           <td className="px-3 py-3 text-purple-400 text-right rounded-br-lg">
-                            R$  {Number(totais.valorPA||0).toFixed(2)} 
+                            R$ {Number(totais.valorPA || 0).toFixed(2)}
                           </td>
                         </tr>
                       </tfoot>

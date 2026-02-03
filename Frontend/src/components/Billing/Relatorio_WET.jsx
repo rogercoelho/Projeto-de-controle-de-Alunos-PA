@@ -109,7 +109,7 @@ function Relatorio_WET() {
     faturamentoInicio,
     tipoPagamento,
     mesSelecionado,
-    anoSelecionado
+    anoSelecionado,
   ) => {
     const inicio = new Date(faturamentoInicio);
     const mesInicio = inicio.getMonth() + 1; // 1-12
@@ -151,16 +151,19 @@ function Relatorio_WET() {
     const pagamentosFiltrados = pagamentos.filter(
       (pag) =>
         !excludedPlanos.some(
-          (ep) => String(ep.codigo) === String(pag.Plano_Codigo)
-        )
+          (ep) => String(ep.codigo) === String(pag.Plano_Codigo),
+        ),
     );
 
     const resultado = [];
     for (const pag of pagamentosFiltrados) {
-      const aluno = alunos.find((a) => a.Alunos_Codigo === pag.Aluno_Codigo) || {};
-      const plano = planos.find((p) => p.Plano_Codigo === pag.Plano_Codigo) || {};
+      const aluno =
+        alunos.find((a) => a.Alunos_Codigo === pag.Aluno_Codigo) || {};
+      const plano =
+        planos.find((p) => p.Plano_Codigo === pag.Plano_Codigo) || {};
 
-      const valorTotalFaturamento = parseFloat(pag.Faturamento_Valor_Total) || 0;
+      const valorTotalFaturamento =
+        parseFloat(pag.Faturamento_Valor_Total) || 0;
       const mesesPlano = getMesesPorTipoPlano(plano.Plano_Pagamento);
 
       // Se existir contador no faturamento, consideramos apenas linhas com repasse
@@ -171,7 +174,7 @@ function Relatorio_WET() {
             pag.Faturamento_Inicio,
             plano.Plano_Pagamento,
             mesSelecionado || parseInt(mes, 10),
-            anoSelecionado || parseInt(ano, 10)
+            anoSelecionado || parseInt(ano, 10),
           );
 
           resultado.push({
@@ -203,7 +206,7 @@ function Relatorio_WET() {
           pag.Faturamento_Inicio,
           plano.Plano_Pagamento,
           mesSelecionado || parseInt(mes, 10),
-          anoSelecionado || parseInt(ano, 10)
+          anoSelecionado || parseInt(ano, 10),
         );
 
         resultado.push({
@@ -231,11 +234,12 @@ function Relatorio_WET() {
     return dados.reduce(
       (acc, item) => ({
         valorMensal: acc.valorMensal + (Number(item.valorMensal) || 0),
-        valorComDesconto: acc.valorComDesconto + (Number(item.valorComDesconto) || 0),
+        valorComDesconto:
+          acc.valorComDesconto + (Number(item.valorComDesconto) || 0),
         valorWET: acc.valorWET + (Number(item.valorWET) || 0),
         valorPA: acc.valorPA + (Number(item.valorPA) || 0),
       }),
-      { valorMensal: 0, valorComDesconto: 0, valorWET: 0, valorPA: 0 }
+      { valorMensal: 0, valorComDesconto: 0, valorWET: 0, valorPA: 0 },
     );
   };
 
@@ -342,13 +346,16 @@ function Relatorio_WET() {
         doc.text(
           item.dataPagamento ? formatarDataBR(item.dataPagamento) : "-",
           colX.dataPag,
-          y
+          y,
         );
 
         doc.setTextColor(...textGreen);
         doc.text(`R$ ${item.valorMensal.toFixed(2)}`, colX.valorMensal, y);
         doc.setTextColor(...textYellow);
-        const valorComDescText = typeof item.valorComDesconto === 'number' ? `R$ ${item.valorComDesconto.toFixed(2)}` : '-';
+        const valorComDescText =
+          typeof item.valorComDesconto === "number"
+            ? `R$ ${item.valorComDesconto.toFixed(2)}`
+            : "-";
         doc.text(valorComDescText, colX.valorDesc, y);
         doc.setTextColor(...textWhite);
         doc.text(`R$ ${item.valorWET.toFixed(2)}`, colX.valorWET, y);
@@ -371,7 +378,7 @@ function Relatorio_WET() {
       doc.text(
         `R$ ${totais.valorComDesconto.toFixed(2)}`,
         colX.valorDesc,
-        y + 4
+        y + 4,
       );
       doc.setTextColor(...textWhite);
       doc.text(`R$ ${totais.valorWET.toFixed(2)}`, colX.valorWET, y + 4);
@@ -381,11 +388,11 @@ function Relatorio_WET() {
       doc.setTextColor(...textGray);
       doc.text(
         `Gerado em: ${formatarData(new Date().toISOString())} às ${formatarHora(
-          new Date().toISOString()
+          new Date().toISOString(),
         )}`,
         148.5,
         200,
-        { align: "center" }
+        { align: "center" },
       );
 
       doc.save(filename);
@@ -437,7 +444,7 @@ function Relatorio_WET() {
         vb = vb ? new Date(vb).getTime() : 0;
       } else if (
         ["valorMensal", "valorComDesconto", "valorWET", "valorPA"].includes(
-          sortBy
+          sortBy,
         )
       ) {
         va = Number(va) || 0;
@@ -541,14 +548,15 @@ function Relatorio_WET() {
                   return;
                 }
                 const planoSelecionado = relatorio?.planos?.find(
-                  (pp) => String(pp.Plano_Codigo) === String(excludedPlanCodigo)
+                  (pp) =>
+                    String(pp.Plano_Codigo) === String(excludedPlanCodigo),
                 );
                 const nome = planoSelecionado
                   ? planoSelecionado.Plano_Nome
                   : "";
                 if (
                   excludedPlanos.some(
-                    (p) => String(p.codigo) === String(excludedPlanCodigo)
+                    (p) => String(p.codigo) === String(excludedPlanCodigo),
                   )
                 ) {
                   showToast({
@@ -595,8 +603,8 @@ function Relatorio_WET() {
                         onClick={() =>
                           setExcludedPlanos((prev) =>
                             prev.filter(
-                              (x) => String(x.codigo) !== String(p.codigo)
-                            )
+                              (x) => String(x.codigo) !== String(p.codigo),
+                            ),
                           )
                         }
                         className="text-red-400 hover:text-red-300 ml-2"
@@ -736,8 +744,13 @@ function Relatorio_WET() {
                           <td className="px-3 py-2 text-white font-medium">
                             {item.alunoNome}
                           </td>
-                          <td className="px-3 py-2 text-gray-300">
-                            {item.planoNome}
+                          <td className="px-3 py-2">
+                            <span className="text-white font-medium">
+                              {item.planoNome}
+                            </span>
+                            <span className="text-slate-400 text-sm ml-2">
+                              ({item.planoCodigo})
+                            </span>
                           </td>
                           <td className="px-3 py-2 text-purple-400 font-semibold">
                             {item.parcela}
@@ -750,7 +763,12 @@ function Relatorio_WET() {
                           <td className="px-3 py-2 text-green-400 text-right font-semibold">
                             R$ {item.valorMensal.toFixed(2)}
                           </td>
-                          <td className="px-3 py-2 text-yellow-400 text-right font-semibold"> {item.valorComDesconto === "-" ? "-" : `R$ ${item.valorComDesconto.toFixed(2)}`} </td>
+                          <td className="px-3 py-2 text-yellow-400 text-right font-semibold">
+                            {" "}
+                            {item.valorComDesconto === "-"
+                              ? "-"
+                              : `R$ ${item.valorComDesconto.toFixed(2)}`}{" "}
+                          </td>
                           <td className="px-3 py-2 text-blue-400 text-right font-semibold">
                             R$ {item.valorWET.toFixed(2)}
                           </td>

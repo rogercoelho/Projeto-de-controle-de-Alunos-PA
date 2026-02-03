@@ -2,6 +2,14 @@ import React from "react";
 import Buttons from "./Buttons";
 import { formatarData } from "../../utils/Utils";
 
+// Função para adicionar 1 mês a uma data
+function adicionarUmMes(dataInput) {
+  if (!dataInput) return "";
+  const d = new Date(dataInput);
+  d.setMonth(d.getMonth() + 1);
+  return formatarData(d);
+}
+
 function ExpiringModal({ open, onClose, items }) {
   if (!open) return null;
 
@@ -26,8 +34,9 @@ function ExpiringModal({ open, onClose, items }) {
                         Código: {it.Alunos_Codigo} • CPF: {it.Alunos_CPF || "-"}
                       </div>
                       <div className="text-xs text-gray-400">
-                        Plano: {it.Plano_Codigo} • Vence:{" "}
-                        {formatarData(it.Faturamento_Fim)}
+                        Plano: {it.Plano_Codigo} • Última Parcela:{" "}
+                        {formatarData(it.Faturamento_Fim)} • Vence:{" "}
+                        {adicionarUmMes(it.Faturamento_Fim)}
                       </div>
                     </div>
                   </div>

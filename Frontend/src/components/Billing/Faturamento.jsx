@@ -39,7 +39,7 @@ function Faturamento() {
         const res = await api.get("/alunos/");
         // Filtra apenas alunos ativos
         const ativos = (res.data.Listagem_de_Alunos || []).filter(
-          (aluno) => aluno.Alunos_Situacao === "Ativo"
+          (aluno) => aluno.Alunos_Situacao === "Ativo",
         );
         setAlunos(ativos);
       } catch {
@@ -51,7 +51,7 @@ function Faturamento() {
         const res = await api.get("/planos");
         // Filtra apenas planos ativos
         const ativos = (res.data.Planos || []).filter(
-          (plano) => plano.Plano_Ativo === "Ativo"
+          (plano) => plano.Plano_Ativo === "Ativo",
         );
         setPlanos(ativos);
       } catch {
@@ -111,7 +111,7 @@ function Faturamento() {
     try {
       // Verifica se o aluno já possui faturamento em aberto
       const resPendentes = await api.get(
-        `/faturamento/pendentes/${formData.codigoAluno}`
+        `/faturamento/pendentes/${formData.codigoAluno}`,
       );
       if (
         resPendentes.data.faturamentos &&
@@ -219,7 +219,7 @@ function Faturamento() {
             onChange={(e) => {
               const nomeSelecionado = e.target.value;
               const alunoSelecionado = alunos.find(
-                (a) => a.Alunos_Nome === nomeSelecionado
+                (a) => a.Alunos_Nome === nomeSelecionado,
               );
               setFormData((prev) => ({
                 ...prev,

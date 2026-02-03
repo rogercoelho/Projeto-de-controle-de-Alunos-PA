@@ -121,13 +121,13 @@ function ExtratoAluno() {
       doc.text(
         `Código: ${extrato.aluno?.Alunos_Codigo || "-"}`,
         marginLeft + 5,
-        infoY
+        infoY,
       );
       infoY += 6;
       doc.text(
         `Nome: ${extrato.aluno?.Alunos_Nome || "-"}`,
         marginLeft + 5,
-        infoY
+        infoY,
       );
       // Status badge
       const status = extrato.aluno?.Alunos_Situacao || "";
@@ -149,19 +149,19 @@ function ExtratoAluno() {
       doc.text(
         `CPF: ${extrato.aluno?.Alunos_CPF || "-"}`,
         marginLeft + 5,
-        infoY
+        infoY,
       );
       infoY += 6;
       doc.text(
         `Email: ${extrato.aluno?.Alunos_Email || "-"}`,
         marginLeft + 5,
-        infoY
+        infoY,
       );
       infoY += 6;
       doc.text(
         `Telefone: ${extrato.aluno?.Alunos_Telefone || "-"}`,
         marginLeft + 5,
-        infoY
+        infoY,
       );
       infoY += 6;
       doc.text(
@@ -171,7 +171,7 @@ function ExtratoAluno() {
             : "-"
         }`,
         marginLeft + 5,
-        infoY
+        infoY,
       );
 
       y += 62;
@@ -191,12 +191,12 @@ function ExtratoAluno() {
         const mesesFaturamento = gerarMesesFaturamento(
           plano.faturamentos || [],
           ano,
-          plano.Plano_Pagamento
+          plano.Plano_Pagamento,
         );
         const mesesKeys = Object.keys(mesesFaturamento).sort();
         const totalPlano = Object.values(mesesFaturamento).reduce(
           (acc, m) => acc + (m.valor - m.desconto),
-          0
+          0,
         );
         const ultimoFat = plano.faturamentos?.[plano.faturamentos.length - 1];
         const dataRenovacao = ultimoFat?.Faturamento_Fim
@@ -225,7 +225,7 @@ function ExtratoAluno() {
         doc.text(
           `Plano: ${plano.Plano_Codigo} - ${plano.Plano_Nome}`,
           marginLeft + 5,
-          y + 8
+          y + 8,
         );
 
         doc.setFontSize(9);
@@ -233,12 +233,12 @@ function ExtratoAluno() {
         doc.text(
           `Tipo de Pagamento: ${plano.Plano_Pagamento}`,
           marginLeft + 5,
-          y + 15
+          y + 15,
         );
         doc.text(
           `Quantidade por Semana: ${plano.Plano_Quantidade_Semana}x`,
           marginLeft + 5,
-          y + 21
+          y + 21,
         );
 
         let mesY = y + 30;
@@ -276,7 +276,7 @@ function ExtratoAluno() {
             doc.text(
               `Pago em: ${formatarDataBR(mesData.dataPagamento)}`,
               marginLeft + 98,
-              mesY
+              mesY,
             );
           }
 
@@ -286,7 +286,7 @@ function ExtratoAluno() {
             doc.text(
               `(desc: R$ ${mesData.desconto.toFixed(2)})`,
               marginLeft + 145,
-              mesY
+              mesY,
             );
           }
 
@@ -303,7 +303,7 @@ function ExtratoAluno() {
           10,
           2,
           2,
-          "F"
+          "F",
         );
 
         doc.setFontSize(10);
@@ -333,11 +333,11 @@ function ExtratoAluno() {
       doc.setTextColor(...textGray);
       doc.text(
         `Gerado em: ${formatarData(new Date().toISOString())} às ${formatarHora(
-          new Date().toISOString()
+          new Date().toISOString(),
         )}`,
         105,
         290,
-        { align: "center" }
+        { align: "center" },
       );
 
       doc.save(filename);
@@ -365,7 +365,7 @@ function ExtratoAluno() {
   const gerarMesesFaturamento = (
     faturamentos,
     anoSelecionado,
-    tipoPagamento
+    tipoPagamento,
   ) => {
     const lancamentos = {};
     const qtdMesesPlano = getMesesPorTipoPlano(tipoPagamento);
@@ -373,7 +373,14 @@ function ExtratoAluno() {
     for (const fat of faturamentos) {
       if (!fat.Faturamento_Inicio) continue;
 
-      const inicio = new Date(fat.Faturamento_Inicio);
+      // Parse da data de forma segura para evitar problemas de timezone
+      // Formato esperado: "YYYY-MM-DD"
+      const partes = String(fat.Faturamento_Inicio).split("-");
+      const anoInicio = parseInt(partes[0], 10);
+      const mesInicio = parseInt(partes[1], 10) - 1; // Mês é 0-indexed em JS
+      const diaInicio = parseInt(partes[2], 10);
+      const inicio = new Date(anoInicio, mesInicio, diaInicio);
+
       const valorTotal = parseFloat(fat.Faturamento_Valor_Total) || 0;
       const desconto = parseFloat(fat.Faturamento_Desconto) || 0;
       const pago = fat.Faturamento_Data_Pagamento ? true : false;
@@ -383,7 +390,7 @@ function ExtratoAluno() {
         const mesData = new Date(
           inicio.getFullYear(),
           inicio.getMonth() + i,
-          1
+          1,
         );
         mesesDoPlano.push({
           ano: mesData.getFullYear(),
@@ -545,11 +552,11 @@ function ExtratoAluno() {
                   const mesesFaturamento = gerarMesesFaturamento(
                     plano.faturamentos || [],
                     ano,
-                    plano.Plano_Pagamento
+                    plano.Plano_Pagamento,
                   );
                   const totalPlano = Object.values(mesesFaturamento).reduce(
                     (acc, m) => acc + (m.valor - m.desconto),
-                    0
+                    0,
                   );
 
                   return (
@@ -586,7 +593,11 @@ function ExtratoAluno() {
                                 >
                                   <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                                     <span className="text-gray-500 font-mono text-sm">
-                                      #{mesData.faturamentos?.[0]?.Faturamento_ID || mesData.faturamentos?.[0]?.id || '-'}
+                                      #
+                                      {mesData.faturamentos?.[0]
+                                        ?.Faturamento_ID ||
+                                        mesData.faturamentos?.[0]?.id ||
+                                        "-"}
                                     </span>
                                     <span className="text-purple-400 font-semibold text-sm">
                                       {parcela}
@@ -620,10 +631,16 @@ function ExtratoAluno() {
                                         (desc: R$ {mesData.desconto.toFixed(2)})
                                       </span>
                                     )}
-                                    {mesData.faturamentos?.[0]?.Faturamento_Comprovante && (
+                                    {mesData.faturamentos?.[0]
+                                      ?.Faturamento_Comprovante && (
                                       <span className="ml-2">
                                         <Buttons.BotaoComprovante
-                                        onClick={() => setComprovanteModal(mesData.faturamentos[0].Faturamento_Comprovante)}
+                                          onClick={() =>
+                                            setComprovanteModal(
+                                              mesData.faturamentos[0]
+                                                .Faturamento_Comprovante,
+                                            )
+                                          }
                                         />
                                       </span>
                                     )}
@@ -659,7 +676,7 @@ function ExtratoAluno() {
                                 {formatarDataBR(
                                   plano.faturamentos[
                                     plano.faturamentos.length - 1
-                                  ].Faturamento_Fim
+                                  ].Faturamento_Fim,
                                 )}
                               </span>
                             </div>
@@ -761,16 +778,18 @@ function ExtratoAluno() {
 
       {/* Modal de Comprovante */}
       {comprovanteModal && (
-        <div 
+        <div
           className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50"
           onClick={() => setComprovanteModal(null)}
         >
-          <div 
+          <div
             className="bg-gray-800 rounded-xl p-4 max-w-3xl max-h-[90vh] overflow-auto border border-gray-600"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-white font-bold text-lg">Comprovante de Pagamento</h3>
+              <h3 className="text-white font-bold text-lg">
+                Comprovante de Pagamento
+              </h3>
               <button
                 type="button"
                 onClick={() => setComprovanteModal(null)}
@@ -780,9 +799,9 @@ function ExtratoAluno() {
               </button>
             </div>
             <div className="flex justify-center">
-              <img 
-                src={`${import.meta.env.VITE_API_URL || "https://api2.plantandoalegria.com.br"}/uploads/comprovantes/${comprovanteModal}`} 
-                alt="Comprovante" 
+              <img
+                src={`${import.meta.env.VITE_API_URL || "https://api2.plantandoalegria.com.br"}/uploads/comprovantes/${comprovanteModal}`}
+                alt="Comprovante"
                 className="max-w-full max-h-[70vh] rounded-lg"
               />
             </div>

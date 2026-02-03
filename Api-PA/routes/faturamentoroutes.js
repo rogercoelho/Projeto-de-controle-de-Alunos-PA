@@ -651,9 +651,11 @@ router.get("/relatorio-mensal/:mes/:ano", async (req, res) => {
         tipoPagamento.includes("unitário") ||
         tipoPagamento.includes("unitario")
       ) {
-        const inicio = new Date(fat.Faturamento_Inicio);
-        const mesInicio = inicio.getMonth() + 1;
-        const anoInicio = inicio.getFullYear();
+        // Parse da data de forma segura para evitar problemas de timezone
+        // Formato esperado: "YYYY-MM-DD"
+        const partes = String(fat.Faturamento_Inicio).split("-");
+        const anoInicio = parseInt(partes[0], 10);
+        const mesInicio = parseInt(partes[1], 10);
         return mesInicio === mesNum && anoInicio === anoNum;
       }
 

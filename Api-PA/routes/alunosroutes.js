@@ -84,6 +84,164 @@ const upload = multer({
   limits: { fileSize: 5 * 1024 * 1024 }, // Limite de 5MB por arquivo
 });
 
+async function converterPdfEmImagensBase64(arquivoPdfPath) {
+  let pdf2picModule;
+  try {
+    pdf2picModule = require("pdf2pic");
+  } catch {
+    pdf2picModule = await import("pdf2pic");
+  }
+
+  const fromPath =
+    pdf2picModule?.fromPath || pdf2picModule?.default?.fromPath;
+  if (typeof fromPath !== "function") {
+    throw new Error("Biblioteca pdf2pic indisponivel no servidor.");
+  }
+
+  const convert = fromPath(arquivoPdfPath, {
+    density: 140,
+    format: "png",
+    width: 1200,
+    height: 1700,
+    quality: 85,
+  });
+
+  const paginas = [];
+
+  if (typeof convert.bulk === "function") {
+    // -1 => converte todas as paginas reais do PDF
+    const resultados = await convert.bulk(-1, { responseType: "base64" });
+    for (const resultado of resultados || []) {
+      const base64 = resultado?.base64 || "";
+      if (base64) paginas.push(`data:image/png;base64,${base64}`);
+    }
+  } else {
+    // Fallback para versoes sem bulk: itera ate nao haver mais paginas
+    for (let pagina = 1; pagina <= 500; pagina += 1) {
+      try {
+        const resultado = await convert(pagina, { responseType: "base64" });
+        const base64 = resultado?.base64 || "";
+        if (!base64) break;
+        paginas.push(`data:image/png;base64,${base64}`);
+      } catch (error) {
+        if (pagina === 1) throw error;
+        break;
+      }
+    }
+  }
+
+  return paginas;
+}
+
+// Preview de contrato: converte PDF em imagens (base64) para visualizacao no frontend
+router.get("/contrato-preview/:arquivo", async (req, res) => {
+  try {
+    const arquivo = String(req.params.arquivo || "").trim();
+    if (!arquivo) {
+      return res.status(400).json({ Erro: "Arquivo de contrato nao informado." });
+    }
+    if (
+      arquivo.includes("..") ||
+      arquivo.includes("/") ||
+      arquivo.includes("\\")
+    ) {
+      return res.status(400).json({ Erro: "Nome de arquivo invalido." });
+    }
+
+    const baseDir =
+      process.env.NODE_ENV === "production"
+        ? "/home2/goutechc/wwwplantandoalegria_API/uploads"
+        : path.join(__dirname, "../uploads");
+    const contratoPath = path.join(baseDir, "contratos", arquivo);
+    if (!fs.existsSync(contratoPath)) {
+      return res.status(404).json({ Erro: "Contrato nao encontrado." });
+    }
+
+    const ext = path.extname(arquivo).toLowerCase();
+    if (ext !== ".pdf") {
+      return res.status(400).json({
+        Erro: "Preview em imagem disponivel apenas para contratos PDF.",
+      });
+    }
+
+    const paginas = await converterPdfEmImagensBase64(contratoPath);
+
+    if (!paginas.length) {
+      return res.status(500).json({
+        Erro: "Nao foi possivel converter o contrato PDF em imagem.",
+      });
+    }
+
+    return res.json({ paginas });
+  } catch (error) {
+    console.error("Erro no preview de contrato:", error);
+    const detalhe = String(error?.message || "");
+    const detalheInfra = /gm|ghostscript|graphicsmagick|imagemagick/i.test(
+      detalhe
+    )
+      ? "Dependencias do sistema ausentes para pdf2pic (GraphicsMagick/Ghostscript)."
+      : detalhe;
+    return res.status(500).json({
+      Erro: "Falha ao converter contrato PDF para imagem.",
+      detalhe: detalheInfra,
+    });
+  }
+});
+
+// Versao por query string para maior compatibilidade em dispositivos moveis
+router.get("/contrato-preview", async (req, res) => {
+  try {
+    const arquivo = String(req.query.arquivo || "").trim();
+    if (!arquivo) {
+      return res.status(400).json({ Erro: "Arquivo de contrato nao informado." });
+    }
+    if (
+      arquivo.includes("..") ||
+      arquivo.includes("/") ||
+      arquivo.includes("\\")
+    ) {
+      return res.status(400).json({ Erro: "Nome de arquivo invalido." });
+    }
+
+    const baseDir =
+      process.env.NODE_ENV === "production"
+        ? "/home2/goutechc/wwwplantandoalegria_API/uploads"
+        : path.join(__dirname, "../uploads");
+    const contratoPath = path.join(baseDir, "contratos", arquivo);
+    if (!fs.existsSync(contratoPath)) {
+      return res.status(404).json({ Erro: "Contrato nao encontrado." });
+    }
+
+    const ext = path.extname(arquivo).toLowerCase();
+    if (ext !== ".pdf") {
+      return res.status(400).json({
+        Erro: "Preview em imagem disponivel apenas para contratos PDF.",
+      });
+    }
+
+    const paginas = await converterPdfEmImagensBase64(contratoPath);
+
+    if (!paginas.length) {
+      return res.status(500).json({
+        Erro: "Nao foi possivel converter o contrato PDF em imagem.",
+      });
+    }
+    return res.json({ paginas });
+  } catch (error) {
+    console.error("Erro no preview de contrato (query):", error);
+    const detalhe = String(error?.message || "");
+    const detalheInfra = /gm|ghostscript|graphicsmagick|imagemagick/i.test(
+      detalhe
+    )
+      ? "Dependencias do sistema ausentes para pdf2pic (GraphicsMagick/Ghostscript)."
+      : detalhe;
+    return res.status(500).json({
+      Erro: "Falha ao converter contrato PDF para imagem.",
+      detalhe: detalheInfra,
+    });
+  }
+});
+
 // ✅ Inicio - Rota para obter todos os alunos.
 router.get("/", async (req, res) => {
   // Definindo a rota GET para obter todos os alunos o "/" define que é na raiz dessa rota alunos "/alunos"

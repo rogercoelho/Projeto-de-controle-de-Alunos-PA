@@ -1,6 +1,6 @@
-import PropTypes from "prop-types";
+﻿import PropTypes from "prop-types";
 
-/* Inicio - Botao Cadastrar */
+/* Início - Botao Cadastrar */
 function BotaoCadastrar({
   children,
   onClick,
@@ -29,7 +29,7 @@ BotaoCadastrar.propTypes = {
 };
 /* Fim - Botao Cadastrar */
 
-/* Inicio - Botao Limpar */
+/* Início - Botao Limpar */
 function BotaoLimpar({ onClick, disabled, type = "button" }) {
   return (
     <button
@@ -49,7 +49,7 @@ BotaoLimpar.propTypes = {
 };
 /* Fim - Botao Limpar */
 
-/* Inicio - Botao Pesquisar */
+/* Início - Botao Pesquisar */
 function BotaoPesquisar({
   children,
   onClick,
@@ -78,7 +78,7 @@ BotaoPesquisar.propTypes = {
 };
 /* Fim - Botao Pesquisar */
 
-/* Inicio - Botao X (Remover Conteudo) */
+/* Início - Botao X (Remover Conteudo) */
 function BotaoX({ onClick }) {
   return (
     <button
@@ -97,7 +97,7 @@ BotaoX.propTypes = {
 };
 /* Fim - Botao X (Remover Conteudo) */
 
-/* Inicio - Select Ordenação */
+/* Início - Select Ordenação */
 function SelectOrdenacao({ value, onChange, options, label = "Ordenar por:" }) {
   return (
     <div className="flex items-center gap-2">
@@ -129,7 +129,7 @@ SelectOrdenacao.propTypes = {
 };
 /* Fim - Select Ordenação */
 
-/* Inicio - Botao Voltar */
+/* Início - Botao Voltar */
 function BotaoVoltar({ onBack }) {
   return (
     <button
@@ -145,7 +145,7 @@ BotaoVoltar.propTypes = {
 };
 /* Fim - Botao Voltar */
 
-/* Inicio - Botao Editar */
+/* Início - Botao Editar */
 function BotaoEditar({ onClick }) {
   return (
     <button
@@ -161,7 +161,7 @@ BotaoEditar.propTypes = {
 };
 /* Fim - Botao Editar */
 
-/* Inicio - Botao Ativar/Inativar */
+/* Início - Botao Ativar/Inativar */
 function BotaoAtivarInativar({ onClick, isAtivo }) {
   return (
     <button
@@ -182,7 +182,7 @@ BotaoAtivarInativar.propTypes = {
 };
 /* Fim - Botao Ativar/Inativar */
 
-/* Inicio - Botao Salvar Alteracoes */
+/* Início - Botao Salvar Alteracoes */
 function BotaoSalvarAlteracoes({
   onClick,
   type = "submit",
@@ -209,7 +209,7 @@ BotaoSalvarAlteracoes.propTypes = {
 };
 /* Fim - Botao Salvar Alteracoes */
 
-/* Inicio - Botao Cancelar */
+/* Início - Botao Cancelar */
 function BotaoCancelar({ onClick, disabled, type = "button" }) {
   return (
     <button
@@ -229,7 +229,7 @@ BotaoCancelar.propTypes = {
 };
 /* Fim - Botao Cancelar */
 
-/* Inicio - Botao Paginação Anterior */
+/* Início - Botao Paginação Anterior */
 function BotaoPaginacaoAnterior({ onClick, disabled }) {
   return (
     <button
@@ -247,7 +247,7 @@ BotaoPaginacaoAnterior.propTypes = {
 };
 /* Fim - Botao Paginação Anterior */
 
-/* Inicio - Botao Paginação Próxima */
+/* Início - Botao Paginação Próxima */
 function BotaoPaginacaoProxima({ onClick, disabled }) {
   return (
     <button
@@ -268,7 +268,7 @@ BotaoPaginacaoProxima.propTypes = {
 /* ============================================== */
 /* ============================================== */
 
-/* Inicio - Botao Cadastrar Plano */
+/* Início - Botao Cadastrar Plano */
 function CadastrarPlano({ onClick, type = "submit", disabled, loading }) {
   return (
     <button
@@ -289,7 +289,7 @@ CadastrarPlano.propTypes = {
 };
 /* Fim - Botao Cadastrar Plano */
 
-/* Inicio - Botao Extrato */
+/* Início - Botao Extrato */
 function BotaoExtrato({ onClick, loading, disabled }) {
   return (
     <button
@@ -309,7 +309,7 @@ BotaoExtrato.propTypes = {
 };
 /* Fim - Botao Extrato */
 
-/* Inicio - Botao PDF */
+/* Início - Botao PDF */
 function BotaoPDF({ onClick, loading, disabled }) {
   return (
     <button
@@ -419,7 +419,7 @@ ListarUsuarios.propTypes = {
   onClick: PropTypes.func,
 };
 
-/* Inicio - Botao OK (genérico) */
+/* Início - Botao OK (genérico) */
 function BotaoOK({ onClick, disabled, type = "button", children }) {
   const label = children || "OK";
   return (
@@ -441,7 +441,7 @@ BotaoOK.propTypes = {
 };
 /* Fim - Botao OK */
 
-/* Inicio - Botao Primario genérico (ex: Entrar, Confirmar) */
+/* Início - Botao Primario genérico (ex: Entrar, Confirmar) */
 function BotaoPrimario({
   children,
   onClick,
@@ -470,7 +470,7 @@ BotaoPrimario.propTypes = {
 };
 /* Fim - Botao Primario */
 
-/* Inicio - Botao Icon (pequeno, para ícones como mostrar/ocultar senha) */
+/* Início - Botao Icon (pequeno, para ícones como mostrar/ocultar senha) */
 function BotaoIcon({ onClick, children, disabled, className = "" }) {
   return (
     <button
@@ -491,7 +491,7 @@ BotaoIcon.propTypes = {
 };
 /* Fim - Botao Icon */
 
-/* Inicio - Botao Toggle (pequeno, usado para opções de ordenação) */
+/* Início - Botao Toggle (pequeno, usado para opções de ordenação) */
 function BotaoToggle({ children, onClick, active }) {
   return (
     <button
@@ -514,7 +514,7 @@ BotaoToggle.propTypes = {
 };
 /* Fim - Botao Toggle */
 
-/* Inicio - Botao Comprovante */
+/* Início - Botao Comprovante */
 function BotaoComprovante({ onClick, disabled }) {
   return (
     <button
@@ -564,3 +564,4 @@ export const Buttons = {
 };
 
 export default Buttons;
+

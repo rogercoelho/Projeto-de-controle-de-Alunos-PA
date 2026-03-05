@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import api from "../../services/api";
 import { formatarCPF } from "../../utils/Utils";
 import StudentDetails from "./StudentDetails";
@@ -7,7 +7,7 @@ import MessageToast from "../miscellaneous/MessageToast";
 import useToast from "../../hooks/useToast";
 import { Buttons } from "../miscellaneous/Buttons";
 
-/* ===== Inicio da Função StudentSearch */
+/* ===== Início da Função StudentSearch */
 
 /* Cria variavel constante do objeto searchData e a função setSearchData, recebe o useState
    setando codigo, cpf e nome como vazios */
@@ -354,7 +354,7 @@ function StudentSearch() {
       setLoading(false);
     }
   };
-  /* Inicio - Retorna as informacoes na tela. */
+  /* Início - Retorna as informacoes na tela. */
   return (
     <div className="w-full h-auto">
       {messageToast && <MessageToast messageToast={messageToast} />}
@@ -412,7 +412,7 @@ function StudentSearch() {
         /* E se os dois forem falsos (ternario ? :), mostra o formulário de busca.
              onSubmit recebe a função handleSearch */
         <div className="w-full">
-          {/* Inicio - Formulario de pesquisa do aluno */}
+          {/* Início - Formulario de pesquisa do aluno */}
           <form
             onSubmit={handleSearch}
             className="bg-gray-800 rounded-xl p-6 space-y-4 mb-6"
@@ -420,7 +420,7 @@ function StudentSearch() {
             <h2 className="text-xl font-bold text-white mb-4">
               Pesquisar Aluno
             </h2>
-            {/* Inicio - Campo de pesquisa pelo codigo. 
+            {/* Início - Campo de pesquisa pelo codigo. 
                 type definido como number, name definido como codigo, value recebe de 
                 searchData.codigo, onChange recebe a funcao handleSearchChange. */}
             <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-2 items-center">
@@ -436,7 +436,7 @@ function StudentSearch() {
             </div>
             {/* Fim - Campo de pesquisa pelo codigo */}
 
-            {/* Inicio - Campo de pesquisa pelo CPF.
+            {/* Início - Campo de pesquisa pelo CPF.
                 Type é definido como texto, name como cpf, o value recebe de searchData.cpf, onChange
                 recebe a funcao de handleCPFChange. */}
             <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-2 items-center">
@@ -453,7 +453,7 @@ function StudentSearch() {
             </div>
             {/* Fim - Campo de pesquisa pelo CPF */}
 
-            {/* Inicio - Campo de pesquisa pelo nome.
+            {/* Início - Campo de pesquisa pelo nome.
                 type é definido como texto, name definido como nome, value recebe a funcao de
                 searchData.nome, onChange recebe a funcao de handleSearchChange.  */}
             <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-2 items-center">
@@ -469,7 +469,7 @@ function StudentSearch() {
             </div>
             {/* Fim - Campo de pesuisa pelo nome */}
 
-            {/* Inicio - Campo que busca apenas alunos inativos.
+            {/* Início - Campo que busca apenas alunos inativos.
                 Type é definido como checkbox, id definido como mostrarInaivos, checked recebe a
                 funcao mostrarInativos e onChange recebe o evento (e) que executa a funcao 
                 setMostrarInativos (do evento (e) e.target.checked) */}
@@ -486,7 +486,7 @@ function StudentSearch() {
             </div>
             {/* Fim - Campo que busca apenas alunos inativos. */}
             {/* Fim - Formulario de pesquisa do aluno. */}
-            {/* Inicio - Botoes de controle - pesquisae e limpar */}
+            {/* Início - Botoes de controle - pesquisae e limpar */}
             <div className="flex gap-4">
               <Buttons.BotaoPesquisar
                 onClick={handleSearch}
@@ -500,7 +500,7 @@ function StudentSearch() {
           </form>
           {/* Fim - Botoes de controle - pesquisar e limpar */}
 
-          {/* Inicio - Resultados da pesquisa 
+          {/* Início - Resultados da pesquisa 
               Nesse bloco, se o tamanho do results.length for maior que 0 e se contiver resultados,
               mostra na tela ordenando por codigo ou nome (clicando nos botoes) e se tiver mais de 
               10 alunos, mostra a paginacao. */}
@@ -519,7 +519,7 @@ function StudentSearch() {
                   ]}
                 />
               </div>
-              {/* Inicio - Tags de alunos da pesquisa */}
+              {/* Início - Tags de alunos da pesquisa */}
               <div className="space-y-2">
                 {currentAlunos.map((aluno) => (
                   <div
@@ -549,7 +549,7 @@ function StudentSearch() {
               </div>
               {/* Fim - Tags de alunos da pesquisa */}
 
-              {/* Inicio - Paginacao e botoes de controle - anterior e proximo */}
+              {/* Início - Paginacao e botoes de controle - anterior e proximo */}
               {totalPages > 1 && (
                 <div className="flex justify-center items-center gap-2 mt-6">
                   <Buttons.BotaoPaginacaoAnterior
@@ -585,3 +585,5 @@ function StudentSearch() {
 }
 
 export default StudentSearch;
+
+

@@ -1,4 +1,4 @@
-import {
+﻿import {
   calcularIdade,
   validarCPF,
   formatarCPF,
@@ -395,7 +395,7 @@ function StudentEditForm({
           />
         </div>
 
-        {/* Inicio - Pai / Responsavel */}
+        {/* Início - Pai / Responsavel */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
             Nome do Pai / Responsavel
@@ -435,7 +435,7 @@ function StudentEditForm({
         </div>
         {/* FIM - Pai */}
 
-        {/* Inicio - Mae / Responsavel */}
+        {/* Início - Mae / Responsavel */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
             Nome da Mãe / Responsavel
@@ -715,3 +715,5 @@ StudentEditForm.propTypes = {
     Alunos_Contrato: PropTypes.string,
   }),
 };
+
+

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import api from "../../services/api";
 import useToast from "../../hooks/useToast";
 import MessageToast from "../miscellaneous/MessageToast";
@@ -178,7 +178,7 @@ function RegistrarPresenca() {
         if (error.response?.status !== 401) {
           showToast({
             type: "error",
-            text: "Erro ao carregar presencas do mes.",
+            text: "Erro ao carregar presenças do mês.",
           });
         }
       } finally {
@@ -193,7 +193,7 @@ function RegistrarPresenca() {
     if (!alunoCodigo) {
       showToast({
         type: "error",
-        text: "Selecione o aluno antes de marcar presenca.",
+        text: "Selecione o aluno antes de marcar presença.",
       });
       return;
     }
@@ -276,14 +276,14 @@ function RegistrarPresenca() {
         })),
       });
 
-      showToast({ type: "success", text: "Presencas salvas com sucesso." });
+      showToast({ type: "success", text: "Presenças salvas com sucesso." });
     } catch (error) {
       if (error.response?.status !== 401) {
         showToast({
           type: "error",
           text:
             error.response?.data?.Erro ||
-            "Nao foi possivel salvar as presencas.",
+            "Não foi possível salvar as presenças.",
         });
       }
     } finally {
@@ -427,8 +427,8 @@ function RegistrarPresenca() {
           if (!mapaErros[alunoKey]) mapaErros[alunoKey] = {};
           mapaErros[alunoKey][data] =
             valor?.status === "Dobradinha"
-              ? "Dobradinha exige duas datas de falta validas e diferentes."
-              : "Reposicao sem data de falta. Clique em R para preencher.";
+              ? "Dobradinha exige duas datas de falta válidas e diferentes."
+              : "Reposição sem data de falta. Clique em R para preencher.";
           total += 1;
           continue;
         }
@@ -438,17 +438,17 @@ function RegistrarPresenca() {
           const statusRef = mapaDias?.[referencia]?.status;
           if (!statusRef) {
             erroEncontrado =
-              "A data informada para reposicao nao esta marcada no calendario como Falta.";
+              "A data informada para reposição não está marcada no calendário como Falta.";
             break;
           }
           if (statusRef === "Aula Realizada") {
             erroEncontrado =
-              "Nao e possivel repor um dia marcado como aula realizada.";
+              "Não é possível repor um dia marcado como aula realizada.";
             break;
           }
           if (statusRef && statusRef !== "Ausente") {
             erroEncontrado =
-              "A data informada para reposicao precisa estar marcada como Falta.";
+              "A data informada para reposição precisa estar marcada como Falta.";
             break;
           }
         }
@@ -497,7 +497,7 @@ function RegistrarPresenca() {
         if (error.response?.status !== 401) {
           showToast({
             type: "error",
-            text: "Erro ao carregar grade mensal de presenca.",
+            text: "Erro ao carregar grade mensal de presença.",
           });
         }
       } finally {
@@ -636,7 +636,7 @@ function RegistrarPresenca() {
     if (registros.length === 0) {
       showToast({
         type: "error",
-        text: "Nao ha alunos carregados na grade para salvar.",
+        text: "Não há alunos carregados na grade para salvar.",
       });
       return;
     }
@@ -663,7 +663,7 @@ function RegistrarPresenca() {
           type: "error",
           text:
             error.response?.data?.Erro ||
-            "Nao foi possivel salvar a grade de presenca.",
+            "Não foi possível salvar a grade de presença.",
         });
       }
     } finally {
@@ -677,7 +677,7 @@ function RegistrarPresenca() {
 
       <div className="bg-gray-800 rounded-xl p-3 md:p-6 space-y-3 md:space-y-4">
         <h2 className="text-lg md:text-xl font-bold text-white">
-          Registrar Presenca
+          Registrar Presença
         </h2>
 
         {/* MODELO 1 (comentado temporariamente)
@@ -709,7 +709,7 @@ function RegistrarPresenca() {
           <span className="px-2 py-1 rounded bg-green-600">P = Presente</span>
           <span className="px-2 py-1 rounded bg-red-700">F = Falta</span>
           <span className="px-2 py-1 rounded bg-amber-500 text-black">
-            R = Reposicao
+            R = Reposição
           </span>
           <span className="px-2 py-1 rounded bg-cyan-600">
             AR = Aula realizada
@@ -725,7 +725,7 @@ function RegistrarPresenca() {
               type="button"
               onClick={irParaMesAnterior}
               className="px-2 py-1 rounded bg-gray-700 hover:bg-gray-600 text-white"
-              title="Mes anterior"
+              title="Mês anterior"
             >
               {"<"}
             </button>
@@ -737,7 +737,7 @@ function RegistrarPresenca() {
               onClick={irParaMesSeguinte}
               disabled={!podeAvancarCompetencia}
               className="px-2 py-1 rounded bg-gray-700 hover:bg-gray-600 text-white disabled:opacity-40 disabled:cursor-not-allowed"
-              title="Mes seguinte"
+              title="Mês seguinte"
             >
               {">"}
             </button>
@@ -783,7 +783,7 @@ function RegistrarPresenca() {
                     className={`h-16 md:h-16 w-full border rounded-md flex flex-col justify-center items-center transition ${statusClass(
                       status
                     )} disabled:opacity-50 disabled:cursor-not-allowed`}
-                    title={`${chaveData} - ${status || "Sem marcacao"}`}
+                    title={`${chaveData} - ${status || "Sem marcação"}`}
                   >
                     <span className="text-[11px] md:text-sm">{dia}</span>
                     <span className="font-bold leading-none">
@@ -801,7 +801,7 @@ function RegistrarPresenca() {
                           abrirModalObservacao(chaveData);
                         }}
                         className="mt-0.5 text-[10px] leading-none bg-black/30 hover:bg-black/45 text-white px-1 rounded cursor-pointer"
-                        title={`Editar observacao de ${chaveData}`}
+                        title={`Editar observação de ${chaveData}`}
                       >
                         ✎
                       </span>
@@ -817,7 +817,7 @@ function RegistrarPresenca() {
           ([, v]) => !!v?.status && String(v?.observacao || "").trim()
         ) && (
           <div className="border border-gray-700 rounded-lg p-3 bg-gray-900">
-            <h4 className="font-semibold mb-2">Dias com observacao</h4>
+            <h4 className="font-semibold mb-2">Dias com observação</h4>
             <div className="space-y-1 text-sm">
               {Object.entries(presencasMap)
                 .filter(
@@ -849,14 +849,14 @@ function RegistrarPresenca() {
         <div className="border border-gray-700 rounded-lg p-2 md:p-3 bg-gray-900">
           <div className="flex flex-col gap-2 mb-3 w-fit">
             <h4 className="font-semibold text-sm md:text-base text-center">
-              Mes de Referencia
+              Mês de Referência
             </h4>
             <div className="flex flex-wrap items-center gap-2 text-xs md:text-sm">
               <button
                 type="button"
                 onClick={irParaMesAnterior}
                 className="px-2 py-1 rounded bg-gray-700 hover:bg-gray-600 text-white"
-                title="Mes anterior"
+                title="Mês anterior"
               >
                 {"<"}
               </button>
@@ -868,7 +868,7 @@ function RegistrarPresenca() {
                 onClick={irParaMesSeguinte}
                 disabled={!podeAvancarCompetencia}
                 className="px-2 py-1 rounded bg-gray-700 hover:bg-gray-600 text-white disabled:opacity-40 disabled:cursor-not-allowed"
-                title="Mes seguinte"
+                title="Mês seguinte"
               >
                 {">"}
               </button>
@@ -876,7 +876,7 @@ function RegistrarPresenca() {
           </div>
           <div className="mb-2 md:mb-3 grid grid-cols-1 md:grid-cols-[260px_1fr] gap-2 items-center">
             <label className="text-sm text-gray-300">
-              Filtrar alunos (codigo ou nome):
+              Filtrar alunos (código ou nome):
             </label>
             <input
               type="text"
@@ -894,7 +894,7 @@ function RegistrarPresenca() {
               F = Falta
             </span>
             <span className="px-3 py-1 rounded-md bg-amber-500 text-black font-semibold">
-              R = Reposicao
+              R = Reposição
             </span>
             <span className="px-3 py-1 rounded-md bg-cyan-600 text-white font-semibold">
               AR = Aula realizada
@@ -916,7 +916,7 @@ function RegistrarPresenca() {
                       onClick={() => alternarOrdenacaoGrade("codigo")}
                       className="w-full text-left hover:text-yellow-300"
                     >
-                      Codigo {marcadorOrdenacao("codigo")}
+                      Código {marcadorOrdenacao("codigo")}
                     </button>
                   </th>
                   <th className="border border-gray-600 px-2 py-1 text-left bg-gray-800 min-w-[200px] md:min-w-[260px]">
@@ -1019,7 +1019,7 @@ function RegistrarPresenca() {
                                         );
                                       }}
                                       className="text-[10px] leading-none bg-black/30 hover:bg-black/45 text-white px-1 rounded cursor-pointer"
-                                      title={`Editar observacao de ${chaveData}`}
+                                      title={`Editar observação de ${chaveData}`}
                                     >
                                       ✎
                                     </span>
@@ -1039,7 +1039,7 @@ function RegistrarPresenca() {
                                       title={
                                         status === "Dobradinha"
                                           ? "Editar datas da dobradinha"
-                                          : "Editar data de reposicao"
+                                          : "Editar data de reposição"
                                       }
                                     >
                                       {status === "Dobradinha" ? "D" : "R"}
@@ -1127,11 +1127,11 @@ function RegistrarPresenca() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
           <div className="w-full max-w-2xl bg-gray-900 border border-gray-600 rounded-xl p-5">
             <h3 className="text-lg font-bold mb-3">
-              Informar data de falta para reposicao
+              Informar data de falta para reposição
             </h3>
 
             <p className="text-sm text-gray-300 mb-4">
-              Cada dia marcado como reposicao precisa informar qual falta esta
+              Cada dia marcado como reposição precisa informar qual falta está
               sendo reposta.
             </p>
 
@@ -1148,7 +1148,7 @@ function RegistrarPresenca() {
                     key={`reposicao-${data}`}
                     className="grid grid-cols-1 md:grid-cols-[180px_1fr] gap-2 items-center"
                   >
-                    <label className="text-gray-200">Reposicao em {data}</label>
+                    <label className="text-gray-200">Reposição em {data}</label>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       <input
                         type="date"
@@ -1274,12 +1274,12 @@ function RegistrarPresenca() {
       {reposicaoGradeModal.open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
           <div className="w-full max-w-lg bg-gray-900 border border-gray-600 rounded-xl p-5">
-            <h3 className="text-lg font-bold mb-3">Reposicao na grade</h3>
+            <h3 className="text-lg font-bold mb-3">Reposição na grade</h3>
             <p className="text-sm text-gray-300 mb-3">
               {nomeAlunoPorCodigoGrade(reposicaoGradeModal.alunoCodigo)} -
               {reposicaoGradeModal.tipo === "Dobradinha"
                 ? ` dobradinha em ${reposicaoGradeModal.data}`
-                : ` reposicao em ${reposicaoGradeModal.data}`}
+                : ` reposição em ${reposicaoGradeModal.data}`}
             </p>
             <div className="space-y-2">
               <input
@@ -1330,7 +1330,7 @@ function RegistrarPresenca() {
                   if (!String(reposicaoGradeModal.valor || "").trim()) {
                     showToast({
                       type: "error",
-                      text: "Informe a data de falta da reposicao.",
+                      text: "Informe a data de falta da reposição.",
                     });
                     return;
                   }
@@ -1469,3 +1469,8 @@ function RegistrarPresenca() {
 }
 
 export default RegistrarPresenca;
+
+
+
+
+

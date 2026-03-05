@@ -1,4 +1,4 @@
-/* Importa os hooks do react usestate e useref */
+﻿/* Importa os hooks do react usestate e useref */
 import React, { useState, useRef } from "react";
 /* Importa a tratativa de mensagens do toast */
 import MessageToast from "../miscellaneous/MessageToast";
@@ -536,7 +536,7 @@ function StudentForm({ aluno, onSaveSuccess }) {
           />
         </div>
         {/* FIM - Código do Aluno */}
-        {/* Inicio - Nome Completo */}
+        {/* Início - Nome Completo */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
             Nome Completo *
@@ -551,7 +551,7 @@ function StudentForm({ aluno, onSaveSuccess }) {
           />
         </div>
         {/* FIM - Nome Completo */}
-        {/* Inicio - Data de Nascimento */}
+        {/* Início - Data de Nascimento */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
             Data de Nascimento *
@@ -566,7 +566,7 @@ function StudentForm({ aluno, onSaveSuccess }) {
           />
         </div>
         {/* FIM - Data de Nascimento */}
-        {/* Inicio - CPF */}
+        {/* Início - CPF */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
             CPF
@@ -586,7 +586,7 @@ function StudentForm({ aluno, onSaveSuccess }) {
           />
         </div>
         {/* FIM - CPF */}
-        {/* Inicio - Pai / Responsável */}
+        {/* Início - Pai / Responsável */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
             Nome do Pai / Responsavel
@@ -618,7 +618,7 @@ function StudentForm({ aluno, onSaveSuccess }) {
         </div>
         {/* FIM - Pai */}
 
-        {/* Inicio - Mãe / Responsável */}
+        {/* Início - Mãe / Responsável */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
             Nome da Mãe / Responsavel
@@ -674,7 +674,7 @@ function StudentForm({ aluno, onSaveSuccess }) {
           </div>
         </div>
         {/* FIM - CEP */}
-        {/* Inicio - Endereço */}
+        {/* Início - Endereço */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
             Endereço *
@@ -690,7 +690,7 @@ function StudentForm({ aluno, onSaveSuccess }) {
           />
         </div>
         {/* FIM - Endereço */}
-        {/* Inicio - Complemento */}
+        {/* Início - Complemento */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
             Complemento
@@ -704,7 +704,7 @@ function StudentForm({ aluno, onSaveSuccess }) {
           />
         </div>
         {/* FIM - Complemento */}
-        {/* Inicio - Bairro */}
+        {/* Início - Bairro */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
             Bairro *
@@ -720,7 +720,7 @@ function StudentForm({ aluno, onSaveSuccess }) {
           />
         </div>
         {/* FIM - Bairro */}
-        {/* Inicio - Localidade */}
+        {/* Início - Localidade */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
             Localidade *
@@ -736,7 +736,7 @@ function StudentForm({ aluno, onSaveSuccess }) {
           />
         </div>
         {/* FIM - Localidade */}
-        {/* Inicio - Cidade */}
+        {/* Início - Cidade */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
             Cidade *
@@ -752,7 +752,7 @@ function StudentForm({ aluno, onSaveSuccess }) {
           />
         </div>
         {/* FIM - Cidade */}
-        {/* Inicio - Estado */}
+        {/* Início - Estado */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
             Estado *
@@ -769,7 +769,7 @@ function StudentForm({ aluno, onSaveSuccess }) {
           />
         </div>
         {/* FIM - Estado */}
-        {/* Inicio - Telefone */}
+        {/* Início - Telefone */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
             Telefone *
@@ -786,7 +786,7 @@ function StudentForm({ aluno, onSaveSuccess }) {
           />
         </div>
         {/* FIM - Telefone */}
-        {/* Inicio - Email */}
+        {/* Início - Email */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
             Email *
@@ -801,7 +801,7 @@ function StudentForm({ aluno, onSaveSuccess }) {
           />
         </div>
         {/* FIM - Email */}
-        {/* Inicio - Nome do Contato de Emergência */}
+        {/* Início - Nome do Contato de Emergência */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
             Nome do Contato de Emergência *
@@ -816,7 +816,7 @@ function StudentForm({ aluno, onSaveSuccess }) {
           />
         </div>
         {/* FIM - Nome do Contato de Emergência */}
-        {/* Inicio - Telefone Emergência 1 */}
+        {/* Início - Telefone Emergência 1 */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
             Telefone Emergência 1 *
@@ -833,7 +833,7 @@ function StudentForm({ aluno, onSaveSuccess }) {
           />
         </div>
         {/* FIM - Telefone Emergência 1 */}
-        {/* Inicio - Telefone Emergência 2 */}
+        {/* Início - Telefone Emergência 2 */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
             Telefone Emergência 2
@@ -849,7 +849,7 @@ function StudentForm({ aluno, onSaveSuccess }) {
           />
         </div>
         {/* FIM - Telefone Emergência 2 */}
-        {/* Inicio - Foto do Aluno */}
+        {/* Início - Foto do Aluno */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
             Foto do Aluno
@@ -876,7 +876,7 @@ function StudentForm({ aluno, onSaveSuccess }) {
           )}
         </div>
         {/* FIM - Foto do Aluno */}
-        {/* Inicio - Contrato do Aluno */}
+        {/* Início - Contrato do Aluno */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
             Contrato do Aluno
@@ -904,7 +904,7 @@ function StudentForm({ aluno, onSaveSuccess }) {
           )}
         </div>
         {/* FIM - Contrato do Aluno */}
-        {/* Inicio - Data de Matrícula */}
+        {/* Início - Data de Matrícula */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
             Data de Matrícula *
@@ -919,7 +919,7 @@ function StudentForm({ aluno, onSaveSuccess }) {
           />
         </div>
         {/* FIM - Data de Matrícula */}
-        {/* Inicio - Observações */}
+        {/* Início - Observações */}
         <div className="md:col-span-2">
           <label className="block text-sm font-medium text-gray-300 mb-2">
             Observações
@@ -934,7 +934,7 @@ function StudentForm({ aluno, onSaveSuccess }) {
           />
         </div>
         {/* FIM - Observações */}
-        {/* Inicio - Botoes de Ação: Cadastrar e Limpar */}
+        {/* Início - Botoes de Ação: Cadastrar e Limpar */}
         <div className="flex justify-center gap-6 pt-4">
           <Buttons.BotaoCadastrar
             type="submit"
@@ -969,3 +969,5 @@ StudentForm.propTypes = {
 };
 
 export default StudentForm;
+
+

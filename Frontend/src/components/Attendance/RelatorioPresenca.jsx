@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import api from "../../services/api";
 import useToast from "../../hooks/useToast";
 import MessageToast from "../miscellaneous/MessageToast";
@@ -98,14 +98,14 @@ function RelatorioPresenca() {
     if (!alunoCodigo || !inicio || !fim) {
       showToast({
         type: "error",
-        text: "Selecione aluno e periodo (inicio/fim).",
+        text: "Selecione aluno e período (início/fim).",
       });
       return;
     }
     if (inicio > fim) {
       showToast({
         type: "error",
-        text: "Periodo invalido: inicio maior que fim.",
+        text: "Período inválido: início maior que fim.",
       });
       return;
     }
@@ -116,14 +116,14 @@ function RelatorioPresenca() {
         `/presenca/relatorio/${alunoCodigo}?inicio=${inicio}&fim=${fim}`
       );
       setRelatorio(response.data || null);
-      showToast({ type: "success", text: "Relatorio carregado." });
+      showToast({ type: "success", text: "Relatório carregado." });
     } catch (error) {
       if (error.response?.status !== 401) {
         setRelatorio(null);
         showToast({
           type: "error",
           text:
-            error.response?.data?.Erro || "Nao foi possivel gerar o relatorio.",
+            error.response?.data?.Erro || "Não foi possível gerar o relatório.",
         });
       }
     } finally {
@@ -133,7 +133,7 @@ function RelatorioPresenca() {
 
   const gerarPDF = async () => {
     if (!relatorio) {
-      showToast({ type: "error", text: "Gere o relatorio primeiro." });
+      showToast({ type: "error", text: "Gere o relatório primeiro." });
       return;
     }
 
@@ -168,9 +168,15 @@ function RelatorioPresenca() {
         D: [245, 158, 11],
       };
 
+      const baseUrl = import.meta.env.BASE_URL || "/";
+      const normalizedBaseUrl = baseUrl.endsWith("/")
+        ? baseUrl
+        : `${baseUrl}/`;
+      const logoPath = `${normalizedBaseUrl}logo.png`;
+
       const carregarLogoDataUrl = async () => {
-        const response = await fetch("/logo.png");
-        if (!response.ok) throw new Error("Logo nao encontrado");
+        const response = await fetch(logoPath);
+        if (!response.ok) throw new Error("Logo não encontrado");
         const blob = await response.blob();
         return await new Promise((resolve, reject) => {
           const reader = new FileReader();
@@ -211,7 +217,7 @@ function RelatorioPresenca() {
         cursor.setMonth(cursor.getMonth() + 1);
       }
       if (meses.length === 0) {
-        showToast({ type: "error", text: "Periodo invalido para gerar PDF." });
+        showToast({ type: "error", text: "Período inválido para gerar PDF." });
         setLoadingPdf(false);
         return;
       }
@@ -250,7 +256,7 @@ function RelatorioPresenca() {
 
         doc.setFontSize(14);
         doc.setTextColor(185, 28, 28);
-        doc.text("Relatorio de Presenca - Calendario", larguraPagina / 2, 22, {
+        doc.text("Relatório de Presença - Calendário", larguraPagina / 2, 22, {
           align: "center",
         });
 
@@ -276,9 +282,9 @@ function RelatorioPresenca() {
           coresPdf.textoSuave[2]
         );
         doc.text(
-          `Periodo: ${formatarDataISOParaBR(
+          `Período: ${formatarDataISOParaBR(
             relatorio.periodo?.inicio
-          )} ate ${formatarDataISOParaBR(relatorio.periodo?.fim)}`,
+          )} até ${formatarDataISOParaBR(relatorio.periodo?.fim)}`,
           margem,
           49
         );
@@ -294,7 +300,7 @@ function RelatorioPresenca() {
         doc.setFontSize(9);
         doc.setTextColor(226, 232, 240);
         doc.text(
-          `P - Presenca: ${totais.P || 0} | F - Falta: ${totais.F || 0} | R - Reposicao: ${
+          `P - Presença: ${totais.P || 0} | F - Falta: ${totais.F || 0} | R - Reposição: ${
             totais.R || 0
           } | AR - Aula Realizada: ${totais.AR || 0} | D - Dobradinha: ${
             totais.D || 0
@@ -463,10 +469,10 @@ function RelatorioPresenca() {
           <div className="relative z-10 space-y-4">
             <div className="flex flex-col gap-1">
               <h2 className="text-xl sm:text-2xl font-bold text-white">
-                Relatorio de Presenca
+                Relatório de Presença
               </h2>
               <p className="text-sm text-slate-300">
-                Visualizacao por calendario com status diario e referencias.
+                Visualização por calendário com status diário e referências.
               </p>
             </div>
 
@@ -495,7 +501,7 @@ function RelatorioPresenca() {
 
               <div className="rounded-xl bg-slate-900/60 border border-slate-700 p-3">
                 <label className="text-slate-300 text-xs uppercase tracking-wide">
-                  Inicio <span className="text-red-400">*</span>
+                  Início <span className="text-red-400">*</span>
                 </label>
                 <input
                   type="date"
@@ -519,10 +525,10 @@ function RelatorioPresenca() {
 
               <div className="rounded-xl bg-slate-900/60 border border-slate-700 p-3 flex flex-col justify-between">
                 <div className="text-xs text-slate-400 uppercase tracking-wide">
-                  Periodo
+                  Período
                 </div>
                 <div className="text-sm text-slate-200 font-medium mt-1">
-                  {inicio ? formatarDataISOParaBR(inicio) : "--"} ate{" "}
+                  {inicio ? formatarDataISOParaBR(inicio) : "--"} até{" "}
                   {fim ? formatarDataISOParaBR(fim) : "--"}
                 </div>
               </div>
@@ -533,7 +539,7 @@ function RelatorioPresenca() {
                 onClick={buscarRelatorio}
                 loading={loadingRelatorio}
               >
-                Gerar Relatorio
+                Gerar Relatório
               </Buttons.BotaoExtrato>
             </div>
           </div>
@@ -546,13 +552,13 @@ function RelatorioPresenca() {
               {relatorio.aluno?.Alunos_Nome}
             </div>
             <div className="text-sm text-gray-300">
-              Periodo: {formatarDataISOParaBR(relatorio.periodo?.inicio)} ate{" "}
+              Período: {formatarDataISOParaBR(relatorio.periodo?.inicio)} até{" "}
               {formatarDataISOParaBR(relatorio.periodo?.fim)}
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
               <div className="bg-gray-900 border border-gray-600 rounded p-2 text-center">
-                <div className="text-xs text-gray-400">P - Presenca</div>
+                <div className="text-xs text-gray-400">P - Presença</div>
                 <div className="font-bold text-emerald-300">
                   {relatorio.totais?.P ?? 0}
                 </div>
@@ -564,7 +570,7 @@ function RelatorioPresenca() {
                 </div>
               </div>
               <div className="bg-gray-900 border border-gray-600 rounded p-2 text-center">
-                <div className="text-xs text-gray-400">R - Reposicao</div>
+                <div className="text-xs text-gray-400">R - Reposição</div>
                 <div className="font-bold text-fuchsia-300">
                   {relatorio.totais?.R ?? 0}
                 </div>
@@ -708,7 +714,7 @@ function RelatorioPresenca() {
         {!relatorio && (
           <div className="bg-gray-900 rounded-xl p-4 border border-gray-700 text-center">
             <span className="text-gray-400">
-              Selecione os filtros e clique em Gerar Relatorio.
+              Selecione os filtros e clique em Gerar Relatório.
             </span>
           </div>
         )}
@@ -718,4 +724,9 @@ function RelatorioPresenca() {
 }
 
 export default RelatorioPresenca;
+
+
+
+
+
 

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+﻿import { useState, useEffect, useMemo } from "react";
 import api from "../../services/api";
 import { formatarDataBR, formatarData, formatarHora } from "../../utils/Utils";
 import MessageToast from "../miscellaneous/MessageToast";
@@ -760,3 +760,7 @@ function Relatorio_PA() {
 }
 
 export default Relatorio_PA;
+
+
+
+

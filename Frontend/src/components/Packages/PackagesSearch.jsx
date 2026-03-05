@@ -1,4 +1,4 @@
-import api from "../../services/api";
+﻿import api from "../../services/api";
 import { useState } from "react";
 import Buttons from "../miscellaneous/Buttons";
 import PackagesDetails from "./PackagesDetails";
@@ -406,3 +406,6 @@ function PackagesSearch() {
 }
 
 export default PackagesSearch;
+
+
+

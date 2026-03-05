@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { Routes, Route } from "react-router-dom";
 import Login from "./components/security/Login";
 import StudentForm from "./components/students/StudentForm";
@@ -66,7 +66,7 @@ function App() {
         setRemaining(diff);
         if (diff <= 0) {
           window.dispatchEvent(
-            new CustomEvent("token-expired", { detail: "Sua sessao expirou." })
+            new CustomEvent("token-expired", { detail: "Sua sessão expirou." })
           );
         }
       };
@@ -352,4 +352,5 @@ function App() {
 }
 
 export default App;
+
 

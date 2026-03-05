@@ -10,6 +10,7 @@ const STATUS_VALIDOS = [
   "Ausente",
   "Reposicao",
   "Aula Realizada",
+  "Dobradinha",
 ];
 
 function ehDataISO(valor) {
@@ -32,8 +33,8 @@ async function salvarPresencasAluno({
   presencas,
   transaction,
 }) {
-  if (!Array.isArray(presencas) || presencas.length === 0) {
-    const err = new Error("Nenhuma presenca enviada.");
+  if (!Array.isArray(presencas)) {
+    const err = new Error("Presencas invalidas.");
     err.httpStatus = 400;
     throw err;
   }
@@ -48,10 +49,12 @@ async function salvarPresencasAluno({
   }
 
   const processados = [];
+  const datasEnviadas = new Set();
   const statusPorDataNoLote = new Map();
   for (const item of presencas) {
     if (ehDataISO(item?.data) && STATUS_VALIDOS.includes(item?.status)) {
       statusPorDataNoLote.set(item.data, item.status);
+      datasEnviadas.add(item.data);
     }
   }
 
@@ -59,6 +62,7 @@ async function salvarPresencasAluno({
     const data = item?.data;
     const status = item?.status;
     const dataReposicaoReferencia = item?.dataReposicaoReferencia || null;
+    const dataReposicaoReferencia2 = item?.dataReposicaoReferencia2 || null;
     const observacao =
       item?.observacao && String(item.observacao).trim() !== ""
         ? String(item.observacao).trim()
@@ -78,18 +82,18 @@ async function salvarPresencasAluno({
       throw err;
     }
 
-    if (status === "Reposicao" && !ehDataISO(dataReposicaoReferencia)) {
+    if (
+      (status === "Reposicao" || status === "Dobradinha") &&
+      !ehDataISO(dataReposicaoReferencia)
+    ) {
       const err = new Error(
         `Reposicao exige data de referencia valida (${data}).`
       );
       err.httpStatus = 400;
       throw err;
     }
-
-    if (status === "Reposicao") {
-      const statusReferenciaNoLote = statusPorDataNoLote.get(
-        dataReposicaoReferencia
-      );
+    const validarReferenciaFalta = async (referenciaData) => {
+      const statusReferenciaNoLote = statusPorDataNoLote.get(referenciaData);
 
       if (statusReferenciaNoLote === "Aula Realizada") {
         const err = new Error(
@@ -103,7 +107,7 @@ async function salvarPresencasAluno({
         const aulaRealizadaJaRegistrada = await Alunos_Presenca.findOne({
           where: {
             Aluno_Codigo: alunoCodigoNum,
-            Presenca_Data: dataReposicaoReferencia,
+            Presenca_Data: referenciaData,
             Presenca_Status: "Aula Realizada",
           },
           transaction,
@@ -122,7 +126,7 @@ async function salvarPresencasAluno({
         const faltaJaRegistrada = await Alunos_Presenca.findOne({
           where: {
             Aluno_Codigo: alunoCodigoNum,
-            Presenca_Data: dataReposicaoReferencia,
+            Presenca_Data: referenciaData,
             Presenca_Status: "Ausente",
           },
           transaction,
@@ -136,12 +140,40 @@ async function salvarPresencasAluno({
           throw err;
         }
       }
+    };
+
+    if (status === "Reposicao") {
+      await validarReferenciaFalta(dataReposicaoReferencia);
+    }
+
+    if (status === "Dobradinha") {
+      if (!ehDataISO(dataReposicaoReferencia2)) {
+        const err = new Error(
+          `Dobradinha exige a segunda data de referencia valida (${data}).`
+        );
+        err.httpStatus = 400;
+        throw err;
+      }
+      if (dataReposicaoReferencia2 === dataReposicaoReferencia) {
+        const err = new Error(
+          "Dobradinha exige duas faltas diferentes para reposicao."
+        );
+        err.httpStatus = 400;
+        throw err;
+      }
+
+      await validarReferenciaFalta(dataReposicaoReferencia);
+      await validarReferenciaFalta(dataReposicaoReferencia2);
     }
 
     const payload = {
       Presenca_Status: status,
       Presenca_Data_Reposicao_Referencia:
-        status === "Reposicao" ? dataReposicaoReferencia : null,
+        status === "Reposicao" || status === "Dobradinha"
+          ? dataReposicaoReferencia
+          : null,
+      Presenca_Data_Reposicao_Referencia_2:
+        status === "Dobradinha" ? dataReposicaoReferencia2 : null,
       Presenca_Observacao: observacao,
     };
 
@@ -163,6 +195,46 @@ async function salvarPresencasAluno({
         { transaction }
       );
       processados.push({ data, acao: "create" });
+    }
+  }
+
+  // Sincroniza o mês: remove do banco os dias que foram limpos na interface
+  const { dataInicial, dataFinal } = intervaloMes(anoNum, mesNum);
+  const whereBase = {
+    Aluno_Codigo: alunoCodigoNum,
+    Presenca_Data: {
+      [Op.between]: [dataInicial, dataFinal],
+    },
+  };
+
+  const whereDelete =
+    datasEnviadas.size === 0
+      ? whereBase
+      : {
+          ...whereBase,
+          Presenca_Data: {
+            [Op.between]: [dataInicial, dataFinal],
+            [Op.notIn]: Array.from(datasEnviadas),
+          },
+        };
+
+  const registrosParaExcluir = await Alunos_Presenca.findAll({
+    where: whereDelete,
+    attributes: ["Presenca_Data"],
+    transaction,
+    raw: true,
+  });
+
+  if (registrosParaExcluir.length > 0) {
+    await Alunos_Presenca.destroy({
+      where: whereDelete,
+      transaction,
+    });
+    for (const reg of registrosParaExcluir) {
+      processados.push({
+        data: reg.Presenca_Data,
+        acao: "delete",
+      });
     }
   }
 
@@ -234,6 +306,75 @@ router.get("/grade/:ano/:mes", async (req, res) => {
   } catch (error) {
     return res.status(500).json({
       Erro: "Erro ao carregar grade de presencas.",
+      Detalhes: error.message,
+    });
+  }
+});
+
+router.get("/relatorio/:Aluno_Codigo", async (req, res) => {
+  try {
+    const Aluno_Codigo = parseInt(req.params.Aluno_Codigo, 10);
+    const inicio = String(req.query?.inicio || "");
+    const fim = String(req.query?.fim || "");
+
+    if (Number.isNaN(Aluno_Codigo) || !ehDataISO(inicio) || !ehDataISO(fim)) {
+      return res.status(400).json({ Erro: "Parametros invalidos." });
+    }
+    if (inicio > fim) {
+      return res
+        .status(400)
+        .json({ Erro: "Periodo invalido: inicio maior que fim." });
+    }
+
+    const aluno = await Alunos_Cadastros.findByPk(Aluno_Codigo, {
+      attributes: ["Alunos_Codigo", "Alunos_Nome"],
+      raw: true,
+    });
+    if (!aluno) {
+      return res.status(404).json({ Erro: "Aluno nao encontrado." });
+    }
+
+    const presencas = await Alunos_Presenca.findAll({
+      where: {
+        Aluno_Codigo,
+        Presenca_Data: {
+          [Op.between]: [inicio, fim],
+        },
+      },
+      order: [["Presenca_Data", "ASC"]],
+      raw: true,
+    });
+
+    const totais = {
+      P: 0,
+      F: 0,
+      R: 0,
+      AR: 0,
+      D: 0,
+      totalGeral: 0,
+      aulasFeitas: 0,
+    };
+
+    for (const p of presencas) {
+      if (p.Presenca_Status === "Presente") totais.P += 1;
+      else if (p.Presenca_Status === "Ausente") totais.F += 1;
+      else if (p.Presenca_Status === "Reposicao") totais.R += 1;
+      else if (p.Presenca_Status === "Aula Realizada") totais.AR += 1;
+      else if (p.Presenca_Status === "Dobradinha") totais.D += 1;
+    }
+
+    totais.totalGeral = totais.P + totais.F + totais.R + totais.AR + totais.D;
+    totais.aulasFeitas = totais.P + totais.R + totais.AR + totais.D * 2;
+
+    return res.json({
+      aluno,
+      periodo: { inicio, fim },
+      totais,
+      presencas,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      Erro: "Erro ao gerar relatorio de presencas.",
       Detalhes: error.message,
     });
   }

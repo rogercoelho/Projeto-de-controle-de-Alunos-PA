@@ -1,0 +1,31 @@
+# Normalize text files and enforce UTF-8 in Git working tree
+* text=auto
+
+# Source and config files
+*.js   text eol=lf working-tree-encoding=UTF-8
+*.jsx  text eol=lf working-tree-encoding=UTF-8
+*.ts   text eol=lf working-tree-encoding=UTF-8
+*.tsx  text eol=lf working-tree-encoding=UTF-8
+*.json text eol=lf working-tree-encoding=UTF-8
+*.css  text eol=lf working-tree-encoding=UTF-8
+*.scss text eol=lf working-tree-encoding=UTF-8
+*.html text eol=lf working-tree-encoding=UTF-8
+*.md   text eol=lf working-tree-encoding=UTF-8
+*.yml  text eol=lf working-tree-encoding=UTF-8
+*.yaml text eol=lf working-tree-encoding=UTF-8
+*.sql  text eol=lf working-tree-encoding=UTF-8
+*.ps1  text eol=lf working-tree-encoding=UTF-8
+*.sh   text eol=lf working-tree-encoding=UTF-8
+
+# Images / binary
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.webp binary
+*.ico  binary
+*.pdf  binary
+*.zip  binary
+*.gz   binary
+*.woff binary
+*.woff2 binary

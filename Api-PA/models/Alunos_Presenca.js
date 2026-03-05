@@ -21,10 +21,16 @@ const Alunos_Presenca = db.sequelizeconnection.define(
       type: db.Sequelize.STRING(20),
       allowNull: false,
       validate: {
-        isIn: [["Presente", "Ausente", "Reposicao", "Aula Realizada"]],
+        isIn: [
+          ["Presente", "Ausente", "Reposicao", "Aula Realizada", "Dobradinha"],
+        ],
       },
     },
     Presenca_Data_Reposicao_Referencia: {
+      type: db.Sequelize.DATEONLY,
+      allowNull: true,
+    },
+    Presenca_Data_Reposicao_Referencia_2: {
       type: db.Sequelize.DATEONLY,
       allowNull: true,
     },

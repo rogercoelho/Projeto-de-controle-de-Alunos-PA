@@ -66,7 +66,7 @@ function App() {
         setRemaining(diff);
         if (diff <= 0) {
           window.dispatchEvent(
-            new CustomEvent("token-expired", { detail: "Sua sessÃ£o expirou." })
+            new CustomEvent("token-expired", { detail: "Sua sessao expirou." })
           );
         }
       };
@@ -92,15 +92,15 @@ function App() {
       window.location.reload();
     }
   };
-  // Logout automÃ¡tico (token expirado)
+  // Logout automatico (token expirado)
   useEffect(() => {
-    // Atualiza usuario e ehAdmin ao montar e apÃ³s login/logout
+    // Atualiza usuario e ehAdmin ao montar e apos login/logout
     const updateUserState = () => {
       setUsuario(getUsuario());
       setEhAdmin(isAdmin());
     };
     window.addEventListener("login", updateUserState);
-    // Ao logar, buscar alunos com planos vencendo no mÃªs
+    // Ao logar, buscar alunos com planos vencendo no mes
     const handleLoginFetchExpiring = async () => {
       try {
         const res = await api.get("/faturamento/expirando");
@@ -110,12 +110,12 @@ function App() {
           setShowExpiring(true);
         }
       } catch (err) {
-        // nÃ£o bloquear o login por erro na busca
+        // nao bloquear o login por erro na busca
         console.error("Erro ao buscar expirando:", err);
       }
     };
     window.addEventListener("login", handleLoginFetchExpiring);
-    // Se jÃ¡ estiver logado ao montar, busca tambÃ©m
+    // Se ja estiver logado ao montar, busca tambem
     if (getToken()) {
       handleLoginFetchExpiring();
     }
@@ -148,19 +148,19 @@ function App() {
   const handleNavigate = (component, subComponent) => {
     setActiveComponent(component);
     setActiveComponent2(subComponent);
-    // Incrementa a key quando UserList Ã© selecionado para forÃ§ar remontagem
+    // Incrementa a key quando UserList e selecionado para forcar remontagem
     if (subComponent === "UserList") {
       setUserListKey((prev) => prev + 1);
     }
-    // Incrementa a key quando StudentSearch Ã© selecionado para forÃ§ar remontagem
+    // Incrementa a key quando StudentSearch e selecionado para forcar remontagem
     if (subComponent === "StudentSearch") {
       setStudentSearchKey((prev) => prev + 1);
     }
-    // Incrementa a key quando PackagesSearck Ã© selecionado para forÃ§ar remontagem
+    // Incrementa a key quando PackagesSearck e selecionado para forcar remontagem
     if (subComponent === "PackagesSearch") {
       setPackagesSearchKey((prev) => prev + 1);
     }
-    // Incrementa a key quando RegistrarPagamento Ã© selecionado para forÃ§ar remontagem
+    // Incrementa a key quando RegistrarPagamento e selecionado para forcar remontagem
     if (component === "Financeiro" && subComponent === "RegistrarPagamento") {
       setRegistrarPagamentoKey((prev) => prev + 1);
     }
@@ -185,7 +185,7 @@ function App() {
             <ProtectedRoute>
               <div className="w-full h-auto min-h-screen mx-auto flex flex-col justify-start p-6 bg-gray-900 text-white border-8 border-red-900 rounded-4xl">
                 <div className="relative">
-                  {/* BotÃ£o de Logout e informaÃ§Ãµes do usuÃ¡rio - Desktop */}
+                  {/* Botao de Logout e informacoes do usuario - Desktop */}
                   <div className="hidden md:flex absolute top-0 right-0 items-center gap-4">
                     <div className="text-right">
                       <p className="text-sm text-gray-300">Bem-vindo(a),</p>
@@ -206,8 +206,8 @@ function App() {
                       </div>
                       <p className="text-xs text-gray-400">
                         {usuario?.grupo === "Administrador"
-                          ? "ðŸ‘‘ Administrador"
-                          : "ðŸ‘¤ Aluno"}
+                          ? "Administrador"
+                          : "Aluno"}
                       </p>
                         <TokenExpiry />
                     </div>
@@ -248,8 +248,8 @@ function App() {
                         </div>
                         <p className="text-xs text-gray-400">
                           {usuario?.grupo === "Administrador"
-                            ? "ðŸ‘‘ Administrador"
-                            : "ðŸ‘¤ Aluno"}
+                            ? "Administrador"
+                            : "Aluno"}
                         </p>
                         <TokenExpiry />
                       </div>
@@ -352,3 +352,4 @@ function App() {
 }
 
 export default App;
+

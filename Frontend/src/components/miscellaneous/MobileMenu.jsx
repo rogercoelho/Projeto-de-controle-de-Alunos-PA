@@ -9,6 +9,7 @@ function MobileMenu({ onNavigate, ehAdmin }) {
   const [menuGestaoFinanceiraAberto, setMenuGestaoFinanceiraAberto] =
     useState(false);
   const [menuPlanosAberto, setMenuPlanosAberto] = useState(false);
+  const [menuAulasAberto, setMenuAulasAberto] = useState(false);
 
   const handleNavigation = (component, subComponent) => {
     if (onNavigate) {
@@ -28,6 +29,7 @@ function MobileMenu({ onNavigate, ehAdmin }) {
     if (menu !== "usuarios") setMenuUsuariosAberto(false);
     if (menu !== "financeiro") setMenuFinanceiroAberto(false);
     if (menu !== "planos") setMenuPlanosAberto(false);
+    if (menu !== "aulas") setMenuAulasAberto(false);
 
     // Depois de um pequeno delay, alterna o menu clicado
     setTimeout(() => {
@@ -46,6 +48,9 @@ function MobileMenu({ onNavigate, ehAdmin }) {
           break;
         case "planos":
           setMenuPlanosAberto((prev) => !prev);
+          break;
+        case "aulas":
+          setMenuAulasAberto((prev) => !prev);
           break;
         default:
           break;
@@ -238,7 +243,7 @@ function MobileMenu({ onNavigate, ehAdmin }) {
         )}
 
         {/* CONTROLE DE AULAS */}
-        {/*  {ehAdmin && (
+        {ehAdmin && (
           <div className="border-b border-gray-700">
             <button
               onClick={() => toggleMenu("aulas")}
@@ -284,7 +289,7 @@ function MobileMenu({ onNavigate, ehAdmin }) {
             >
               <div className="pb-3 space-y-2 pl-2">
                 <button
-                  onClick={() => handleNavigation("Classes", null)}
+                  onClick={() => handleNavigation("Aulas", "ControleHorarios")}
                   className="w-full flex items-center gap-3 px-4 py-3 bg-red-900/30 hover:bg-red-800/40 active:bg-red-700/50 rounded-lg text-white text-left transition-all border border-red-800/50"
                 >
                   <svg
@@ -297,14 +302,14 @@ function MobileMenu({ onNavigate, ehAdmin }) {
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth={2}
-                      d="M12 4v16m8-8H4"
+                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
                     />
                   </svg>
-                  <span className="font-medium">Criar Aula</span>
+                  <span className="font-medium">Controle de Horários</span>
                 </button>
 
                 <button
-                  onClick={() => handleNavigation("Classes", null)}
+                  onClick={() => handleNavigation("Aulas", "AgendamentoAulas")}
                   className="w-full flex items-center gap-3 px-4 py-3 bg-red-900/30 hover:bg-red-800/40 active:bg-red-700/50 rounded-lg text-white text-left transition-all border border-red-800/50"
                 >
                   <svg
@@ -317,107 +322,15 @@ function MobileMenu({ onNavigate, ehAdmin }) {
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth={2}
-                      d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                      d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
                     />
                   </svg>
-                  <span className="font-medium">Listar Aulas</span>
+                  <span className="font-medium">Agendamento de Aulas</span>
                 </button>
               </div>
             </div>
           </div>
-        )} */}
-
-        {/* CONTROLE DE PRESENCA */}
-        {/*  {ehAdmin && (
-          <div className="border-b border-gray-700">
-            <button
-              onClick={() => toggleMenu("presenca")}
-              className="w-full flex items-center justify-between py-3 text-white font-semibold text-base active:bg-gray-700 transition-colors rounded-lg px-2"
-            >
-              <div className="flex items-center gap-3">
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
-                  />
-                </svg>
-                <span>Controle de Presença</span>
-              </div>
-              <svg
-                className={`w-5 h-5 transition-transform duration-300 ${
-                  menuPresencaAberto ? "rotate-180" : ""
-                }`}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 9l-7 7-7-7"
-                />
-              </svg>
-            </button>
-
-            <div
-              className={`overflow-hidden transition-all duration-300 ease-in-out ${
-                menuPresencaAberto
-                  ? "max-h-96 opacity-100"
-                  : "max-h-0 opacity-0"
-              }`}
-            >
-              <div className="pb-3 space-y-2 pl-2">
-                <button
-                  onClick={() => handleNavigation("Attendance", null)}
-                  className="w-full flex items-center gap-3 px-4 py-3 bg-red-900/30 hover:bg-red-800/40 active:bg-red-700/50 rounded-lg text-white text-left transition-all border border-red-800/50"
-                >
-                  <svg
-                    className="w-5 h-5 shrink-0"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                  <span className="font-medium">Registrar Presença</span>
-                </button>
-
-                <button
-                  onClick={() => handleNavigation("Attendance", null)}
-                  className="w-full flex items-center gap-3 px-4 py-3 bg-red-900/30 hover:bg-red-800/40 active:bg-red-700/50 rounded-lg text-white text-left transition-all border border-red-800/50"
-                >
-                  <svg
-                    className="w-5 h-5 shrink-0"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                    />
-                  </svg>
-                  <span className="font-medium">Relatório de Presença</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        )} */}
+        )}
 
         {/* CONTROLE DE PRESENCA */}
         {ehAdmin && (
@@ -831,6 +744,3 @@ MobileMenu.propTypes = {
   onNavigate: PropTypes.func,
   ehAdmin: PropTypes.bool,
 };
-
-
-

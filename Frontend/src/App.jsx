@@ -14,6 +14,8 @@ import Relatorio_PA from "./components/Billing/Relatorio_PA";
 import Relatorio_WET from "./components/Billing/Relatorio_WET";
 import RegistrarPresenca from "./components/Attendance/RegistrarPresenca";
 import RelatorioPresenca from "./components/Attendance/RelatorioPresenca";
+import ControleHorarios from "./components/Classes/ControleHorarios";
+import AgendamentoAulas from "./components/Classes/AgendamentoAulas";
 import ProtectedRoute from "./components/Security/ProtectedRoute";
 import AdminDelete from "./components/Security/AdminDelete";
 import MobileMenu from "./components/miscellaneous/MobileMenu";
@@ -66,7 +68,7 @@ function App() {
         setRemaining(diff);
         if (diff <= 0) {
           window.dispatchEvent(
-            new CustomEvent("token-expired", { detail: "Sua sessão expirou." })
+            new CustomEvent("token-expired", { detail: "Sua sessão expirou." }),
           );
         }
       };
@@ -209,7 +211,7 @@ function App() {
                           ? "Administrador"
                           : "Aluno"}
                       </p>
-                        <TokenExpiry />
+                      <TokenExpiry />
                     </div>
                     <button
                       onClick={handleLogout}
@@ -339,6 +341,14 @@ function App() {
                         activeComponent2 === "RelatorioPresenca" && (
                           <RelatorioPresenca key="relatorio-presenca" />
                         )}
+                      {activeComponent === "Aulas" &&
+                        activeComponent2 === "ControleHorarios" && (
+                          <ControleHorarios key="controle-horarios" />
+                        )}
+                      {activeComponent === "Aulas" &&
+                        activeComponent2 === "AgendamentoAulas" && (
+                          <AgendamentoAulas key="agendamento-aulas" />
+                        )}
                     </div>
                   </div>
                 )}
@@ -352,5 +362,3 @@ function App() {
 }
 
 export default App;
-
-

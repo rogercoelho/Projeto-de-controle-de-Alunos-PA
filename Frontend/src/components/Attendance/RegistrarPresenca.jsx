@@ -67,6 +67,9 @@ function RegistrarPresenca() {
   const [gradeAlunos, setGradeAlunos] = useState([]);
   const [gradeMap, setGradeMap] = useState({});
   const [filtroGrade, setFiltroGrade] = useState("");
+  const [filtroHorario, setFiltroHorario] = useState("");
+  const [horarios, setHorarios] = useState([]);
+  const [alunosPorHorario, setAlunosPorHorario] = useState(null);
   const [ordenacaoGrade, setOrdenacaoGrade] = useState({
     campo: "nome",
     direcao: "asc",
@@ -100,11 +103,11 @@ function RegistrarPresenca() {
 
   const totalDiasMes = useMemo(
     () => new Date(anoSelecionado, mesSelecionadoIndex + 1, 0).getDate(),
-    [anoSelecionado, mesSelecionadoIndex]
+    [anoSelecionado, mesSelecionadoIndex],
   );
   const primeiroDiaSemana = useMemo(
     () => new Date(anoSelecionado, mesSelecionadoIndex, 1).getDay(),
-    [anoSelecionado, mesSelecionadoIndex]
+    [anoSelecionado, mesSelecionadoIndex],
   );
 
   const diasReposicaoSemReferencia = useMemo(
@@ -116,17 +119,17 @@ function RegistrarPresenca() {
               !String(v?.dataReposicaoReferencia || "").trim()) ||
             (v?.status === "Dobradinha" &&
               (!String(v?.dataReposicaoReferencia || "").trim() ||
-                !String(v?.dataReposicaoReferencia2 || "").trim()))
+                !String(v?.dataReposicaoReferencia2 || "").trim())),
         )
         .map(([data]) => data),
-    [presencasMap]
+    [presencasMap],
   );
 
   const alunoSelecionado = useMemo(
     () =>
       alunos.find((a) => String(a.Alunos_Codigo) === String(alunoCodigo)) ||
       null,
-    [alunos, alunoCodigo]
+    [alunos, alunoCodigo],
   );
 
   useEffect(() => {
@@ -160,7 +163,7 @@ function RegistrarPresenca() {
       setLoadingPresencas(true);
       try {
         const response = await api.get(
-          `/presenca/${alunoCodigo}/${anoSelecionado}/${mesSelecionadoIndex + 1}`
+          `/presenca/${alunoCodigo}/${anoSelecionado}/${mesSelecionadoIndex + 1}`,
         );
         const map = {};
         for (const item of response.data?.presencas || []) {
@@ -243,7 +246,7 @@ function RegistrarPresenca() {
     }
 
     const entradas = Object.entries(presencasMap).filter(
-      ([, valor]) => !!valor?.status
+      ([, valor]) => !!valor?.status,
     );
     if (entradas.length === 0) {
       showToast({ type: "error", text: "Nenhum dia foi marcado." });
@@ -355,23 +358,27 @@ function RegistrarPresenca() {
   };
 
   const nomeDiaSemana = (dia) => {
-    const idx = new Date(
-      anoSelecionado,
-      mesSelecionadoIndex,
-      dia
-    ).getDay();
+    const idx = new Date(anoSelecionado, mesSelecionadoIndex, dia).getDay();
     return diasSemana[idx].toLowerCase();
   };
 
   const gradeAlunosFiltrados = useMemo(() => {
-    const termo = String(filtroGrade || "").trim().toLowerCase();
-    const base = !termo
-      ? [...gradeAlunos]
-      : gradeAlunos.filter((aluno) => {
+    const termo = String(filtroGrade || "")
+      .trim()
+      .toLowerCase();
+    let base = termo
+      ? gradeAlunos.filter((aluno) => {
           const nome = String(aluno.Alunos_Nome || "").toLowerCase();
           const codigo = String(aluno.Alunos_Codigo || "");
           return nome.includes(termo) || codigo.includes(termo);
-        });
+        })
+      : [...gradeAlunos];
+
+    if (alunosPorHorario !== null) {
+      base = base.filter((aluno) =>
+        alunosPorHorario.includes(String(aluno.Alunos_Codigo)),
+      );
+    }
 
     base.sort((a, b) => {
       if (ordenacaoGrade.campo === "codigo") {
@@ -380,13 +387,19 @@ function RegistrarPresenca() {
       }
       const comp = String(a.Alunos_Nome || "").localeCompare(
         String(b.Alunos_Nome || ""),
-        "pt-BR"
+        "pt-BR",
       );
       return ordenacaoGrade.direcao === "asc" ? comp : -comp;
     });
 
     return base;
-  }, [gradeAlunos, filtroGrade, ordenacaoGrade]);
+  }, [
+    gradeAlunos,
+    filtroGrade,
+    filtroHorario,
+    alunosPorHorario,
+    ordenacaoGrade,
+  ]);
 
   const alternarOrdenacaoGrade = (campo) => {
     setOrdenacaoGrade((prev) => {
@@ -464,12 +477,37 @@ function RegistrarPresenca() {
     return { mapaErros, total };
   }, [gradeMap]);
 
+  // Carrega lista de horários para o select de filtro
+  useEffect(() => {
+    api
+      .get("/horarios")
+      .then((res) => setHorarios(res.data?.Horarios || []))
+      .catch(() => {});
+  }, []);
+
+  // Ao trocar o horário selecionado, busca os alunos agendados nele
+  useEffect(() => {
+    if (!filtroHorario) {
+      setAlunosPorHorario(null);
+      return;
+    }
+    api
+      .get(`/agendamentos/horario/${filtroHorario}`)
+      .then((res) => {
+        const codigos = (res.data?.Agendamentos || []).map((a) =>
+          String(a.Aluno?.Alunos_Codigo ?? a.Aluno_Codigo),
+        );
+        setAlunosPorHorario(codigos);
+      })
+      .catch(() => setAlunosPorHorario([]));
+  }, [filtroHorario]);
+
   useEffect(() => {
     const carregarGradeMensal = async () => {
       setLoadingGrade(true);
       try {
         const response = await api.get(
-          `/presenca/grade/${anoSelecionado}/${mesSelecionadoIndex + 1}`
+          `/presenca/grade/${anoSelecionado}/${mesSelecionadoIndex + 1}`,
         );
         const alunosGrade = response.data?.alunos || [];
         const presencasPorAluno = response.data?.presencasPorAluno || {};
@@ -547,7 +585,6 @@ function RegistrarPresenca() {
         [alunoKey]: mapaAluno,
       };
     });
-
   };
 
   const abrirModalObservacaoGrade = (alunoCodigoGrade, data) => {
@@ -607,14 +644,14 @@ function RegistrarPresenca() {
 
   const nomeAlunoPorCodigoGrade = (alunoCodigoGrade) => {
     const aluno = gradeAlunos.find(
-      (a) => String(a.Alunos_Codigo) === String(alunoCodigoGrade)
+      (a) => String(a.Alunos_Codigo) === String(alunoCodigoGrade),
     );
     return aluno?.Alunos_Nome || "Aluno";
   };
 
   const salvarMatrizPresencas = async () => {
-    const registros = Object.entries(gradeMap)
-      .map(([alunoCodigoGrade, mapaDias]) => {
+    const registros = Object.entries(gradeMap).map(
+      ([alunoCodigoGrade, mapaDias]) => {
         const presencas = Object.entries(mapaDias || {})
           .filter(([, valor]) => !!valor?.status)
           .map(([data, valor]) => ({
@@ -631,7 +668,8 @@ function RegistrarPresenca() {
             observacao: String(valor.observacao || "").trim() || null,
           }));
         return { Aluno_Codigo: Number(alunoCodigoGrade), presencas };
-      });
+      },
+    );
 
     if (registros.length === 0) {
       showToast({
@@ -886,6 +924,25 @@ function RegistrarPresenca() {
               placeholder="Ex.: 12 ou Maria"
             />
           </div>
+          <div className="mb-2 md:mb-3 grid grid-cols-1 md:grid-cols-[260px_1fr] gap-2 items-center">
+            <label className="text-sm text-gray-300">
+              Filtrar alunos por horário:
+            </label>
+            <select
+              value={filtroHorario}
+              onChange={(e) => setFiltroHorario(e.target.value)}
+              className="border border-gray-300 rounded-md p-2 bg-white text-black"
+            >
+              <option value="">Todos os horários</option>
+              {horarios.map((h) => (
+                <option key={h.Horario_Id} value={h.Horario_Id}>
+                  {h.Horario_Dia_Semana} &mdash;{" "}
+                  {String(h.Horario_Inicio).substring(0, 5)} às{" "}
+                  {String(h.Horario_Fim).substring(0, 5)}
+                </option>
+              ))}
+            </select>
+          </div>
           <div className="mb-3 flex flex-wrap items-center gap-2 text-[11px] sm:text-xs">
             <span className="px-3 py-1 rounded-md bg-green-600 text-white font-semibold">
               P = Presente
@@ -976,14 +1033,14 @@ function RegistrarPresenca() {
                         const chaveData = toDateKey(
                           anoSelecionado,
                           mesSelecionadoIndex,
-                          dia
+                          dia,
                         );
                         const status =
                           gradeMap[alunoKey]?.[chaveData]?.status || "";
                         const erroCelula =
                           errosGrade.mapaErros?.[alunoKey]?.[chaveData] || "";
                         const observacao = String(
-                          gradeMap[alunoKey]?.[chaveData]?.observacao || ""
+                          gradeMap[alunoKey]?.[chaveData]?.observacao || "",
                         ).trim();
                         return (
                           <td
@@ -1015,7 +1072,7 @@ function RegistrarPresenca() {
                                         e.stopPropagation();
                                         abrirModalObservacaoGrade(
                                           alunoKey,
-                                          chaveData
+                                          chaveData,
                                         );
                                       }}
                                       className="text-[10px] leading-none bg-black/30 hover:bg-black/45 text-white px-1 rounded cursor-pointer"
@@ -1032,7 +1089,7 @@ function RegistrarPresenca() {
                                         e.stopPropagation();
                                         abrirModalReposicaoGrade(
                                           alunoKey,
-                                          chaveData
+                                          chaveData,
                                         );
                                       }}
                                       className="text-[9px] leading-none bg-black/30 hover:bg-black/45 text-white px-1 rounded cursor-pointer"
@@ -1048,36 +1105,36 @@ function RegistrarPresenca() {
                                 </div>
                               )}
                             </div>
-                              {erroCelula && (
-                                <>
-                                  <div className="pointer-events-none absolute z-30 left-1/2 -translate-x-1/2 bottom-[calc(100%+10px)] hidden md:block md:group-hover:block w-52 text-[10px] leading-tight bg-black text-yellow-100 border border-yellow-400 rounded-xl p-2 shadow-lg">
-                                    <div className="font-bold mb-0.5">
-                                      {chaveData}
-                                    </div>
-                                    <div>{erroCelula}</div>
-                                    <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-[7px] border-l-transparent border-r-[7px] border-r-transparent border-t-[7px] border-t-yellow-400" />
-                                    <div className="absolute left-1/2 -translate-x-1/2 top-[calc(100%-1px)] w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] border-t-black" />
+                            {erroCelula && (
+                              <>
+                                <div className="pointer-events-none absolute z-30 left-1/2 -translate-x-1/2 bottom-[calc(100%+10px)] hidden md:block md:group-hover:block w-52 text-[10px] leading-tight bg-black text-yellow-100 border border-yellow-400 rounded-xl p-2 shadow-lg">
+                                  <div className="font-bold mb-0.5">
+                                    {chaveData}
                                   </div>
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setErroGradeMobileModal({
-                                        open: true,
-                                        alunoCodigo: alunoKey,
-                                        data: chaveData,
-                                        mensagem: erroCelula,
-                                      });
-                                    }}
-                                    className="md:hidden mt-0.5 text-[9px] leading-none bg-violet-600 text-white px-1 rounded"
-                                    title="Ver erro"
-                                  >
-                                    ⚠
-                                  </button>
-                                </>
-                              )}
-                            </td>
-                          );
+                                  <div>{erroCelula}</div>
+                                  <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-[7px] border-l-transparent border-r-[7px] border-r-transparent border-t-[7px] border-t-yellow-400" />
+                                  <div className="absolute left-1/2 -translate-x-1/2 top-[calc(100%-1px)] w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] border-t-black" />
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setErroGradeMobileModal({
+                                      open: true,
+                                      alunoCodigo: alunoKey,
+                                      data: chaveData,
+                                      mensagem: erroCelula,
+                                    });
+                                  }}
+                                  className="md:hidden mt-0.5 text-[9px] leading-none bg-violet-600 text-white px-1 rounded"
+                                  title="Ver erro"
+                                >
+                                  ⚠
+                                </button>
+                              </>
+                            )}
+                          </td>
+                        );
                       })}
                     </tr>
                   );
@@ -1140,7 +1197,7 @@ function RegistrarPresenca() {
                 .filter(
                   ([, valor]) =>
                     valor?.status === "Reposicao" ||
-                    valor?.status === "Dobradinha"
+                    valor?.status === "Dobradinha",
                 )
                 .sort(([a], [b]) => a.localeCompare(b))
                 .map(([data, valor]) => (
@@ -1204,7 +1261,7 @@ function RegistrarPresenca() {
                         !String(v?.dataReposicaoReferencia || "").trim()) ||
                       (v?.status === "Dobradinha" &&
                         (!String(v?.dataReposicaoReferencia || "").trim() ||
-                          !String(v?.dataReposicaoReferencia2 || "").trim()))
+                          !String(v?.dataReposicaoReferencia2 || "").trim())),
                   );
                   if (faltando) {
                     showToast({
@@ -1469,8 +1526,3 @@ function RegistrarPresenca() {
 }
 
 export default RegistrarPresenca;
-
-
-
-
-

@@ -12,6 +12,8 @@ const adminroutes = require("./routes/adminroutes"); // Importando as rotas de a
 const planosroutes = require("./routes/planosroutes"); // Importando as rotas de planos
 const faturamentoroutes = require("./routes/faturamentoroutes");
 const presencaroutes = require("./routes/presencaroutes");
+const horarioroutes = require("./routes/horarioroutes"); // Importando as rotas de horários
+const agendamentoroutes = require("./routes/agendamentoroutes"); // Importando as rotas de agendamento
 const app = express(); // Criando uma variavel constante para iniciar o express
 
 //middlewares basicos
@@ -58,7 +60,7 @@ function verificarIP(req, res, next) {
     ipCliente;
 
   console.log(
-    `[IP] Tentativa de acesso de IP: ${realIP} (Original: ${ipCliente})`
+    `[IP] Tentativa de acesso de IP: ${realIP} (Original: ${ipCliente})`,
   );
 
   // Se o IP e localhost ou 127.x.x.x, permite (requisicoes internas do servidor)
@@ -100,13 +102,14 @@ app.use("/admin", autenticarToken, adminroutes);
 app.use("/planos", autenticarToken, planosroutes);
 app.use("/faturamento", autenticarToken, faturamentoroutes);
 app.use("/presenca", autenticarToken, presencaroutes);
+app.use("/horarios", autenticarToken, horarioroutes);
+app.use("/agendamentos", autenticarToken, agendamentoroutes);
 
 //Bloqueeia acesso a rota raiz
 app.get("/", (req, res) => {
   res.status(403).json({
     // Retornando status 403 Forbidden
-    message:
-      "Acesso a rota raiz e proibido. Ta querendo xeretar o que aqui???",
+    message: "Acesso a rota raiz e proibido. Ta querendo xeretar o que aqui???",
   });
 });
 

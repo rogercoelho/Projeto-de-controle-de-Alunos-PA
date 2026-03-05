@@ -12,6 +12,8 @@ import RegistrarPagamento from "./components/Billing/RegistrarPagamento";
 import ExtratoAluno from "./components/Billing/ExtratoAluno";
 import Relatorio_PA from "./components/Billing/Relatorio_PA";
 import Relatorio_WET from "./components/Billing/Relatorio_WET";
+import RegistrarPresenca from "./components/Attendance/RegistrarPresenca";
+import RelatorioPresenca from "./components/Attendance/RelatorioPresenca";
 import ProtectedRoute from "./components/Security/ProtectedRoute";
 import AdminDelete from "./components/Security/AdminDelete";
 import MobileMenu from "./components/miscellaneous/MobileMenu";
@@ -30,9 +32,8 @@ function App() {
   const [studentSearchKey, setStudentSearchKey] = useState(0);
   const [packagesSearchKey, setPackagesSearchKey] = useState(0);
   const [registrarPagamentoKey, setRegistrarPagamentoKey] = useState(0);
-  // eslint-disable-next-line no-unused-vars
+  const [registrarPresencaKey, setRegistrarPresencaKey] = useState(0);
   const [usuario, setUsuario] = useState(() => getUsuario());
-  // eslint-disable-next-line no-unused-vars
   const [ehAdmin, setEhAdmin] = useState(() => isAdmin());
   const [messageToast, showToast] = useToast();
   const [expiringList, setExpiringList] = useState([]);
@@ -50,7 +51,7 @@ function App() {
         const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
         const json = JSON.parse(atob(base64));
         return json.exp ? json.exp * 1000 : null;
-      } catch (e) {
+      } catch {
         return null;
       }
     };
@@ -65,7 +66,7 @@ function App() {
         setRemaining(diff);
         if (diff <= 0) {
           window.dispatchEvent(
-            new CustomEvent("token-expired", { detail: "Sua sessão expirou." })
+            new CustomEvent("token-expired", { detail: "Sua sessÃ£o expirou." })
           );
         }
       };
@@ -91,15 +92,15 @@ function App() {
       window.location.reload();
     }
   };
-  // Logout automático (token expirado)
+  // Logout automÃ¡tico (token expirado)
   useEffect(() => {
-    // Atualiza usuario e ehAdmin ao montar e após login/logout
+    // Atualiza usuario e ehAdmin ao montar e apÃ³s login/logout
     const updateUserState = () => {
       setUsuario(getUsuario());
       setEhAdmin(isAdmin());
     };
     window.addEventListener("login", updateUserState);
-    // Ao logar, buscar alunos com planos vencendo no mês
+    // Ao logar, buscar alunos com planos vencendo no mÃªs
     const handleLoginFetchExpiring = async () => {
       try {
         const res = await api.get("/faturamento/expirando");
@@ -109,12 +110,12 @@ function App() {
           setShowExpiring(true);
         }
       } catch (err) {
-        // não bloquear o login por erro na busca
+        // nÃ£o bloquear o login por erro na busca
         console.error("Erro ao buscar expirando:", err);
       }
     };
     window.addEventListener("login", handleLoginFetchExpiring);
-    // Se já estiver logado ao montar, busca também
+    // Se jÃ¡ estiver logado ao montar, busca tambÃ©m
     if (getToken()) {
       handleLoginFetchExpiring();
     }
@@ -147,21 +148,24 @@ function App() {
   const handleNavigate = (component, subComponent) => {
     setActiveComponent(component);
     setActiveComponent2(subComponent);
-    // Incrementa a key quando UserList é selecionado para forçar remontagem
+    // Incrementa a key quando UserList Ã© selecionado para forÃ§ar remontagem
     if (subComponent === "UserList") {
       setUserListKey((prev) => prev + 1);
     }
-    // Incrementa a key quando StudentSearch é selecionado para forçar remontagem
+    // Incrementa a key quando StudentSearch Ã© selecionado para forÃ§ar remontagem
     if (subComponent === "StudentSearch") {
       setStudentSearchKey((prev) => prev + 1);
     }
-    // Incrementa a key quando PackagesSearck é selecionado para forçar remontagem
+    // Incrementa a key quando PackagesSearck Ã© selecionado para forÃ§ar remontagem
     if (subComponent === "PackagesSearch") {
       setPackagesSearchKey((prev) => prev + 1);
     }
-    // Incrementa a key quando RegistrarPagamento é selecionado para forçar remontagem
+    // Incrementa a key quando RegistrarPagamento Ã© selecionado para forÃ§ar remontagem
     if (component === "Financeiro" && subComponent === "RegistrarPagamento") {
       setRegistrarPagamentoKey((prev) => prev + 1);
+    }
+    if (component === "Presenca" && subComponent === "RegistrarPresenca") {
+      setRegistrarPresencaKey((prev) => prev + 1);
     }
   };
 
@@ -181,7 +185,7 @@ function App() {
             <ProtectedRoute>
               <div className="w-full h-auto min-h-screen mx-auto flex flex-col justify-start p-6 bg-gray-900 text-white border-8 border-red-900 rounded-4xl">
                 <div className="relative">
-                  {/* Botão de Logout e informações do usuário - Desktop */}
+                  {/* BotÃ£o de Logout e informaÃ§Ãµes do usuÃ¡rio - Desktop */}
                   <div className="hidden md:flex absolute top-0 right-0 items-center gap-4">
                     <div className="text-right">
                       <p className="text-sm text-gray-300">Bem-vindo(a),</p>
@@ -202,8 +206,8 @@ function App() {
                       </div>
                       <p className="text-xs text-gray-400">
                         {usuario?.grupo === "Administrador"
-                          ? "👑 Administrador"
-                          : "👤 Aluno"}
+                          ? "ðŸ‘‘ Administrador"
+                          : "ðŸ‘¤ Aluno"}
                       </p>
                         <TokenExpiry />
                     </div>
@@ -244,8 +248,8 @@ function App() {
                         </div>
                         <p className="text-xs text-gray-400">
                           {usuario?.grupo === "Administrador"
-                            ? "👑 Administrador"
-                            : "👤 Aluno"}
+                            ? "ðŸ‘‘ Administrador"
+                            : "ðŸ‘¤ Aluno"}
                         </p>
                         <TokenExpiry />
                       </div>
@@ -324,6 +328,16 @@ function App() {
                         (!activeComponent2 ||
                           activeComponent2 === "Financeiro") && (
                           <Financeiro key="financeiro" />
+                        )}
+                      {activeComponent === "Presenca" &&
+                        activeComponent2 === "RegistrarPresenca" && (
+                          <RegistrarPresenca
+                            key={`registrar-presenca-${registrarPresencaKey}`}
+                          />
+                        )}
+                      {activeComponent === "Presenca" &&
+                        activeComponent2 === "RelatorioPresenca" && (
+                          <RelatorioPresenca key="relatorio-presenca" />
                         )}
                     </div>
                   </div>

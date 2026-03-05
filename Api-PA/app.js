@@ -1,33 +1,34 @@
 const express = require("express"); // Criando uma variavel constante para importar o framework Express
-const cors = require("cors"); // Importando o pacote CORS para permitir requisições de diferentes origens
+const cors = require("cors"); // Importando o pacote CORS para permitir requisiÃ§Ãµes de diferentes origens
 const path = require("path"); // Importando path para manipular caminhos de arquivos
-//const securityroutes = require("./routes/securityroutes"); // Importando as rotas de segurança
+//const securityroutes = require("./routes/securityroutes"); // Importando as rotas de seguranÃ§a
 const {
-  // Importando o roteador de segurança e o middleware de autenticação
+  // Importando o roteador de seguranÃ§a e o middleware de autenticaÃ§Ã£o
   router: securityroutes, // Renomeando a constante router para securityroutes
-  autenticarToken, // Importando o middleware de autenticação
-} = require("./routes/securityroutes"); // Importando as rotas de segurança e o middleware de autenticação
+  autenticarToken, // Importando o middleware de autenticaÃ§Ã£o
+} = require("./routes/securityroutes"); // Importando as rotas de seguranÃ§a e o middleware de autenticaÃ§Ã£o
 const alunosroutes = require("./routes/alunosroutes"); // Importando as rotas de alunos
-const adminroutes = require("./routes/adminroutes"); // Importando as rotas de administração
+const adminroutes = require("./routes/adminroutes"); // Importando as rotas de administraÃ§Ã£o
 const planosroutes = require("./routes/planosroutes"); // Importando as rotas de planos
 const faturamentoroutes = require("./routes/faturamentoroutes");
+const presencaroutes = require("./routes/presencaroutes");
 const app = express(); // Criando uma variavel constante para iniciar o express
 
 //middlewares basicos
 app.use(express.json()); // Configurando o Express para usar JSON
-app.use(express.urlencoded({ extended: false })); // Configurando o Express para interpretar dados codificados na URL. true permite objetos aninhados. false não permite.
+app.use(express.urlencoded({ extended: false })); // Configurando o Express para interpretar dados codificados na URL. true permite objetos aninhados. false nÃ£o permite.
 
-// Servir arquivos estáticos da pasta uploads
+// Servir arquivos estÃ¡ticos da pasta uploads
 const uploadsPath =
   process.env.NODE_ENV === "production"
     ? "/home2/goutechc/wwwplantandoalegria_API/uploads"
     : path.join(__dirname, "uploads");
 
-console.log(`📁 Servindo arquivos estáticos de: ${uploadsPath}`);
+console.log(`ðŸ“ Servindo arquivos estÃ¡ticos de: ${uploadsPath}`);
 app.use("/uploads", express.static(uploadsPath));
 
 //CORS  - Libera acesso apenas do dominio especificado
-//🧰 Inicio - Restringindo o acesso a API apenas para o site especificado
+//ðŸ§° Inicio - Restringindo o acesso a API apenas para o site especificado
 const corsOptions = {
   origin: [
     "https://www.plantandoalegria.com.br",
@@ -35,76 +36,77 @@ const corsOptions = {
     "http://localhost:5173",
     "http://localhost:5174",
     "http://127.0.0.1:5173",
-  ], // Domínios permitidos (com e sem www)
-  methods: ["GET", "DELETE", "PATCH", "POST"], // Métodos HTTP permitidos
-  credentials: true, // Permite envio de cookies e headers de autenticação
-  optionsSuccessStatus: 200, // Alguns navegadores (como o IE11) exigem um status 200 para respostas de pré-voo
+  ], // DomÃ­nios permitidos (com e sem www)
+  methods: ["GET", "DELETE", "PATCH", "POST"], // MÃ©todos HTTP permitidos
+  credentials: true, // Permite envio de cookies e headers de autenticaÃ§Ã£o
+  optionsSuccessStatus: 200, // Alguns navegadores (como o IE11) exigem um status 200 para respostas de prÃ©-voo
 };
-app.use(cors(corsOptions)); // Aplicando as opções de CORS ao aplicativo Express
-//🧰 Fim - Restringindo o acesso a API apenas para o site especificado
+app.use(cors(corsOptions)); // Aplicando as opÃ§Ãµes de CORS ao aplicativo Express
+//ðŸ§° Fim - Restringindo o acesso a API apenas para o site especificado
 
-// Middleware de verificação de IP
-// 🧰 Inicio - Middleware para permitir acesso apenas de IPs autorizados
+// Middleware de verificaÃ§Ã£o de IP
+// ðŸ§° Inicio - Middleware para permitir acesso apenas de IPs autorizados
 function verificarIP(req, res, next) {
   // Middleware para verificar o IP do cliente
   const ipCliente = req.ip.replace("::ffff:", ""); // Obtendo o IP do cliente e removendo o prefixo IPv6 se presente
   const ipsPermitidos = ["127.0.0.1", "::1", "51.222.94.140", "localhost"]; // Lista de IPs permitidos (adicione os IPs autorizados aqui)
 
-  // Obtém o IP real do cliente considerando proxy/load balancer
+  // ObtÃ©m o IP real do cliente considerando proxy/load balancer
   const realIP =
     req.headers["x-forwarded-for"]?.split(",")[0]?.trim() ||
     req.headers["x-real-ip"] ||
     ipCliente;
 
   console.log(
-    `📍 Tentativa de acesso de IP: ${realIP} (Original: ${ipCliente})`
+    `ðŸ“ Tentativa de acesso de IP: ${realIP} (Original: ${ipCliente})`
   );
 
-  // Se o IP é localhost ou 127.x.x.x, permite (requisições internas do servidor)
+  // Se o IP Ã© localhost ou 127.x.x.x, permite (requisiÃ§Ãµes internas do servidor)
   if (
     ipCliente.startsWith("127.") ||
     realIP.startsWith("127.") ||
     ipCliente === "::1" ||
     realIP === "::1"
   ) {
-    console.log(`✅ Acesso local permitido: ${realIP}`);
+    console.log(`âœ… Acesso local permitido: ${realIP}`);
     return next();
   }
 
   if (!ipsPermitidos.includes(ipCliente) && !ipsPermitidos.includes(realIP)) {
-    // Verificando se o IP do cliente está na lista de permitidos
-    console.log(`🤬Tentativa de acesso não autorizado de: ${realIP}`); // Log de tentativa de acesso não autorizado
+    // Verificando se o IP do cliente estÃ¡ na lista de permitidos
+    console.log(`ðŸ¤¬Tentativa de acesso nÃ£o autorizado de: ${realIP}`); // Log de tentativa de acesso nÃ£o autorizado
     return res
       .status(403) // Retornando status 403 Forbidden
       .json({
         message:
-          " 🤬 Acesso negado: IP não autorizado. 🤬 Está querendo xeretar oquê aqui???",
+          " ðŸ¤¬ Acesso negado: IP nÃ£o autorizado. ðŸ¤¬ EstÃ¡ querendo xeretar oquÃª aqui???",
       }); // Mensagem de erro personalizada
   }
 
-  next(); // Se o IP for permitido, prosseguir para a próxima função de middleware ou rota
+  next(); // Se o IP for permitido, prosseguir para a prÃ³xima funÃ§Ã£o de middleware ou rota
 }
 
-//comentado para nao bloquear geral -->app.use(verificarIP); // Usando o middleware de verificação de IP para todas as rotas
+//comentado para nao bloquear geral -->app.use(verificarIP); // Usando o middleware de verificaÃ§Ã£o de IP para todas as rotas
 
 // ROTAS -- Rotas da API
 
-// Rota publica para autenticação (login)
-app.use("/auth", securityroutes); // rotas de autenticação (ex: /auth/login)
+// Rota publica para autenticaÃ§Ã£o (login)
+app.use("/auth", securityroutes); // rotas de autenticaÃ§Ã£o (ex: /auth/login)
 
-// rotas protegidas (só acessa quem tiver token válido)
+// rotas protegidas (sÃ³ acessa quem tiver token vÃ¡lido)
 
 app.use("/alunos", autenticarToken, alunosroutes);
 app.use("/admin", autenticarToken, adminroutes);
 app.use("/planos", autenticarToken, planosroutes);
 app.use("/faturamento", autenticarToken, faturamentoroutes);
+app.use("/presenca", autenticarToken, presencaroutes);
 
 //Bloqueeia acesso a rota raiz
 app.get("/", (req, res) => {
   res.status(403).json({
     // Retornando status 403 Forbidden
     message:
-      "🤬 Acesso à rota raiz é proibido. Tá querendo xeretar o quê aqui??? 🤬",
+      "ðŸ¤¬ Acesso Ã  rota raiz Ã© proibido. TÃ¡ querendo xeretar o quÃª aqui??? ðŸ¤¬",
   });
 });
 
@@ -113,5 +115,5 @@ app.get("/", (req, res) => {
 // Iniciando o servidor escutando na porta 8081
 app.listen(8081, () => {
   // Iniciando o servidor na porta 8081
-  console.log("Servidor rodando na url http://localhost:8081"); // Mensagem que aparece no terminal quando o servidor é iniciado.
+  console.log("Servidor rodando na url http://localhost:8081"); // Mensagem que aparece no terminal quando o servidor Ã© iniciado.
 });

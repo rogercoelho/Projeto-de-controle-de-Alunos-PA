@@ -20,19 +20,16 @@ const Alunos_Presenca = db.sequelizeconnection.define(
     Presenca_Status: {
       type: db.Sequelize.STRING(20),
       allowNull: false,
-      validate: {
-        isIn: [
-          ["Presente", "Ausente", "Reposicao", "Aula Realizada", "Dobradinha"],
-        ],
-      },
     },
     Presenca_Data_Reposicao_Referencia: {
       type: db.Sequelize.DATEONLY,
       allowNull: true,
+      field: "Presenca_Data_Reposicao_Referencia",
     },
     Presenca_Data_Reposicao_Referencia_2: {
       type: db.Sequelize.DATEONLY,
       allowNull: true,
+      field: "Presenca_Data_Reposicao_Referencia_2",
     },
     Presenca_Observacao: {
       type: db.Sequelize.TEXT,
@@ -47,9 +44,9 @@ const Alunos_Presenca = db.sequelizeconnection.define(
         fields: ["Aluno_Codigo", "Presenca_Data"],
       },
     ],
-  }
+  },
 );
 
-Alunos_Presenca.sync({ force: false });
+Alunos_Presenca.sync({ alter: true });
 
 module.exports = Alunos_Presenca;

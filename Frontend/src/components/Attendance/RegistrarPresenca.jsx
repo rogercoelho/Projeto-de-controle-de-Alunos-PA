@@ -1,4 +1,5 @@
-﻿import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useRef, useState } from "react";
+import { jsPDF } from "jspdf";
 import api from "../../services/api";
 import useToast from "../../hooks/useToast";
 import MessageToast from "../miscellaneous/MessageToast";
@@ -63,9 +64,12 @@ function RegistrarPresenca() {
   const [saving, setSaving] = useState(false);
   const [showReposicaoModal, setShowReposicaoModal] = useState(false);
   const [loadingGrade, setLoadingGrade] = useState(false);
+  const [filtrando, setFiltrando] = useState(false);
   const [savingGrade, setSavingGrade] = useState(false);
   const [gradeAlunos, setGradeAlunos] = useState([]);
   const [gradeMap, setGradeMap] = useState({});
+  const [celulasPendentes, setCelulasPendentes] = useState(new Set());
+  const tabelaRef = useRef(null);
   const [filtroGrade, setFiltroGrade] = useState("");
   const [filtroHorario, setFiltroHorario] = useState("");
   const [horarios, setHorarios] = useState([]);
@@ -334,6 +338,238 @@ function RegistrarPresenca() {
     "Dezembro",
   ];
   const diasSemana = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"];
+
+  const gerarPDF = () => {
+    const nomeMes = nomesMeses[mesSelecionadoIndex];
+    const filename = `Grade-${nomeMes}-${anoSelecionado}.pdf`;
+
+    const doc = new jsPDF({
+      orientation: "landscape",
+      unit: "mm",
+      format: "a4",
+    });
+    const pageW = 297;
+    const pageH = 210;
+    const marginX = 8;
+    const marginY = 16;
+    const usableW = pageW - marginX * 2;
+    const colCodigo = 12;
+    const colNome = 38;
+    const colDia = (usableW - colCodigo - colNome) / totalDiasMes;
+    const headerH = 9;
+    const obsFs = 3.8;
+    const obsLineH = 1.9; // altura por linha de obs em mm
+
+    // Formata data de referência: sempre dd/mm/aa
+    const fmtRef = (ref) => {
+      if (!ref) return "";
+      const [ry, rm, rd] = ref.split("-").map(Number);
+      return `${pad2(rd)}/${pad2(rm)}/${String(ry).slice(2)}`;
+    };
+
+    const statusColors = {
+      Presente: [22, 163, 74],
+      Ausente: [185, 28, 28],
+      Reposicao: [217, 119, 6],
+      "Aula Realizada": [8, 145, 178],
+      Dobradinha: [192, 38, 211],
+    };
+    const statusTextEscuro = new Set(["Reposicao"]);
+
+    const drawCell = (cx, cy, w, h, fillRGB, textRGB, text, fs = 7) => {
+      doc.setFillColor(...fillRGB);
+      doc.setDrawColor(160, 160, 160);
+      doc.rect(cx, cy, w, h, "FD");
+      if (text) {
+        doc.setFontSize(fs);
+        doc.setTextColor(...textRGB);
+        doc.text(String(text), cx + w / 2, cy + h / 2 + fs * 0.19, {
+          align: "center",
+        });
+      }
+    };
+
+    // Título
+    doc.setFontSize(11);
+    doc.setTextColor(10, 10, 10);
+    doc.text(
+      `Grade de Presenças — ${nomeMes} ${anoSelecionado}`,
+      pageW / 2,
+      8,
+      { align: "center" },
+    );
+    doc.setFontSize(8);
+    doc.setTextColor(80, 80, 80);
+    doc.text(`${gradeAlunosFiltrados.length} aluno(s)`, pageW / 2, 13, {
+      align: "center",
+    });
+
+    // Cabeçalho
+    const headerBg = [30, 58, 95];
+    const headerFg = [255, 255, 255];
+    let x = marginX;
+    let y = marginY;
+
+    drawCell(x, y, colCodigo, headerH, headerBg, headerFg, "Cód.");
+    x += colCodigo;
+    drawCell(x, y, colNome, headerH, headerBg, headerFg, "Nome");
+    x += colNome;
+
+    for (let dia = 1; dia <= totalDiasMes; dia++) {
+      const ds =
+        diasSemana[new Date(anoSelecionado, mesSelecionadoIndex, dia).getDay()];
+      doc.setFillColor(...headerBg);
+      doc.setDrawColor(160, 160, 160);
+      doc.rect(x, y, colDia, headerH, "FD");
+      doc.setFontSize(6.5);
+      doc.setTextColor(...headerFg);
+      doc.text(String(dia), x + colDia / 2, y + headerH / 2 - 0.5, {
+        align: "center",
+      });
+      doc.setFontSize(5.5);
+      doc.text(ds, x + colDia / 2, y + headerH / 2 + 3, {
+        align: "center",
+      });
+      x += colDia;
+    }
+    y += headerH;
+
+    // Linhas de dados
+    gradeAlunosFiltrados.forEach((aluno, idx) => {
+      const alunoKey = String(aluno.Alunos_Codigo);
+      const mapaDias = gradeMap[alunoKey] || {};
+
+      // Pré-calcula altura da linha com base na observação mais longa da linha
+      let maxObsLines = 0;
+      let anyRef = false;
+      for (let dia = 1; dia <= totalDiasMes; dia++) {
+        const chave = toDateKey(anoSelecionado, mesSelecionadoIndex, dia);
+        const valor = mapaDias[chave] || {};
+        if (String(valor.dataReposicaoReferencia || "").trim()) anyRef = true;
+        const obs = String(valor.observacao || "").trim();
+        if (obs) {
+          doc.setFontSize(obsFs);
+          const linhas = doc.splitTextToSize(obs, colDia - 0.6);
+          maxObsLines = Math.max(maxObsLines, linhas.length);
+        }
+      }
+      // altura = bloco status (4.5) + bloco ref se houver (3) + bloco obs
+      const rowH =
+        4.5 +
+        (anyRef ? 3 : 0) +
+        (maxObsLines > 0 ? maxObsLines * obsLineH + 1 : 0) +
+        1.5;
+
+      if (y + rowH > pageH - 15) {
+        doc.addPage();
+        y = marginY;
+      }
+
+      const rowBg = idx % 2 === 0 ? [248, 250, 252] : [235, 240, 248];
+      x = marginX;
+
+      drawCell(x, y, colCodigo, rowH, rowBg, [10, 10, 10], alunoKey, 6.5);
+      x += colCodigo;
+
+      // Nome alinhado à esquerda
+      doc.setFillColor(...rowBg);
+      doc.setDrawColor(160, 160, 160);
+      doc.rect(x, y, colNome, rowH, "FD");
+      doc.setFontSize(6.5);
+      doc.setTextColor(10, 10, 10);
+      doc.text(
+        String(aluno.Alunos_Nome || "").substring(0, 22),
+        x + 1,
+        y + rowH / 2 + 6.5 * 0.19,
+      );
+      x += colNome;
+
+      for (let dia = 1; dia <= totalDiasMes; dia++) {
+        const chave = toDateKey(anoSelecionado, mesSelecionadoIndex, dia);
+        const valor = mapaDias[chave] || {};
+        const st = valor.status || "";
+        const legenda = legendaStatus(st);
+        const bg = statusColors[st] || rowBg;
+        const fg = statusColors[st]
+          ? statusTextEscuro.has(st)
+            ? [0, 0, 0]
+            : [255, 255, 255]
+          : [180, 180, 180];
+
+        // Fundo + borda
+        doc.setFillColor(...bg);
+        doc.setDrawColor(160, 160, 160);
+        doc.rect(x, y, colDia, rowH, "FD");
+
+        let curY = y + 3.2;
+
+        // Legenda principal (P/F/R/D/AR)
+        if (legenda) {
+          doc.setFontSize(6.5);
+          doc.setTextColor(...fg);
+          doc.text(legenda, x + colDia / 2, curY, { align: "center" });
+        }
+        curY += 3;
+
+        // Datas de referência (R e D)
+        const ref1 = String(valor.dataReposicaoReferencia || "").trim();
+        const ref2 = String(valor.dataReposicaoReferencia2 || "").trim();
+        if (ref1) {
+          const t1 = ref1 === chave ? "hoje" : fmtRef(ref1);
+          const t2 = ref2 ? (ref2 === chave ? "hoje" : fmtRef(ref2)) : "";
+          doc.setFontSize(4);
+          doc.setTextColor(...fg);
+          doc.text(t1, x + colDia / 2, curY, { align: "center" });
+          if (t2) {
+            curY += obsLineH;
+            doc.text(t2, x + colDia / 2, curY, { align: "center" });
+          }
+        }
+        if (anyRef) curY = y + 4.5 + 3; // alinha obs à mesma altura em todas as células
+
+        // Observação completa (com quebra de linha)
+        const obs = String(valor.observacao || "").trim();
+        if (obs) {
+          doc.setFontSize(obsFs);
+          doc.setTextColor(...fg);
+          const linhas = doc.splitTextToSize(obs, colDia - 0.6);
+          linhas.forEach((linha, li) => {
+            doc.text(linha, x + colDia / 2, curY + 1 + li * obsLineH, {
+              align: "center",
+            });
+          });
+        }
+
+        x += colDia;
+      }
+      y += rowH;
+    });
+
+    // Legenda no rodapé
+    const legendaItems = [
+      { label: "P=Presente", bg: [22, 163, 74], fg: [255, 255, 255] },
+      { label: "F=Falta", bg: [185, 28, 28], fg: [255, 255, 255] },
+      { label: "R=Reposição", bg: [217, 119, 6], fg: [0, 0, 0] },
+      { label: "AR=Aula Realizada", bg: [8, 145, 178], fg: [255, 255, 255] },
+      { label: "D=Dobradinha", bg: [192, 38, 211], fg: [255, 255, 255] },
+    ];
+    let lx = marginX;
+    const ly = pageH - 8;
+    legendaItems.forEach((l) => {
+      const lw = 30;
+      const lh = 5;
+      doc.setFillColor(...l.bg);
+      doc.setDrawColor(...l.bg);
+      doc.rect(lx, ly, lw, lh, "F");
+      doc.setFontSize(6);
+      doc.setTextColor(...l.fg);
+      doc.text(l.label, lx + lw / 2, ly + lh / 2 + 1, { align: "center" });
+      lx += lw + 2;
+    });
+
+    doc.save(filename);
+  };
+
   const podeAvancarCompetencia =
     anoSelecionado < anoAtual ||
     (anoSelecionado === anoAtual && mesSelecionadoIndex < mesAtualIndex);
@@ -448,10 +684,17 @@ function RegistrarPresenca() {
 
         let erroEncontrado = "";
         for (const referencia of referencias) {
+          // Referência igual à própria data do D = aula regular, não precisa ser F
+          if (referencia === data) continue;
           const statusRef = mapaDias?.[referencia]?.status;
           if (!statusRef) {
-            erroEncontrado =
-              "A data informada para reposição não está marcada no calendário como Falta.";
+            // Referência de outro mês não está no gradeMap — o backend valida no banco
+            const refAno = parseInt(referencia.slice(0, 4), 10);
+            const refMes = parseInt(referencia.slice(5, 7), 10) - 1; // 0-based
+            if (refAno === anoSelecionado && refMes === mesSelecionadoIndex) {
+              erroEncontrado =
+                "A data informada para reposição não está marcada no calendário como Falta.";
+            }
             break;
           }
           if (statusRef === "Aula Realizada") {
@@ -460,8 +703,7 @@ function RegistrarPresenca() {
             break;
           }
           if (statusRef && statusRef !== "Ausente") {
-            erroEncontrado =
-              "A data informada para reposição precisa estar marcada como Falta.";
+            erroEncontrado = "Não é possível repor aula com presença marcada!";
             break;
           }
         }
@@ -475,7 +717,7 @@ function RegistrarPresenca() {
     }
 
     return { mapaErros, total };
-  }, [gradeMap]);
+  }, [gradeMap, anoSelecionado, mesSelecionadoIndex]);
 
   // Carrega lista de horários para o select de filtro
   useEffect(() => {
@@ -489,8 +731,10 @@ function RegistrarPresenca() {
   useEffect(() => {
     if (!filtroHorario) {
       setAlunosPorHorario(null);
+      setFiltrando(false);
       return;
     }
+    setFiltrando(true);
     api
       .get(`/agendamentos/horario/${filtroHorario}`)
       .then((res) => {
@@ -499,7 +743,8 @@ function RegistrarPresenca() {
         );
         setAlunosPorHorario(codigos);
       })
-      .catch(() => setAlunosPorHorario([]));
+      .catch(() => setAlunosPorHorario([]))
+      .finally(() => setFiltrando(false));
   }, [filtroHorario]);
 
   useEffect(() => {
@@ -585,6 +830,9 @@ function RegistrarPresenca() {
         [alunoKey]: mapaAluno,
       };
     });
+    setCelulasPendentes((prev) =>
+      new Set(prev).add(`${alunoKey}|${chaveData}`),
+    );
   };
 
   const abrirModalObservacaoGrade = (alunoCodigoGrade, data) => {
@@ -620,6 +868,7 @@ function RegistrarPresenca() {
         },
       },
     }));
+    setCelulasPendentes((prev) => new Set(prev).add(`${alunoKey}|${data}`));
 
     setObservacaoGradeModal({
       open: false,
@@ -695,6 +944,7 @@ function RegistrarPresenca() {
         registros,
       });
       showToast({ type: "success", text: "Grade salva com sucesso." });
+      setCelulasPendentes(new Set());
     } catch (error) {
       if (error.response?.status !== 401) {
         showToast({
@@ -919,7 +1169,11 @@ function RegistrarPresenca() {
             <input
               type="text"
               value={filtroGrade}
-              onChange={(e) => setFiltroGrade(e.target.value)}
+              onChange={(e) => {
+                setFiltrando(true);
+                setFiltroGrade(e.target.value);
+                setTimeout(() => setFiltrando(false), 50);
+              }}
               className="border border-gray-300 rounded-md p-2 bg-white text-black"
               placeholder="Ex.: 12 ou Maria"
             />
@@ -930,7 +1184,9 @@ function RegistrarPresenca() {
             </label>
             <select
               value={filtroHorario}
-              onChange={(e) => setFiltroHorario(e.target.value)}
+              onChange={(e) => {
+                setFiltroHorario(e.target.value);
+              }}
               className="border border-gray-300 rounded-md p-2 bg-white text-black"
             >
               <option value="">Todos os horários</option>
@@ -960,11 +1216,30 @@ function RegistrarPresenca() {
               D = Dobradinha
             </span>
           </div>
-          <p className="md:hidden text-[11px] text-gray-400 mb-2">
-            Deslize horizontalmente para ver todos os dias da grade.
-          </p>
-          <div className="overflow-x-auto pb-1">
-            <table className="min-w-[1200px] border-collapse text-[11px] md:text-xs">
+          <div className="flex flex-col gap-1 mb-2">
+            <button
+              type="button"
+              onClick={gerarPDF}
+              className="self-start flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-red-700 hover:bg-red-600 text-white text-xs font-semibold transition-colors"
+            >
+              📄 Salvar como PDF
+            </button>
+            <p className="md:hidden text-[11px] text-gray-400">
+              Deslize horizontalmente para ver todos os dias da grade.
+            </p>
+          </div>
+          <div className="relative overflow-x-auto pb-1">
+            {(loadingGrade || filtrando) && (
+              <div className="absolute inset-0 z-20 flex items-center justify-center bg-gray-900/70 rounded-lg">
+                <span className="text-white font-semibold text-sm px-5 py-3 bg-gray-800 border border-gray-600 rounded-xl shadow-lg">
+                  Carregando grade...
+                </span>
+              </div>
+            )}
+            <table
+              ref={tabelaRef}
+              className="min-w-[1600px] border-collapse text-xs md:text-sm"
+            >
               <thead>
                 <tr>
                   <th className="border border-gray-600 px-2 py-1 text-left bg-gray-800 min-w-[80px]">
@@ -990,7 +1265,7 @@ function RegistrarPresenca() {
                     return (
                       <th
                         key={`wk-${dia}`}
-                        className="border border-gray-600 px-2 py-1 bg-gray-800 text-center min-w-[34px]"
+                        className="border border-gray-600 px-2 py-1 bg-gray-800 text-center min-w-[56px]"
                       >
                         {nomeDiaSemana(dia)}
                       </th>
@@ -1009,7 +1284,7 @@ function RegistrarPresenca() {
                     return (
                       <th
                         key={`day-${dia}`}
-                        className="border border-gray-600 px-2 py-1 bg-blue-900 text-center min-w-[34px]"
+                        className="border border-gray-600 px-2 py-1 bg-blue-900 text-center min-w-[56px]"
                       >
                         {dia}
                       </th>
@@ -1039,6 +1314,9 @@ function RegistrarPresenca() {
                           gradeMap[alunoKey]?.[chaveData]?.status || "";
                         const erroCelula =
                           errosGrade.mapaErros?.[alunoKey]?.[chaveData] || "";
+                        const pendente = celulasPendentes.has(
+                          `${alunoKey}|${chaveData}`,
+                        );
                         const observacao = String(
                           gradeMap[alunoKey]?.[chaveData]?.observacao || "",
                         ).trim();
@@ -1053,11 +1331,21 @@ function RegistrarPresenca() {
                               loadingGrade
                                 ? "cursor-wait opacity-70"
                                 : "cursor-pointer"
-                            } ${statusClass(status)} ${
-                              erroCelula ? "ring-2 ring-yellow-300" : ""
-                            }`}
+                            } ${statusClass(status)}`}
                           >
-                            <div className="min-h-[48px] md:min-h-[42px] flex flex-col items-center justify-center leading-none px-0.5">
+                            {(pendente || erroCelula) && (
+                              <div
+                                style={{
+                                  position: "absolute",
+                                  inset: 0,
+                                  outline: "4px solid white",
+                                  outlineOffset: "-4px",
+                                  pointerEvents: "none",
+                                  zIndex: 10,
+                                }}
+                              />
+                            )}
+                            <div className="min-h-[80px] md:min-h-[70px] flex flex-col items-center justify-center leading-none px-0.5">
                               <span>{legendaStatus(status)}</span>
                               {observacao && (
                                 <span className="text-[9px] max-w-[34px] truncate opacity-90">
@@ -1205,7 +1493,9 @@ function RegistrarPresenca() {
                     key={`reposicao-${data}`}
                     className="grid grid-cols-1 md:grid-cols-[180px_1fr] gap-2 items-center"
                   >
-                    <label className="text-gray-200">Reposição em {data}</label>
+                    <label className="text-gray-200">
+                      Reposição em {data.split("-").reverse().join("/")}
+                    </label>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       <input
                         type="date"
@@ -1335,8 +1625,8 @@ function RegistrarPresenca() {
             <p className="text-sm text-gray-300 mb-3">
               {nomeAlunoPorCodigoGrade(reposicaoGradeModal.alunoCodigo)} -
               {reposicaoGradeModal.tipo === "Dobradinha"
-                ? ` dobradinha em ${reposicaoGradeModal.data}`
-                : ` reposição em ${reposicaoGradeModal.data}`}
+                ? ` dobradinha em ${reposicaoGradeModal.data.split("-").reverse().join("/")}`
+                : ` reposição em ${reposicaoGradeModal.data.split("-").reverse().join("/")}`}
             </p>
             <div className="space-y-2">
               <input
@@ -1418,6 +1708,11 @@ function RegistrarPresenca() {
                     };
                     return { ...prev, [alunoKey]: mapaAluno };
                   });
+                  setCelulasPendentes((prev) =>
+                    new Set(prev).add(
+                      `${reposicaoGradeModal.alunoCodigo}|${reposicaoGradeModal.data}`,
+                    ),
+                  );
                   setReposicaoGradeModal({
                     open: false,
                     alunoCodigo: "",

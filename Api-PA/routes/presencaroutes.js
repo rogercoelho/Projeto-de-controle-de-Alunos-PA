@@ -21,7 +21,7 @@ function intervaloMes(ano, mes) {
   const dataInicial = `${ano}-${String(mes).padStart(2, "0")}-01`;
   const ultimoDia = new Date(ano, mes, 0).getDate();
   const dataFinal = `${ano}-${String(mes).padStart(2, "0")}-${String(
-    ultimoDia
+    ultimoDia,
   ).padStart(2, "0")}`;
   return { dataInicial, dataFinal };
 }
@@ -77,7 +77,9 @@ async function salvarPresencasAluno({
     const anoData = parseInt(data.slice(0, 4), 10);
     const mesData = parseInt(data.slice(5, 7), 10);
     if (anoData !== anoNum || mesData !== mesNum) {
-      const err = new Error(`A data ${data} nao pertence ao mes/ano informado.`);
+      const err = new Error(
+        `A data ${data} nao pertence ao mes/ano informado.`,
+      );
       err.httpStatus = 400;
       throw err;
     }
@@ -87,7 +89,7 @@ async function salvarPresencasAluno({
       !ehDataISO(dataReposicaoReferencia)
     ) {
       const err = new Error(
-        `Reposicao exige data de referencia valida (${data}).`
+        `Reposicao exige data de referencia valida (${data}).`,
       );
       err.httpStatus = 400;
       throw err;
@@ -97,7 +99,7 @@ async function salvarPresencasAluno({
 
       if (statusReferenciaNoLote === "Aula Realizada") {
         const err = new Error(
-          "Nao e possivel marcar reposicao para aulas realizadas."
+          "Nao e possivel marcar reposicao para aulas realizadas.",
         );
         err.httpStatus = 400;
         throw err;
@@ -115,7 +117,7 @@ async function salvarPresencasAluno({
 
         if (aulaRealizadaJaRegistrada) {
           const err = new Error(
-            "Nao e possivel marcar reposicao para aulas realizadas."
+            "Nao e possivel marcar reposicao para aulas realizadas.",
           );
           err.httpStatus = 400;
           throw err;
@@ -134,7 +136,7 @@ async function salvarPresencasAluno({
 
         if (!faltaJaRegistrada) {
           const err = new Error(
-            "O dia marcado na reposicao como falta nao esta marcado no calendario como falta."
+            "O dia marcado na reposicao como falta nao esta marcado no calendario como falta.",
           );
           err.httpStatus = 400;
           throw err;
@@ -149,21 +151,23 @@ async function salvarPresencasAluno({
     if (status === "Dobradinha") {
       if (!ehDataISO(dataReposicaoReferencia2)) {
         const err = new Error(
-          `Dobradinha exige a segunda data de referencia valida (${data}).`
+          `Dobradinha exige a segunda data de referencia valida (${data}).`,
         );
         err.httpStatus = 400;
         throw err;
       }
       if (dataReposicaoReferencia2 === dataReposicaoReferencia) {
         const err = new Error(
-          "Dobradinha exige duas faltas diferentes para reposicao."
+          "Dobradinha exige duas faltas diferentes para reposicao.",
         );
         err.httpStatus = 400;
         throw err;
       }
 
-      await validarReferenciaFalta(dataReposicaoReferencia);
-      await validarReferenciaFalta(dataReposicaoReferencia2);
+      if (dataReposicaoReferencia !== data)
+        await validarReferenciaFalta(dataReposicaoReferencia);
+      if (dataReposicaoReferencia2 !== data)
+        await validarReferenciaFalta(dataReposicaoReferencia2);
     }
 
     const payload = {
@@ -192,7 +196,7 @@ async function salvarPresencasAluno({
           Presenca_Data: data,
           ...payload,
         },
-        { transaction }
+        { transaction },
       );
       processados.push({ data, acao: "create" });
     }
@@ -399,7 +403,7 @@ router.get("/:Aluno_Codigo/:ano/:mes", async (req, res) => {
     const dataInicial = `${ano}-${String(mes).padStart(2, "0")}-01`;
     const ultimoDia = new Date(ano, mes, 0).getDate();
     const dataFinal = `${ano}-${String(mes).padStart(2, "0")}-${String(
-      ultimoDia
+      ultimoDia,
     ).padStart(2, "0")}`;
 
     const presencas = await Alunos_Presenca.findAll({
@@ -471,7 +475,12 @@ router.post("/salvar-matriz", async (req, res) => {
     const { ano, mes, registros } = req.body;
     const anoNum = parseInt(ano, 10);
     const mesNum = parseInt(mes, 10);
-    if (Number.isNaN(anoNum) || Number.isNaN(mesNum) || mesNum < 1 || mesNum > 12) {
+    if (
+      Number.isNaN(anoNum) ||
+      Number.isNaN(mesNum) ||
+      mesNum < 1 ||
+      mesNum > 12
+    ) {
       await transaction.rollback();
       return res.status(400).json({ Erro: "Dados principais invalidos." });
     }

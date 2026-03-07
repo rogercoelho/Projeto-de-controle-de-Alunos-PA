@@ -6,8 +6,7 @@ function MobileMenu({ onNavigate, ehAdmin }) {
   const [menuPresencaAberto, setMenuPresencaAberto] = useState(false);
   const [menuUsuariosAberto, setMenuUsuariosAberto] = useState(false);
   const [menuFinanceiroAberto, setMenuFinanceiroAberto] = useState(false);
-  const [menuGestaoFinanceiraAberto, setMenuGestaoFinanceiraAberto] =
-    useState(false);
+  const [menuRelatoriosAberto, setMenuRelatoriosAberto] = useState(false);
   const [menuPlanosAberto, setMenuPlanosAberto] = useState(false);
   const [menuAulasAberto, setMenuAulasAberto] = useState(false);
 
@@ -28,6 +27,7 @@ function MobileMenu({ onNavigate, ehAdmin }) {
     if (menu !== "presenca") setMenuPresencaAberto(false);
     if (menu !== "usuarios") setMenuUsuariosAberto(false);
     if (menu !== "financeiro") setMenuFinanceiroAberto(false);
+    if (menu !== "relatorios") setMenuRelatoriosAberto(false);
     if (menu !== "planos") setMenuPlanosAberto(false);
     if (menu !== "aulas") setMenuAulasAberto(false);
 
@@ -45,6 +45,9 @@ function MobileMenu({ onNavigate, ehAdmin }) {
           break;
         case "financeiro":
           setMenuFinanceiroAberto((prev) => !prev);
+          break;
+        case "relatorios":
+          setMenuRelatoriosAberto((prev) => !prev);
           break;
         case "planos":
           setMenuPlanosAberto((prev) => !prev);
@@ -401,28 +404,6 @@ function MobileMenu({ onNavigate, ehAdmin }) {
                   </svg>
                   <span className="font-medium">Registrar Presença</span>
                 </button>
-
-                <button
-                  onClick={() =>
-                    handleNavigation("Presenca", "RelatorioPresenca")
-                  }
-                  className="w-full flex items-center gap-3 px-4 py-3 bg-red-900/30 hover:bg-red-800/40 active:bg-red-700/50 rounded-lg text-white text-left transition-all border border-red-800/50"
-                >
-                  <svg
-                    className="w-5 h-5 shrink-0"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                    />
-                  </svg>
-                  <span className="font-medium">Relatório de Presença</span>
-                </button>
               </div>
             </div>
           </div>
@@ -516,128 +497,144 @@ function MobileMenu({ onNavigate, ehAdmin }) {
                   </svg>
                   <span className="font-medium">Registrar Pagamento</span>
                 </button>
+              </div>
+            </div>
+          </div>
+        )}
 
-                {/* Submenu Gestao Financeira */}
-                <div className="mt-2">
-                  <button
-                    onClick={() =>
-                      setMenuGestaoFinanceiraAberto(!menuGestaoFinanceiraAberto)
-                    }
-                    className="w-full flex items-center justify-between px-4 py-3 bg-purple-900/30 hover:bg-purple-800/40 active:bg-purple-700/50 rounded-lg text-white text-left transition-all border border-purple-800/50"
+        {/* RELATÓRIOS */}
+        {ehAdmin && (
+          <div className="border-b border-gray-700">
+            <button
+              onClick={() => toggleMenu("relatorios")}
+              className="w-full flex items-center justify-between py-3 text-white font-semibold text-base active:bg-gray-700 transition-colors rounded-lg px-2"
+            >
+              <div className="flex items-center gap-3">
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  />
+                </svg>
+                <span>Relatórios</span>
+              </div>
+              <svg
+                className={`w-5 h-5 transition-transform duration-300 ${
+                  menuRelatoriosAberto ? "rotate-180" : ""
+                }`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 9l-7 7-7-7"
+                />
+              </svg>
+            </button>
+
+            <div
+              className={`overflow-hidden transition-all duration-300 ease-in-out ${
+                menuRelatoriosAberto
+                  ? "max-h-96 opacity-100"
+                  : "max-h-0 opacity-0"
+              }`}
+            >
+              <div className="pb-3 space-y-2 pl-2">
+                <button
+                  onClick={() =>
+                    handleNavigation("Relatorios", "RelatorioPresenca")
+                  }
+                  className="w-full flex items-center gap-3 px-4 py-3 bg-indigo-900/30 hover:bg-indigo-800/40 active:bg-indigo-700/50 rounded-lg text-white text-left transition-all border border-indigo-800/50"
+                >
+                  <svg
+                    className="w-5 h-5 shrink-0"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
                   >
-                    <div className="flex items-center gap-3">
-                      <svg
-                        className="w-5 h-5 shrink-0"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"
-                        />
-                      </svg>
-                      <span className="font-medium">Gestao Financeira</span>
-                    </div>
-                    <svg
-                      className={`w-4 h-4 transition-transform duration-300 ${
-                        menuGestaoFinanceiraAberto ? "rotate-180" : ""
-                      }`}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 9l-7 7-7-7"
-                      />
-                    </svg>
-                  </button>
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                    />
+                  </svg>
+                  <span className="font-medium">Relatório de Presença</span>
+                </button>
 
-                  <div
-                    className={`overflow-hidden transition-all duration-300 ease-in-out ${
-                      menuGestaoFinanceiraAberto
-                        ? "max-h-48 opacity-100"
-                        : "max-h-0 opacity-0"
-                    }`}
+                <button
+                  onClick={() => handleNavigation("Relatorios", "ExtratoAluno")}
+                  className="w-full flex items-center gap-3 px-4 py-3 bg-indigo-900/30 hover:bg-indigo-800/40 active:bg-indigo-700/50 rounded-lg text-white text-left transition-all border border-indigo-800/50"
+                >
+                  <svg
+                    className="w-5 h-5 shrink-0"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
                   >
-                    <div className="pt-2 space-y-2 pl-4">
-                      <button
-                        onClick={() =>
-                          handleNavigation("Financeiro", "ExtratoAluno")
-                        }
-                        className="w-full flex items-center gap-3 px-4 py-3 bg-indigo-900/30 hover:bg-indigo-800/40 active:bg-indigo-700/50 rounded-lg text-white text-left transition-all border border-indigo-800/50"
-                      >
-                        <svg
-                          className="w-5 h-5 shrink-0"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                          />
-                        </svg>
-                        <span className="font-medium">Extrato do Aluno</span>
-                      </button>
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    />
+                  </svg>
+                  <span className="font-medium">Extrato do Aluno</span>
+                </button>
 
-                      <button
-                        onClick={() =>
-                          handleNavigation("Financeiro", "RelatorioMensalPA")
-                        }
-                        className="w-full flex items-center gap-3 px-4 py-3 bg-indigo-900/30 hover:bg-indigo-800/40 active:bg-indigo-700/50 rounded-lg text-white text-left transition-all border border-indigo-800/50"
-                      >
-                        <svg
-                          className="w-5 h-5 shrink-0"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                          />
-                        </svg>
-                        <span className="font-medium">
-                          Relatório Mensal (PA)
-                        </span>
-                      </button>
+                <button
+                  onClick={() =>
+                    handleNavigation("Relatorios", "RelatorioMensalPA")
+                  }
+                  className="w-full flex items-center gap-3 px-4 py-3 bg-indigo-900/30 hover:bg-indigo-800/40 active:bg-indigo-700/50 rounded-lg text-white text-left transition-all border border-indigo-800/50"
+                >
+                  <svg
+                    className="w-5 h-5 shrink-0"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    />
+                  </svg>
+                  <span className="font-medium">Relatório Mensal (PA)</span>
+                </button>
 
-                      <button
-                        onClick={() =>
-                          handleNavigation("Financeiro", "RelatorioMensalWET")
-                        }
-                        className="w-full flex items-center gap-3 px-4 py-3 bg-indigo-900/30 hover:bg-indigo-800/40 active:bg-indigo-700/50 rounded-lg text-white text-left transition-all border border-indigo-800/50"
-                      >
-                        <svg
-                          className="w-5 h-5 shrink-0"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                          />
-                        </svg>
-                        <span className="font-medium">
-                          Relatório Mensal (WET)
-                        </span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
+                <button
+                  onClick={() =>
+                    handleNavigation("Relatorios", "RelatorioMensalWET")
+                  }
+                  className="w-full flex items-center gap-3 px-4 py-3 bg-indigo-900/30 hover:bg-indigo-800/40 active:bg-indigo-700/50 rounded-lg text-white text-left transition-all border border-indigo-800/50"
+                >
+                  <svg
+                    className="w-5 h-5 shrink-0"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    />
+                  </svg>
+                  <span className="font-medium">Relatório Mensal (WET)</span>
+                </button>
               </div>
             </div>
           </div>

@@ -1,32 +1,69 @@
 ﻿import { useState, useEffect } from "react";
 import api from "../../services/api";
-import { formatarDataBR, formatarData, formatarHora } from "../../utils/Utils";
+import { formatarDataBR } from "../../utils/Utils";
 import MessageToast from "../miscellaneous/MessageToast";
 import CustomSelect from "../miscellaneous/CustomSelect";
 import Buttons from "../miscellaneous/Buttons";
 import useToast from "../../hooks/useToast";
 
+/* ── micro helpers ── */
+function StatusBadge({ status }) {
+  if (!status) return null;
+  const isAtivo = status === "Ativo";
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${
+        isAtivo
+          ? "bg-emerald-900/50 text-emerald-300 border-emerald-700/60"
+          : "bg-red-900/50 text-red-300 border-red-700/60"
+      }`}
+    >
+      <span
+        className={`w-1.5 h-1.5 rounded-full ${isAtivo ? "bg-emerald-400" : "bg-red-400"}`}
+      />
+      {status}
+    </span>
+  );
+}
+
+function InfoField({ icon, label, value }) {
+  return (
+    <div className="flex items-start gap-2 min-w-0">
+      <span className="text-base leading-none mt-0.5 shrink-0">{icon}</span>
+      <div className="min-w-0">
+        <p className="text-gray-500 text-xs leading-none mb-0.5">{label}</p>
+        <p className="text-gray-200 text-sm font-medium truncate">
+          {value || "—"}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function StatCard({ icon, label, value, colorClass }) {
+  return (
+    <div
+      className={`rounded-xl p-2 sm:p-4 border flex flex-col sm:flex-row items-center sm:items-center gap-1 sm:gap-3 ${colorClass}`}
+    >
+      <span className="text-xl sm:text-2xl leading-none shrink-0">{icon}</span>
+      <div className="min-w-0 text-center sm:text-left">
+        <p className="text-gray-400 text-[10px] sm:text-xs">{label}</p>
+        <p className="text-white font-bold text-xs sm:text-lg leading-tight break-all">
+          {value}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function ExtratoAluno() {
   const [codigoAluno, setCodigoAluno] = useState("");
-  const [ano, setAno] = useState("");
   const [alunos, setAlunos] = useState([]);
-  const [anos, setAnos] = useState([]);
   const [loading, setLoading] = useState(false);
   const [loadingPdf, setLoadingPdf] = useState(false);
   const [extrato, setExtrato] = useState(null);
   const [messageToast, showToast] = useToast();
   const [comprovanteModal, setComprovanteModal] = useState(null);
-
-  // Gera lista de anos (de 2020 até o próximo ano)
-  useEffect(() => {
-    const anoAtual = new Date().getFullYear();
-    const listaAnos = [];
-    for (let a = anoAtual + 1; a >= 2020; a--) {
-      listaAnos.push({ value: String(a), label: String(a) });
-    }
-    setAnos(listaAnos);
-    setAno(String(anoAtual));
-  }, []);
 
   // Buscar todos os alunos ao montar
   useEffect(() => {
@@ -46,14 +83,10 @@ function ExtratoAluno() {
       showToast({ type: "error", text: "Selecione um aluno." });
       return;
     }
-    if (!ano) {
-      showToast({ type: "error", text: "Selecione um ano." });
-      return;
-    }
     setLoading(true);
     setExtrato(null);
     try {
-      const res = await api.get(`/faturamento/extrato/${codigoAluno}/${ano}`);
+      const res = await api.get(`/faturamento/extrato/${codigoAluno}/all`);
       setExtrato(res.data);
     } catch (error) {
       if (error?.response?.status !== 401) {
@@ -77,7 +110,7 @@ function ExtratoAluno() {
       const doc = new jsPDF("p", "mm", "a4");
 
       const nomeAluno = extrato.aluno?.Alunos_Nome || "Aluno";
-      const filename = `Extrato_${nomeAluno.replace(/\s+/g, "_")}_${ano}.pdf`;
+      const filename = `Extrato_${nomeAluno.replace(/\s+/g, "_")}.pdf`;
 
       // Cores
       const bgDark = [31, 41, 55]; // #1f2937
@@ -102,7 +135,7 @@ function ExtratoAluno() {
       // Título
       doc.setFontSize(18);
       doc.setTextColor(...textWhite);
-      doc.text(`Extrato do Aluno - ${ano}`, 105, y + 10, { align: "center" });
+      doc.text(`Extrato do Aluno`, 105, y + 10, { align: "center" });
       y += 25;
 
       // Card: Informações do Aluno
@@ -188,138 +221,142 @@ function ExtratoAluno() {
       });
 
       for (const plano of planosSorted) {
-        const mesesFaturamento = gerarMesesFaturamento(
-          plano.faturamentos || [],
-          ano,
-          plano.Plano_Pagamento,
+        const planFatsSorted = [...(plano.faturamentos || [])].sort(
+          (a, b) =>
+            new Date(a.Faturamento_Inicio || 0) -
+            new Date(b.Faturamento_Inicio || 0),
         );
-        const mesesKeys = Object.keys(mesesFaturamento).sort();
-        const totalPlano = Object.values(mesesFaturamento).reduce(
-          (acc, m) => acc + (m.valor - m.desconto),
+        const totalPlano = planFatsSorted.reduce(
+          (acc, f) =>
+            acc +
+            (parseFloat(f.Faturamento_Valor_Total) || 0) -
+            (parseFloat(f.Faturamento_Desconto) || 0),
           0,
         );
-        const ultimoFat = plano.faturamentos?.[plano.faturamentos.length - 1];
+        const ultimoFat = planFatsSorted[planFatsSorted.length - 1];
         const dataRenovacao = ultimoFat?.Faturamento_Fim
           ? formatarDataBR(ultimoFat.Faturamento_Fim)
           : null;
 
-        // Calcular altura do card
-        const cardHeight = 35 + mesesKeys.length * 8 + 15;
-
-        // Verificar se precisa nova página
-        if (y + cardHeight > 280) {
+        // Cabeçalho do plano
+        if (y + 30 > 280) {
           doc.addPage();
           doc.setFillColor(...bgDark);
           doc.rect(0, 0, 210, 297, "F");
           y = 10;
         }
 
-        // Card do Plano
         doc.setFillColor(...bgCard);
-        doc.roundedRect(marginLeft, y, pageWidth, cardHeight, 3, 3, "F");
+        doc.roundedRect(marginLeft, y, pageWidth, 28, 3, 3, "F");
         doc.setDrawColor(...borderGray);
-        doc.roundedRect(marginLeft, y, pageWidth, cardHeight, 3, 3, "S");
+        doc.roundedRect(marginLeft, y, pageWidth, 28, 3, 3, "S");
 
         doc.setFontSize(12);
         doc.setTextColor(...textWhite);
         doc.text(
           `Plano: ${plano.Plano_Codigo} - ${plano.Plano_Nome}`,
           marginLeft + 5,
-          y + 8,
+          y + 9,
         );
 
         doc.setFontSize(9);
         doc.setTextColor(...textGray);
         doc.text(
-          `Tipo de Pagamento: ${plano.Plano_Pagamento}`,
+          `${plano.Plano_Pagamento} | ${plano.Plano_Quantidade_Semana}x/semana | Total: R$ ${totalPlano.toFixed(2)}`,
           marginLeft + 5,
-          y + 15,
+          y + 17,
         );
-        doc.text(
-          `Quantidade por Semana: ${plano.Plano_Quantidade_Semana}x`,
-          marginLeft + 5,
-          y + 21,
-        );
-
-        let mesY = y + 30;
-        for (let i = 0; i < mesesKeys.length; i++) {
-          const mesAno = mesesKeys[i];
-          const mesData = mesesFaturamento[mesAno];
-          const valorMes = mesData.valor - mesData.desconto;
-          const parcela = `${mesData.parcela}/${mesData.totalParcelas}`;
-
-          doc.setFontSize(9);
-          // Número da parcela
-          doc.setTextColor(192, 132, 252); // purple-400
-          doc.text(parcela, marginLeft + 8, mesY);
-          // Mês/Ano
-          doc.setTextColor(...textWhite);
-          doc.text(nomeMes(mesAno), marginLeft + 22, mesY);
-
-          doc.setTextColor(...textGreen);
-          doc.text(`R$ ${valorMes.toFixed(2)}`, marginLeft + 45, mesY);
-
-          // Badge pago/pendente
-          const badgeX = marginLeft + 75;
-          doc.setFillColor(...(mesData.pago ? bgGreen : bgYellow));
-          doc.roundedRect(badgeX, mesY - 3, 18, 5, 1, 1, "F");
-          doc.setFontSize(7);
-          doc.setTextColor(...textWhite);
-          doc.text(mesData.pago ? "Pago" : "Pendente", badgeX + 9, mesY, {
-            align: "center",
-          });
-
-          // Data pagamento
-          if (mesData.pago && mesData.dataPagamento) {
-            doc.setFontSize(8);
-            doc.setTextColor(...textGray);
-            doc.text(
-              `Pago em: ${formatarDataBR(mesData.dataPagamento)}`,
-              marginLeft + 98,
-              mesY,
-            );
-          }
-
-          // Desconto
-          if (mesData.desconto > 0) {
-            doc.setTextColor(...textYellow);
-            doc.text(
-              `(desc: R$ ${mesData.desconto.toFixed(2)})`,
-              marginLeft + 145,
-              mesY,
-            );
-          }
-
-          mesY += 8;
-        }
-
-        // Total do plano
-        const totalY = y + cardHeight - 8;
-        doc.setFillColor(...borderGray);
-        doc.roundedRect(
-          marginLeft + 3,
-          totalY - 5,
-          pageWidth - 6,
-          10,
-          2,
-          2,
-          "F",
-        );
-
-        doc.setFontSize(10);
-        doc.setTextColor(...textWhite);
-        doc.text("Total do Plano:", marginLeft + 8, totalY);
-        doc.setTextColor(...textGreen);
-        doc.text(`R$ ${totalPlano.toFixed(2)}`, marginLeft + 45, totalY);
 
         if (dataRenovacao) {
-          doc.setTextColor(...textGray);
-          doc.text("Renovação:", marginLeft + 120, totalY);
           doc.setTextColor(...textYellow);
-          doc.text(dataRenovacao, marginLeft + 145, totalY);
+          doc.text(`Renovação: ${dataRenovacao}`, marginLeft + 5, y + 24);
         }
 
-        y += cardHeight + 5;
+        y += 32;
+
+        // Sub-seções por contratação
+        for (const fat of planFatsSorted) {
+          const fatId = fat.id || fat.Faturamento_ID;
+          const isPago = !!fat.Faturamento_Data_Pagamento;
+          const mesesFat = gerarMesesFaturamento([fat], plano.Plano_Pagamento);
+          const mesesKeys = Object.keys(mesesFat).sort();
+          const fatTotal = Object.values(mesesFat).reduce(
+            (acc, m) => acc + (m.valor - m.desconto),
+            0,
+          );
+
+          const subHeight = 11 + mesesKeys.length * 8 + 6;
+
+          if (y + subHeight > 280) {
+            doc.addPage();
+            doc.setFillColor(...bgDark);
+            doc.rect(0, 0, 210, 297, "F");
+            y = 10;
+          }
+
+          // Sub-header da contratação
+          doc.setFillColor(...borderGray);
+          doc.roundedRect(marginLeft + 2, y, pageWidth - 4, 9, 1, 1, "F");
+          doc.setFontSize(8);
+          doc.setTextColor(...textGray);
+          const periodo = `#${fatId} | ${
+            fat.Faturamento_Inicio
+              ? formatarDataBR(fat.Faturamento_Inicio)
+              : "—"
+          } → ${fat.Faturamento_Fim ? formatarDataBR(fat.Faturamento_Fim) : "—"}`;
+          doc.text(periodo, marginLeft + 6, y + 6);
+          doc.setTextColor(...(isPago ? textGreen : textYellow));
+          doc.text(
+            `${isPago ? "Pago" : "Pendente"} | R$ ${fatTotal.toFixed(2)}`,
+            marginLeft + pageWidth - 6,
+            y + 6,
+            { align: "right" },
+          );
+
+          y += 12;
+
+          // Linhas de meses
+          for (let i = 0; i < mesesKeys.length; i++) {
+            const mesAno = mesesKeys[i];
+            const mesData = mesesFat[mesAno];
+            const valorMes = mesData.valor - mesData.desconto;
+            const parcela = `${mesData.parcela}/${mesData.totalParcelas}`;
+
+            doc.setFontSize(9);
+            doc.setTextColor(192, 132, 252);
+            doc.text(parcela, marginLeft + 8, y);
+            doc.setTextColor(...textWhite);
+            doc.text(nomeMes(mesAno), marginLeft + 22, y);
+            doc.setTextColor(...textGreen);
+            doc.text(`R$ ${valorMes.toFixed(2)}`, marginLeft + 50, y);
+
+            if (mesData.pago && mesData.dataPagamento) {
+              doc.setFontSize(8);
+              doc.setTextColor(...textGray);
+              doc.text(
+                `Pago em: ${formatarDataBR(mesData.dataPagamento)}`,
+                marginLeft + 90,
+                y,
+              );
+            }
+
+            if (mesData.desconto > 0) {
+              doc.setFontSize(8);
+              doc.setTextColor(...textYellow);
+              doc.text(
+                `(desc: R$ ${mesData.desconto.toFixed(2)})`,
+                marginLeft + 145,
+                y,
+              );
+            }
+
+            y += 8;
+          }
+
+          y += 4;
+        }
+
+        y += 5;
       }
 
       // Rodapé
@@ -331,14 +368,15 @@ function ExtratoAluno() {
       }
       doc.setFontSize(8);
       doc.setTextColor(...textGray);
-      doc.text(
-        `Gerado em: ${formatarData(new Date().toISOString())} às ${formatarHora(
-          new Date().toISOString(),
-        )}`,
-        105,
-        290,
-        { align: "center" },
-      );
+      const agora = new Date();
+      const dataGeracao = agora.toLocaleDateString("pt-BR");
+      const horaGeracao = agora.toLocaleTimeString("pt-BR", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+      doc.text(`Gerado em: ${dataGeracao} às ${horaGeracao}`, 105, 290, {
+        align: "center",
+      });
 
       doc.save(filename);
       showToast({ type: "success", text: "PDF gerado com sucesso!" });
@@ -361,12 +399,8 @@ function ExtratoAluno() {
   };
 
   // Gera os meses baseado no tipo de plano e mês de início
-  // ALTERADO: cada lançamento aparece como linha separada (não agrupa por mês)
-  const gerarMesesFaturamento = (
-    faturamentos,
-    anoSelecionado,
-    tipoPagamento,
-  ) => {
+  // Cada lançamento aparece como linha separada (não agrupa por mês)
+  const gerarMesesFaturamento = (faturamentos, tipoPagamento) => {
     const lancamentos = {};
     const qtdMesesPlano = getMesesPorTipoPlano(tipoPagamento);
 
@@ -404,16 +438,17 @@ function ExtratoAluno() {
       const descontoPorMes = desconto / qtdMesesPlano;
 
       for (const m of mesesDoPlano) {
-        if (String(m.ano) !== String(anoSelecionado)) continue;
-
         const mesAno = `${m.ano}-${String(m.mes).padStart(2, "0")}`;
         const chaveUnica = `${mesAno}-${fat.id || fat.Faturamento_ID || Math.random()}`;
 
         lancamentos[chaveUnica] = {
           valor: valorPorMes,
           desconto: descontoPorMes,
-          pago: pago,
+          pago: !!fat.Faturamento_Data_Pagamento,
           dataPagamento: fat.Faturamento_Data_Pagamento,
+          motivo: fat.Faturamento_Motivo || null,
+          comprovante: fat.Faturamento_Comprovante || null,
+          faturamentoId: fat.id || fat.Faturamento_ID || null,
           faturamentos: [fat],
           parcela: m.parcela,
           totalParcelas: m.totalParcelas,
@@ -445,365 +480,568 @@ function ExtratoAluno() {
     return `${nomes[parseInt(mesNum, 10) - 1]}/${anoNum}`;
   };
 
+  const computeStats = () => {
+    if (!extrato) return null;
+    let totalPago = 0;
+    let totalPendente = 0;
+    let totalDescontos = 0;
+    for (const plano of extrato.planos || []) {
+      for (const fat of plano.faturamentos || []) {
+        const valor = parseFloat(fat.Faturamento_Valor_Total) || 0;
+        const desc = parseFloat(fat.Faturamento_Desconto) || 0;
+        totalDescontos += desc;
+        if (fat.Faturamento_Data_Pagamento) {
+          totalPago += valor - desc;
+        } else {
+          totalPendente += valor - desc;
+        }
+      }
+    }
+    return { totalPago, totalPendente, totalDescontos };
+  };
+
+  const stats = extrato ? computeStats() : null;
+
   return (
     <div className="w-full h-auto">
       <MessageToast messageToast={messageToast} />
-      <div
-        className="bg-gray-800 rounded-xl p-3 sm:p-6 space-y-4 w-full h-full min-h-[80vh] shadow-lg border-2 border-gray-700"
-        style={{ minWidth: 0, maxWidth: "100vw" }}
-      >
-        <h2 className="text-xl font-bold text-white mb-4">Extrato do Aluno</h2>
 
-        {/* Dropdown Aluno */}
-        <div className="flex flex-col gap-1">
-          <label className="text-gray-300 text-sm">
-            Aluno:<span className="text-red-500"> *</span>
-          </label>
-          <CustomSelect
-            name="codigoAluno"
-            value={codigoAluno}
-            onChange={(e) => setCodigoAluno(e.target.value)}
-            required
-            placeholder="Selecione o aluno"
-            options={alunos.map((aluno) => ({
-              value: aluno.Alunos_Codigo,
-              label: `${aluno.Alunos_Codigo} - ${aluno.Alunos_Nome}`,
-            }))}
-          />
+      <div className="bg-gray-800 rounded-xl p-3 sm:p-6 space-y-6 w-full shadow-lg border-2 border-gray-700">
+        {/* ── Header ── */}
+        <div className="flex items-center gap-3 border-b border-gray-700 pb-4">
+          <div className="w-11 h-11 rounded-xl bg-linear-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-2xl shadow-lg shrink-0">
+            💳
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-white leading-none">
+              Extrato do Aluno
+            </h2>
+            <p className="text-gray-400 text-sm mt-0.5">
+              Histórico de faturamentos e pagamentos
+            </p>
+          </div>
         </div>
 
-        {/* Dropdown Ano */}
-        <div className="flex flex-col gap-1">
-          <label className="text-gray-300 text-sm">
-            Ano:<span className="text-red-500"> *</span>
-          </label>
-          <CustomSelect
-            name="ano"
-            value={ano}
-            onChange={(e) => setAno(e.target.value)}
-            required
-            placeholder="Selecione o ano"
-            options={anos}
-          />
+        {/* ── Filters ── */}
+        <div className="flex flex-col sm:flex-row gap-3 items-end">
+          <div className="flex-1 flex flex-col gap-1 min-w-0">
+            <label className="text-gray-300 text-sm font-medium">
+              Aluno <span className="text-red-400">*</span>
+            </label>
+            <CustomSelect
+              name="codigoAluno"
+              value={codigoAluno}
+              onChange={(e) => setCodigoAluno(e.target.value)}
+              placeholder="Selecione o aluno"
+              options={alunos.map((a) => ({
+                value: a.Alunos_Codigo,
+                label: `${a.Alunos_Codigo} — ${a.Alunos_Nome}`,
+              }))}
+            />
+          </div>
+          <div className="shrink-0">
+            <Buttons.BotaoExtrato onClick={handleExtrato} loading={loading} />
+          </div>
         </div>
 
-        {/* Botão Extrato */}
-        <div className="flex flex-col sm:flex-row gap-4 pt-2">
-          <Buttons.BotaoExtrato onClick={handleExtrato} loading={loading} />
-        </div>
-
-        {/* Resultados do Extrato */}
+        {/* ── Results ── */}
         {extrato && (
-          <div className="mt-6 space-y-6 bg-gray-800 p-4 rounded-xl">
-            {/* Card: Informações do Aluno */}
-            <div className="bg-gray-900 rounded-xl p-4 border border-gray-700">
-              <h3 className="text-lg font-bold text-white mb-2">
-                Informações do Aluno
-              </h3>
-              <ul className="text-gray-200 text-sm space-y-1">
-                <li>
-                  <b>Código:</b> {extrato.aluno?.Alunos_Codigo}
-                </li>
-                <li>
-                  <b>Nome:</b> {extrato.aluno?.Alunos_Nome}
-                  {extrato.aluno?.Alunos_Situacao === "Ativo" && (
-                    <span className="ml-2 px-2 py-0.5 bg-green-600 text-white text-xs rounded-full font-semibold">
-                      Ativo
+          <div className="space-y-5">
+            {/* Student Profile Card */}
+            <div className="relative bg-linear-to-br from-gray-900 via-gray-900 to-gray-800 rounded-2xl p-5 border border-gray-700 overflow-hidden shadow-lg">
+              <div className="absolute top-0 right-0 w-48 h-48 bg-indigo-600/10 rounded-full -translate-y-1/2 translate-x-1/4 pointer-events-none" />
+              <div className="relative flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+                {/* Avatar */}
+                <div className="w-16 h-16 rounded-2xl bg-linear-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-2xl shadow-xl shrink-0 select-none">
+                  {extrato.aluno?.Alunos_Nome?.charAt(0).toUpperCase() || "?"}
+                </div>
+                {/* Info */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-wrap items-center gap-2 mb-3">
+                    <h3 className="text-white font-bold text-xl leading-none">
+                      {extrato.aluno?.Alunos_Nome}
+                    </h3>
+                    <span className="text-gray-500 text-sm font-mono">
+                      #{extrato.aluno?.Alunos_Codigo}
                     </span>
-                  )}
-                  {extrato.aluno?.Alunos_Situacao === "Inativo" && (
-                    <span className="ml-2 px-2 py-0.5 bg-red-600 text-white text-xs rounded-full font-semibold">
-                      Inativo
-                    </span>
-                  )}
-                </li>
-                <li>
-                  <b>CPF:</b> {extrato.aluno?.Alunos_CPF || "-"}
-                </li>
-                <li>
-                  <b>Email:</b> {extrato.aluno?.Alunos_Email || "-"}
-                </li>
-                <li>
-                  <b>Telefone:</b> {extrato.aluno?.Alunos_Telefone || "-"}
-                </li>
-                <li>
-                  <b>Data Matrícula:</b>{" "}
-                  {extrato.aluno?.Alunos_Data_Matricula
-                    ? formatarDataBR(extrato.aluno.Alunos_Data_Matricula)
-                    : "-"}
-                </li>
-              </ul>
+                    <StatusBadge status={extrato.aluno?.Alunos_Situacao} />
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-3">
+                    <InfoField
+                      icon="🆔"
+                      label="CPF"
+                      value={extrato.aluno?.Alunos_CPF}
+                    />
+                    <InfoField
+                      icon="📧"
+                      label="E-mail"
+                      value={extrato.aluno?.Alunos_Email}
+                    />
+                    <InfoField
+                      icon="📱"
+                      label="Telefone"
+                      value={extrato.aluno?.Alunos_Telefone}
+                    />
+                    <InfoField
+                      icon="📅"
+                      label="Matrícula"
+                      value={
+                        extrato.aluno?.Alunos_Data_Matricula
+                          ? formatarDataBR(extrato.aluno.Alunos_Data_Matricula)
+                          : undefined
+                      }
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
 
-            {/* Cards: Planos e Pagamentos */}
-            {extrato.planos && extrato.planos.length > 0 ? (
-              [...extrato.planos]
-                .sort((a, b) => {
-                  // Ordena planos mais antigos primeiro (por data de início do faturamento mais antigo)
-                  const dataA = a.faturamentos?.[0]?.Faturamento_Inicio
-                    ? new Date(a.faturamentos[0].Faturamento_Inicio)
-                    : new Date(9999, 0, 1);
-                  const dataB = b.faturamentos?.[0]?.Faturamento_Inicio
-                    ? new Date(b.faturamentos[0].Faturamento_Inicio)
-                    : new Date(9999, 0, 1);
-                  return dataA - dataB;
-                })
-                .map((plano, idx) => {
-                  const mesesFaturamento = gerarMesesFaturamento(
-                    plano.faturamentos || [],
-                    ano,
-                    plano.Plano_Pagamento,
-                  );
-                  const totalPlano = Object.values(mesesFaturamento).reduce(
-                    (acc, m) => acc + (m.valor - m.desconto),
-                    0,
-                  );
-
-                  return (
-                    <div
-                      key={idx}
-                      className="bg-gray-900 rounded-xl p-4 border border-gray-700"
-                    >
-                      <h3 className="text-lg font-bold text-white mb-2">
-                        Plano: {plano.Plano_Codigo} - {plano.Plano_Nome}
-                      </h3>
-                      <ul className="text-gray-200 text-sm space-y-1 mb-3">
-                        <li>
-                          <b>Tipo de Pagamento:</b> {plano.Plano_Pagamento}
-                        </li>
-                        <li>
-                          <b>Quantidade por Semana:</b>{" "}
-                          {plano.Plano_Quantidade_Semana}x
-                        </li>
-                      </ul>
-
-                      {/* Pagamentos por mês */}
-                      {Object.keys(mesesFaturamento).length > 0 ? (
-                        <div className="space-y-2">
-                          {Object.keys(mesesFaturamento)
-                            .sort()
-                            .map((mesAno) => {
-                              const mesData = mesesFaturamento[mesAno];
-                              const valorMes = mesData.valor - mesData.desconto;
-                              const parcela = `${mesData.parcela}/${mesData.totalParcelas}`;
-                              return (
-                                <div
-                                  key={mesAno}
-                                  className="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-gray-800 rounded-lg p-2 border border-gray-600"
-                                >
-                                  <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                                    <span className="text-gray-500 font-mono text-sm">
-                                      #
-                                      {mesData.faturamentos?.[0]
-                                        ?.Faturamento_ID ||
-                                        mesData.faturamentos?.[0]?.id ||
-                                        "-"}
-                                    </span>
-                                    <span className="text-purple-400 font-semibold text-sm">
-                                      {parcela}
-                                    </span>
-                                    <span className="text-white font-semibold">
-                                      {nomeMes(mesData.mesAno || mesAno)}
-                                    </span>
-                                    <span className="text-green-400 text-sm">
-                                      R$ {valorMes.toFixed(2)}
-                                    </span>
-                                    {mesData.pago && (
-                                      <span className="ml-2 px-2 py-0.5 bg-green-600 text-white text-xs rounded-full font-semibold">
-                                        Pago
-                                      </span>
-                                    )}
-                                    {!mesData.pago && (
-                                      <span className="ml-2 px-2 py-0.5 bg-yellow-600 text-white text-xs rounded-full font-semibold">
-                                        Pendente
-                                      </span>
-                                    )}
-                                  </div>
-                                  <div className="text-xs text-gray-400 mt-1 sm:mt-0">
-                                    {mesData.pago && mesData.dataPagamento && (
-                                      <span>
-                                        Pago em:{" "}
-                                        {formatarDataBR(mesData.dataPagamento)}
-                                      </span>
-                                    )}
-                                    {mesData.desconto > 0 && (
-                                      <span className="text-yellow-400 ml-2">
-                                        (desc: R$ {mesData.desconto.toFixed(2)})
-                                      </span>
-                                    )}
-                                    {mesData.faturamentos?.[0]
-                                      ?.Faturamento_Comprovante && (
-                                      <span className="ml-2">
-                                        <Buttons.BotaoComprovante
-                                          onClick={() =>
-                                            setComprovanteModal(
-                                              mesData.faturamentos[0]
-                                                .Faturamento_Comprovante,
-                                            )
-                                          }
-                                        />
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-                              );
-                            })}
-                        </div>
-                      ) : (
-                        <p className="text-gray-400 text-sm">
-                          Nenhum mês de faturamento encontrado para este plano
-                          no ano selecionado.
-                        </p>
-                      )}
-
-                      {/* Total do Plano */}
-                      <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between bg-gray-700 rounded-lg p-3 border border-gray-600 gap-2">
-                        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                          <span className="text-white font-bold">
-                            Total do Plano:
-                          </span>
-                          <span className="text-green-400 font-bold text-lg">
-                            R$ {totalPlano.toFixed(2)}
-                          </span>
-                        </div>
-                        {plano.faturamentos &&
-                          plano.faturamentos.length > 0 &&
-                          plano.faturamentos[plano.faturamentos.length - 1]
-                            .Faturamento_Fim && (
-                            <div className="text-sm text-gray-300">
-                              <span className="font-semibold">Renovação:</span>{" "}
-                              <span className="text-yellow-400">
-                                {formatarDataBR(
-                                  plano.faturamentos[
-                                    plano.faturamentos.length - 1
-                                  ].Faturamento_Fim,
-                                )}
-                              </span>
-                            </div>
-                          )}
-                      </div>
-                    </div>
-                  );
-                })
-            ) : (
-              <div className="bg-gray-900 rounded-xl p-4 border border-gray-700 text-center">
-                <span className="text-gray-400">
-                  Nenhum plano encontrado para o ano selecionado.
-                </span>
+            {/* Stats Summary */}
+            {stats && (
+              <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                <StatCard
+                  icon="✅"
+                  label="Total Pago"
+                  value={`R$ ${stats.totalPago.toFixed(2)}`}
+                  colorClass="bg-emerald-900/20 border-emerald-800/60"
+                />
+                <StatCard
+                  icon="⏳"
+                  label="Pendente"
+                  value={`R$ ${stats.totalPendente.toFixed(2)}`}
+                  colorClass="bg-amber-900/20 border-amber-800/60"
+                />
+                <StatCard
+                  icon="🏷️"
+                  label="Descontos"
+                  value={`R$ ${stats.totalDescontos.toFixed(2)}`}
+                  colorClass="bg-blue-900/20 border-blue-800/60"
+                />
               </div>
             )}
 
-            {/* Botão Salvar PDF */}
-            {/* Pendências: faturamentos e planos com parcelas em aberto */}
-            {extrato.faturamentosPendentes &&
-              extrato.faturamentosPendentes.length > 0 && (
-                <div className="bg-gray-900 rounded-xl p-4 border border-yellow-600 mt-4">
-                  <h3 className="text-lg font-bold text-yellow-300 mb-2">
-                    Pendências / Faturamentos em Aberto
-                  </h3>
-                  <div className="space-y-3">
-                    {extrato.planosPendentes &&
-                      extrato.planosPendentes.map((pp, pidx) => (
-                        <div
-                          key={pidx}
-                          className="bg-gray-800 rounded-lg p-3 border border-gray-700"
-                        >
-                          <div className="flex items-center justify-between">
+            {/* Contratações — um card por faturamento */}
+            {extrato.planos && extrato.planos.length > 0 ? (
+              (() => {
+                // Expande todos os faturamentos de todos os planos numa lista plana
+                const contratacoes = [];
+                for (const plano of extrato.planos) {
+                  for (const fat of plano.faturamentos || []) {
+                    contratacoes.push({ plano, fat });
+                  }
+                }
+                // Ordena por data de início
+                contratacoes.sort(
+                  (a, b) =>
+                    new Date(a.fat.Faturamento_Inicio || 0) -
+                    new Date(b.fat.Faturamento_Inicio || 0),
+                );
+
+                if (contratacoes.length === 0) {
+                  return (
+                    <div className="bg-gray-900 rounded-2xl border border-gray-700 p-10 text-center">
+                      <p className="text-gray-400 text-lg">
+                        Nenhum faturamento encontrado para este aluno.
+                      </p>
+                    </div>
+                  );
+                }
+
+                return contratacoes.map(({ plano, fat }, cardIdx) => {
+                  const fatId = fat.id || fat.Faturamento_ID;
+                  const isPago = !!fat.Faturamento_Data_Pagamento;
+                  const fatMeses = gerarMesesFaturamento(
+                    [fat],
+                    plano.Plano_Pagamento,
+                  );
+                  const fatMesesSorted = Object.entries(fatMeses).sort(
+                    ([a], [b]) => a.localeCompare(b),
+                  );
+                  const valorBruto =
+                    parseFloat(fat.Faturamento_Valor_Total) || 0;
+                  const desconto = parseFloat(fat.Faturamento_Desconto) || 0;
+                  const valorLiquido = valorBruto - desconto;
+
+                  return (
+                    <div
+                      key={fatId || cardIdx}
+                      className="bg-gray-900 rounded-2xl border border-gray-700 overflow-hidden shadow-lg"
+                    >
+                      {/* Card header */}
+                      <div className="bg-linear-to-r from-purple-900/60 via-indigo-900/40 to-blue-900/20 border-b border-gray-700 p-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                          {/* Left: plan info */}
+                          <div className="flex items-center gap-3 flex-wrap">
+                            <div className="w-9 h-9 rounded-lg bg-purple-700/50 border border-purple-600/40 flex items-center justify-center shrink-0">
+                              <span className="text-purple-200 text-xs font-bold leading-none text-center px-0.5">
+                                {plano.Plano_Codigo}
+                              </span>
+                            </div>
                             <div>
-                              <div className="text-white font-semibold">
-                                Plano: {pp.Plano_Codigo} - {pp.Plano_Nome}
+                              <h4 className="text-white font-bold text-base leading-none">
+                                {plano.Plano_Nome}
+                              </h4>
+                              <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                                <span className="text-gray-500 font-mono text-xs">
+                                  #{fatId}
+                                </span>
+                                <span className="bg-gray-700/80 rounded-md px-2 py-0.5 text-gray-300 text-xs">
+                                  {plano.Plano_Pagamento}
+                                </span>
+                                <span className="bg-gray-700/80 rounded-md px-2 py-0.5 text-gray-300 text-xs">
+                                  {plano.Plano_Quantidade_Semana}x/semana
+                                </span>
+                                <span className="text-gray-400 text-xs">
+                                  {fat.Faturamento_Inicio
+                                    ? formatarDataBR(fat.Faturamento_Inicio)
+                                    : "—"}
+                                  <span className="text-gray-600 mx-1">→</span>
+                                  {fat.Faturamento_Fim
+                                    ? formatarDataBR(fat.Faturamento_Fim)
+                                    : "—"}
+                                </span>
                               </div>
-                              {pp.Plano_Valor !== null && (
-                                <div className="text-yellow-200 text-sm">
-                                  Valor do Plano: R$ {pp.Plano_Valor}
-                                </div>
-                              )}
                             </div>
                           </div>
 
-                          <div className="mt-2 space-y-1">
-                            {pp.faturamentos && pp.faturamentos.length > 0 ? (
-                              pp.faturamentos.map((f) => (
-                                <div
-                                  key={f.id || f.Faturamento_ID}
-                                  className="flex items-center justify-between text-sm text-gray-200 bg-gray-700 p-2 rounded"
-                                >
-                                  <div>
-                                    <div>
-                                      <b>ID:</b> {f.id || f.Faturamento_ID}
-                                    </div>
-                                    <div>
-                                      <b>Período:</b>{" "}
-                                      {f.Faturamento_Inicio
-                                        ? formatarDataBR(f.Faturamento_Inicio)
-                                        : "-"}{" "}
-                                      -{" "}
-                                      {f.Faturamento_Fim
-                                        ? formatarDataBR(f.Faturamento_Fim)
-                                        : "-"}
-                                    </div>
-                                  </div>
-                                  <div className="text-right">
-                                    <div className="text-yellow-300 font-semibold">
-                                      R${" "}
-                                      {(
-                                        parseFloat(f.Faturamento_Valor_Total) ||
-                                        0
-                                      ).toFixed(2)}
-                                    </div>
-                                    <div className="text-xs text-gray-400">
-                                      Status: Pendente
-                                    </div>
-                                  </div>
-                                </div>
-                              ))
+                          {/* Right: totals + status */}
+                          <div className="flex flex-wrap gap-3 items-center justify-end">
+                            {isPago ? (
+                              <span className="inline-flex items-center gap-1 bg-emerald-900/50 text-emerald-300 border border-emerald-700/50 rounded-full px-3 py-1 text-sm font-semibold">
+                                ✓ Pago
+                              </span>
                             ) : (
-                              <div className="text-sm text-gray-300">
-                                Nenhum faturamento listado.
-                              </div>
+                              <span className="inline-flex items-center gap-1 bg-amber-900/50 text-amber-300 border border-amber-700/50 rounded-full px-3 py-1 text-sm font-semibold">
+                                ⏳ Pendente
+                              </span>
                             )}
+                            <div className="text-right">
+                              <p className="text-gray-500 text-xs">
+                                Bruto / Desc / Líquido
+                              </p>
+                              <p className="text-sm leading-tight font-mono">
+                                <span className="text-gray-300">
+                                  R$ {valorBruto.toFixed(2)}
+                                </span>
+                                {desconto > 0 && (
+                                  <>
+                                    <span className="text-gray-600 mx-1">
+                                      /
+                                    </span>
+                                    <span className="text-amber-400">
+                                      −R$ {desconto.toFixed(2)}
+                                    </span>
+                                  </>
+                                )}
+                                <span className="text-gray-600 mx-1">/</span>
+                                <span className="text-emerald-400 font-bold">
+                                  R$ {valorLiquido.toFixed(2)}
+                                </span>
+                              </p>
+                            </div>
                           </div>
                         </div>
-                      ))}
-                  </div>
-                </div>
-              )}
+                      </div>
 
-            <div className="flex justify-center pt-4">
+                      {/* Parcelas table */}
+                      {fatMesesSorted.length > 0 ? (
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-sm min-w-[580px]">
+                            <thead>
+                              <tr className="bg-gray-800/80 border-b border-gray-700 text-gray-400 text-xs uppercase tracking-wide">
+                                <th className="px-3 py-2 text-left font-semibold">
+                                  Parcela
+                                </th>
+                                <th className="px-3 py-2 text-left font-semibold">
+                                  Mês
+                                </th>
+                                <th className="px-3 py-2 text-right font-semibold">
+                                  Valor
+                                </th>
+                                <th className="px-3 py-2 text-right font-semibold">
+                                  Desconto
+                                </th>
+                                <th className="px-3 py-2 text-right font-semibold">
+                                  Líquido
+                                </th>
+                                <th className="px-3 py-2 text-center font-semibold">
+                                  Status
+                                </th>
+                                <th className="px-3 py-2 text-left font-semibold">
+                                  Pago em
+                                </th>
+                                <th className="px-3 py-2 text-left font-semibold">
+                                  Motivo
+                                </th>
+                                <th className="px-3 py-2 text-center font-semibold">
+                                  Comprov.
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {fatMesesSorted.map(([key, m], rowIdx) => (
+                                <tr
+                                  key={key}
+                                  className={`border-b border-gray-800 transition-colors duration-100 ${
+                                    rowIdx % 2 === 0
+                                      ? "bg-gray-900"
+                                      : "bg-gray-900/60"
+                                  } ${
+                                    m.pago
+                                      ? "hover:bg-emerald-900/15"
+                                      : "hover:bg-amber-900/15"
+                                  }`}
+                                >
+                                  <td className="px-3 py-2 whitespace-nowrap">
+                                    <span className="text-purple-400 font-semibold">
+                                      {m.parcela}/{m.totalParcelas}
+                                    </span>
+                                  </td>
+                                  <td className="px-3 py-2 text-white font-medium whitespace-nowrap">
+                                    {nomeMes(m.mesAno)}
+                                  </td>
+                                  <td className="px-3 py-2 text-gray-300 text-right font-mono whitespace-nowrap">
+                                    R$ {m.valor.toFixed(2)}
+                                  </td>
+                                  <td className="px-3 py-2 text-right whitespace-nowrap">
+                                    {m.desconto > 0 ? (
+                                      <span className="text-amber-400 font-mono text-xs">
+                                        −R$ {m.desconto.toFixed(2)}
+                                      </span>
+                                    ) : (
+                                      <span className="text-gray-600">—</span>
+                                    )}
+                                  </td>
+                                  <td className="px-3 py-2 text-right whitespace-nowrap">
+                                    <span className="text-emerald-400 font-mono font-semibold">
+                                      R$ {(m.valor - m.desconto).toFixed(2)}
+                                    </span>
+                                  </td>
+                                  <td className="px-3 py-2 text-center whitespace-nowrap">
+                                    {m.pago ? (
+                                      <span className="inline-flex items-center gap-1 bg-emerald-900/50 text-emerald-300 border border-emerald-700/50 rounded-full px-2 py-0.5 text-xs font-semibold">
+                                        ✓ Pago
+                                      </span>
+                                    ) : (
+                                      <span className="inline-flex items-center gap-1 bg-amber-900/50 text-amber-300 border border-amber-700/50 rounded-full px-2 py-0.5 text-xs font-semibold">
+                                        ⏳ Pendente
+                                      </span>
+                                    )}
+                                  </td>
+                                  <td className="px-3 py-2 text-sm whitespace-nowrap">
+                                    {m.dataPagamento ? (
+                                      <span className="text-gray-300">
+                                        {formatarDataBR(m.dataPagamento)}
+                                      </span>
+                                    ) : (
+                                      <span className="text-gray-600">—</span>
+                                    )}
+                                  </td>
+                                  <td className="px-3 py-2 text-gray-400 text-xs max-w-[140px]">
+                                    {m.motivo ? (
+                                      <span
+                                        className="line-clamp-2"
+                                        title={m.motivo}
+                                      >
+                                        {m.motivo}
+                                      </span>
+                                    ) : (
+                                      <span className="text-gray-600">—</span>
+                                    )}
+                                  </td>
+                                  <td className="px-3 py-2 text-center">
+                                    {m.comprovante ? (
+                                      <Buttons.BotaoComprovante
+                                        onClick={() =>
+                                          setComprovanteModal(m.comprovante)
+                                        }
+                                      />
+                                    ) : (
+                                      <span className="text-gray-600 text-xs">
+                                        —
+                                      </span>
+                                    )}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      ) : null}
+
+                      {/* Card footer */}
+                      <div className="bg-gray-800/50 border-t border-gray-700 px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                        <div className="flex items-center gap-4 text-sm flex-wrap">
+                          {isPago && fat.Faturamento_Data_Pagamento ? (
+                            <span className="text-gray-400">
+                              Pago em:{" "}
+                              <span className="text-gray-200 font-medium">
+                                {formatarDataBR(fat.Faturamento_Data_Pagamento)}
+                              </span>
+                            </span>
+                          ) : (
+                            <span className="text-amber-400/70 text-xs">
+                              Aguardando pagamento
+                            </span>
+                          )}
+                          {fat.Faturamento_Fim && (
+                            <span className="flex items-center gap-1.5">
+                              <span className="text-yellow-400">🔄</span>
+                              <span className="text-gray-400">
+                                Próxima renovação:
+                              </span>
+                              <span className="text-yellow-300 font-semibold">
+                                {formatarDataBR(fat.Faturamento_Fim)}
+                              </span>
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-gray-400 text-sm">
+                            Total da contratação:
+                          </span>
+                          <span
+                            className={`font-bold text-lg ${isPago ? "text-emerald-400" : "text-amber-400"}`}
+                          >
+                            R$ {valorLiquido.toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                });
+              })()
+            ) : (
+              <div className="bg-gray-900 rounded-2xl border border-gray-700 p-10 text-center">
+                <p className="text-gray-400 text-lg">
+                  Nenhum plano encontrado para este aluno.
+                </p>
+              </div>
+            )}
+
+            {/* Global pending section */}
+            {extrato.planosPendentes && extrato.planosPendentes.length > 0 && (
+              <div className="bg-amber-950/30 border border-amber-800/50 rounded-2xl overflow-hidden shadow-lg">
+                <div className="px-4 py-3 border-b border-amber-800/40 flex items-center gap-2">
+                  <span className="text-amber-400 text-lg">⚠️</span>
+                  <h3 className="text-amber-300 font-bold text-base">
+                    Pendências — Faturamentos em Aberto (todos os anos)
+                  </h3>
+                </div>
+                <div className="p-4 space-y-3">
+                  {extrato.planosPendentes.map((pp, pidx) => (
+                    <div
+                      key={pidx}
+                      className="bg-gray-900/60 rounded-xl border border-gray-700 overflow-hidden"
+                    >
+                      <div className="px-3 py-2 bg-gray-800/50 border-b border-gray-700 flex items-center justify-between">
+                        <span className="text-white font-semibold text-sm">
+                          {pp.Plano_Codigo} — {pp.Plano_Nome}
+                        </span>
+                        {pp.Plano_Valor !== null && (
+                          <span className="text-amber-300 text-sm font-medium">
+                            Valor do Plano: R$ {pp.Plano_Valor}
+                          </span>
+                        )}
+                      </div>
+                      <div className="divide-y divide-gray-800">
+                        {pp.faturamentos && pp.faturamentos.length > 0 ? (
+                          pp.faturamentos.map((f) => (
+                            <div
+                              key={f.id || f.Faturamento_ID}
+                              className="px-3 py-2.5 flex items-center justify-between text-sm"
+                            >
+                              <div className="text-gray-300 flex items-center gap-2">
+                                <span className="text-gray-500 font-mono text-xs">
+                                  #{f.id || f.Faturamento_ID}
+                                </span>
+                                <span>
+                                  {f.Faturamento_Inicio
+                                    ? formatarDataBR(f.Faturamento_Inicio)
+                                    : "—"}
+                                  {" → "}
+                                  {f.Faturamento_Fim
+                                    ? formatarDataBR(f.Faturamento_Fim)
+                                    : "—"}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-amber-300 font-semibold font-mono">
+                                  R${" "}
+                                  {(
+                                    parseFloat(f.Faturamento_Valor_Total) || 0
+                                  ).toFixed(2)}
+                                </span>
+                                <span className="bg-amber-900/50 text-amber-300 border border-amber-700/50 rounded-full px-2 py-0.5 text-xs font-semibold">
+                                  Pendente
+                                </span>
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <p className="px-3 py-2.5 text-gray-500 text-sm">
+                            Nenhum faturamento listado.
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Download PDF */}
+            <div className="flex justify-center pt-2 pb-1">
               <Buttons.BotaoPDF onClick={handleGerarPDF} loading={loadingPdf} />
             </div>
           </div>
         )}
       </div>
 
-      {/* Modal de Comprovante */}
+      {/* ── Comprovante Modal ── */}
       {comprovanteModal && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50"
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4"
           onClick={() => setComprovanteModal(null)}
         >
           <div
-            className="bg-gray-800 rounded-xl p-4 max-w-3xl max-h-[90vh] overflow-auto border border-gray-600"
+            className="bg-gray-800 rounded-2xl p-5 max-w-2xl w-full max-h-[90vh] overflow-auto border border-gray-600 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-white font-bold text-lg">
-                Comprovante de Pagamento
+              <h3 className="text-white font-bold text-lg flex items-center gap-2">
+                <span>🧾</span> Comprovante de Pagamento
               </h3>
               <button
                 type="button"
                 onClick={() => setComprovanteModal(null)}
-                className="text-gray-400 hover:text-white text-2xl font-bold"
+                className="w-8 h-8 rounded-full bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white flex items-center justify-center text-xl font-bold transition-colors"
               >
-                &times;
+                ×
               </button>
             </div>
             <div className="flex justify-center">
-              <img
-                src={`${import.meta.env.VITE_API_URL || "https://api2.plantandoalegria.com.br"}/uploads/comprovantes/${comprovanteModal}`}
-                alt="Comprovante"
-                className="max-w-full max-h-[70vh] rounded-lg"
-              />
+              {String(comprovanteModal).toLowerCase().endsWith(".pdf") ? (
+                <div className="text-center space-y-4">
+                  <p className="text-gray-400 text-sm">
+                    Comprovante em formato PDF
+                  </p>
+                  <a
+                    href={`${import.meta.env.VITE_API_URL || "https://api2.plantandoalegria.com.br"}/uploads/comprovantes/${comprovanteModal}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2 rounded-lg transition-colors"
+                  >
+                    📄 Abrir PDF
+                  </a>
+                </div>
+              ) : (
+                <img
+                  src={`${import.meta.env.VITE_API_URL || "https://api2.plantandoalegria.com.br"}/uploads/comprovantes/${comprovanteModal}`}
+                  alt="Comprovante de pagamento"
+                  className="max-w-full max-h-[70vh] rounded-xl shadow-lg"
+                />
+              )}
             </div>
           </div>
         </div>
@@ -813,6 +1051,3 @@ function ExtratoAluno() {
 }
 
 export default ExtratoAluno;
-
-
-

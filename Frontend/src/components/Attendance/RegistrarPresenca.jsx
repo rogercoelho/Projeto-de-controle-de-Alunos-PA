@@ -1007,7 +1007,7 @@ function RegistrarPresenca() {
           </span>
         </div>
 
-        <div className="border border-gray-600 rounded-lg p-2 md:p-4 bg-gray-900">
+        <div className="border border-gray-600 rounded-lg p-2 md:p-4 bg-gray-900 overflow-x-auto">
           <div className="mb-2 md:mb-3 flex items-center justify-center gap-2 md:gap-3">
             <button
               type="button"

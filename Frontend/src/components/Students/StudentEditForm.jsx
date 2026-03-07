@@ -160,7 +160,7 @@ function StudentEditForm({
             const formDataConvertido = {
               ...editFormData,
               Alunos_Data_Nascimento: converterData(
-                editFormData.Alunos_Data_Nascimento
+                editFormData.Alunos_Data_Nascimento,
               ),
               // Mantém campos de pai e mãe (não altera nomes aqui)
             };
@@ -176,12 +176,12 @@ function StudentEditForm({
               response = await api.patch(
                 `/alunos/update/${editFormData.Alunos_Codigo}`,
                 data,
-                { headers: { "Content-Type": "multipart/form-data" } }
+                { headers: { "Content-Type": "multipart/form-data" } },
               );
             } else {
               response = await api.patch(
                 `/alunos/update/${editFormData.Alunos_Codigo}`,
-                formDataConvertido
+                formDataConvertido,
               );
             }
             const resData = response.data;
@@ -213,7 +213,7 @@ function StudentEditForm({
             setLoadingbutton(false);
           }
         }}
-        className="bg-gray-800 rounded-xl p-6 space-y-4 mx-auto"
+        className="bg-gray-800 rounded-xl p-3 sm:p-6 space-y-4 mx-auto"
       >
         <div className="w-full mb-8 flex">
           <span
@@ -243,8 +243,8 @@ function StudentEditForm({
                   (!arquivosEdit.foto && !editFormData.Alunos_Foto)
                     ? null
                     : arquivosEdit.foto
-                    ? URL.createObjectURL(arquivosEdit.foto)
-                    : editFormData.Alunos_Foto
+                      ? URL.createObjectURL(arquivosEdit.foto)
+                      : editFormData.Alunos_Foto
                 }
                 nome={
                   editFormData.Alunos_Nome ||
@@ -353,7 +353,7 @@ function StudentEditForm({
             value={editFormData.Alunos_Nome || ""}
             onChange={handleChange}
             className={`w-full px-4 py-2 ${corCampoEditavel(
-              true
+              true,
             )} text-white rounded-md`}
             required
           />
@@ -369,7 +369,7 @@ function StudentEditForm({
             value={editFormData.Alunos_Data_Nascimento || ""}
             onChange={handleChange}
             className={`w-full px-4 py-2 ${corCampoEditavel(
-              false
+              false,
             )} text-white rounded-md`}
             required
             readOnly
@@ -386,7 +386,7 @@ function StudentEditForm({
             value={editFormData.Alunos_CPF || ""}
             onChange={handleChange}
             className={`w-full px-4 py-2 ${corCampoEditavel(
-              !cpfAlunoReadOnly
+              !cpfAlunoReadOnly,
             )} text-white rounded-md`}
             placeholder="000.000.000-00"
             maxLength="14"
@@ -409,7 +409,7 @@ function StudentEditForm({
             value={editFormData.Alunos_Nome_Pai_Responsavel || ""}
             onChange={handleChange}
             className={`w-full px-4 py-2 ${corCampoEditavel(
-              true
+              true,
             )} text-white rounded-md`}
             placeholder="Deixe em branco se for maior de idade"
           />
@@ -427,7 +427,7 @@ function StudentEditForm({
             value={editFormData.Alunos_CPF_Pai_Responsavel || ""}
             onChange={handleChange}
             className={`w-full px-4 py-2 ${corCampoEditavel(
-              true
+              true,
             )} text-white rounded-md`}
             placeholder="000.000.000-00"
             maxLength="14"
@@ -449,7 +449,7 @@ function StudentEditForm({
             value={editFormData.Alunos_Nome_Mae_Responsavel || ""}
             onChange={handleChange}
             className={`w-full px-4 py-2 ${corCampoEditavel(
-              true
+              true,
             )} text-white rounded-md`}
             placeholder="Deixe em branco se for maior de idade"
           />
@@ -467,7 +467,7 @@ function StudentEditForm({
             value={editFormData.Alunos_CPF_Mae_Responsavel || ""}
             onChange={handleChange}
             className={`w-full px-4 py-2 ${corCampoEditavel(
-              true
+              true,
             )} text-white rounded-md`}
             placeholder="000.000.000-00"
             maxLength="14"
@@ -486,7 +486,7 @@ function StudentEditForm({
               value={editFormData.Alunos_Endereco_CEP || ""}
               onChange={handleChange}
               className={`w-full px-4 py-2 ${corCampoEditavel(
-                true
+                true,
               )} text-white rounded-md`}
               placeholder="00000-000"
               maxLength="9"
@@ -509,7 +509,7 @@ function StudentEditForm({
             name="Alunos_Endereco"
             value={editFormData.Alunos_Endereco || ""}
             className={`w-full px-4 py-2 ${corCampoEditavel(
-              false
+              false,
             )} text-white rounded-md`}
             readOnly
             required
@@ -526,7 +526,7 @@ function StudentEditForm({
             value={editFormData.Alunos_Endereco_Complemento || ""}
             onChange={handleChange}
             className={`w-full px-4 py-2 ${corCampoEditavel(
-              true
+              true,
             )} text-white rounded-md`}
           />
         </div>
@@ -540,7 +540,7 @@ function StudentEditForm({
             name="Alunos_Endereco_Bairro"
             value={editFormData.Alunos_Endereco_Bairro || ""}
             className={`w-full px-4 py-2 ${corCampoEditavel(
-              false
+              false,
             )} text-white rounded-md`}
             readOnly
             required
@@ -556,7 +556,7 @@ function StudentEditForm({
             name="Alunos_Endereco_Cidade"
             value={editFormData.Alunos_Endereco_Cidade || ""}
             className={`w-full px-4 py-2 ${corCampoEditavel(
-              false
+              false,
             )} text-white rounded-md`}
             readOnly
             required
@@ -572,7 +572,7 @@ function StudentEditForm({
             name="Alunos_Endereco_Estado"
             value={editFormData.Alunos_Endereco_Estado || ""}
             className={`w-full px-4 py-2 ${corCampoEditavel(
-              false
+              false,
             )} text-white rounded-md`}
             maxLength="2"
             readOnly
@@ -590,7 +590,7 @@ function StudentEditForm({
             value={editFormData.Alunos_Telefone || ""}
             onChange={handleChange}
             className={`w-full px-4 py-2 ${corCampoEditavel(
-              true
+              true,
             )} text-white rounded-md`}
             placeholder="(00) 00000-0000"
             maxLength="15"
@@ -608,7 +608,7 @@ function StudentEditForm({
             value={editFormData.Alunos_Email || ""}
             onChange={handleChange}
             className={`w-full px-4 py-2 ${corCampoEditavel(
-              true
+              true,
             )} text-white rounded-md`}
             required
           />
@@ -624,7 +624,7 @@ function StudentEditForm({
             value={editFormData.Alunos_Contato_Emergencia || ""}
             onChange={handleChange}
             className={`w-full px-4 py-2 ${corCampoEditavel(
-              true
+              true,
             )} text-white rounded-md`}
             required
           />
@@ -640,7 +640,7 @@ function StudentEditForm({
             value={editFormData.Alunos_Telefone_Emergencia_1 || ""}
             onChange={handleChange}
             className={`w-full px-4 py-2 ${corCampoEditavel(
-              true
+              true,
             )} text-white rounded-md`}
             placeholder="(00) 00000-0000"
             maxLength="15"
@@ -658,7 +658,7 @@ function StudentEditForm({
             value={editFormData.Alunos_Telefone_Emergencia_2 || ""}
             onChange={handleChange}
             className={`w-full px-4 py-2 ${corCampoEditavel(
-              true
+              true,
             )} text-white rounded-md`}
             placeholder="(00) 00000-0000"
             maxLength="15"
@@ -674,7 +674,7 @@ function StudentEditForm({
             value={editFormData.Alunos_Observacoes || ""}
             onChange={handleChange}
             className={`w-full px-4 py-2 ${corCampoEditavel(
-              true
+              true,
             )} text-white rounded-md`}
             placeholder="Observações sobre o aluno (opcional)"
             rows="3"
@@ -715,5 +715,3 @@ StudentEditForm.propTypes = {
     Alunos_Contrato: PropTypes.string,
   }),
 };
-
-

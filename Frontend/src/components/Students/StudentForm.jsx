@@ -53,12 +53,12 @@ function StudentForm({ aluno, onSaveSuccess }) {
   /* Inicialização do estado do formulário usando
      o utilitario limparFormData para iniciar sem dados */
   const [formData, setFormData] = useState(
-    aluno ? { ...aluno } : limparFormData()
+    aluno ? { ...aluno } : limparFormData(),
   );
 
   /* Chama o hook useBuscarCEP no topo do componente, passando o CEP atual */
   const { loadingCep, dadosCep, erroCep } = useBuscarCEP(
-    formData.Alunos_Endereco_CEP
+    formData.Alunos_Endereco_CEP,
   );
 
   //const [message, setMessage] = useState({ type: "", text: "" });
@@ -332,7 +332,7 @@ function StudentForm({ aluno, onSaveSuccess }) {
             data,
             {
               headers: { "Content-Type": "multipart/form-data" },
-            }
+            },
           );
         }
         /* (Senao) Se o aluno nao existir, faz o cadastro (Post) e segue o mesmo
@@ -488,7 +488,7 @@ function StudentForm({ aluno, onSaveSuccess }) {
      A div Configura a tela e o formulario, o classname chama um "bloco" de  configuracoes de 
      layout que nesse caso é usado TailwindCSS */
   return (
-    <div className="w-full h-auto p-6 bg-gray-800 rounded-xl">
+    <div className="w-full h-auto p-3 sm:p-6 bg-gray-800 rounded-xl">
       <h2 className="text-xl font-bold text-white mb-4">Cadastrar Aluno</h2>
       {/* Aqui fica a mensagem toast (que aparece no canto direito da tela) Ela é 
         uma props (propriedade) que esta definida em /miscellaneous/Messages.jsx  */}
@@ -969,5 +969,3 @@ StudentForm.propTypes = {
 };
 
 export default StudentForm;
-
-

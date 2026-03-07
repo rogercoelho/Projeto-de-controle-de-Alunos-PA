@@ -196,7 +196,7 @@ function ControleHorarios() {
       {/* Formulário de cadastro/edição */}
       <form
         onSubmit={handleSubmit}
-        className="bg-gray-800 rounded-xl p-6 space-y-4 mb-6"
+        className="bg-gray-800 rounded-xl p-3 sm:p-6 space-y-4 mb-6"
       >
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Dia da Semana */}
@@ -284,7 +284,7 @@ function ControleHorarios() {
       </form>
 
       {/* Lista de horários cadastrados */}
-      <div className="bg-gray-800 rounded-xl p-6">
+      <div className="bg-gray-800 rounded-xl p-3 sm:p-6">
         <h3 className="text-lg font-semibold text-white mb-4">
           Horários Cadastrados ({horarios.length})
         </h3>

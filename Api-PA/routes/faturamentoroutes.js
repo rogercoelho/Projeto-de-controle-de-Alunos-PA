@@ -114,7 +114,8 @@ router.get("/pendentes", async (req, res) => {
 });
 
 // GET /faturamento/extrato/:Aluno_Codigo/:ano
-// Retorna o extrato do aluno: informações do aluno, planos e pagamentos do ano
+// Retorna o extrato do aluno: informações do aluno, planos e pagamentos
+// Quando ano === "all", retorna todos os faturamentos sem filtro de ano
 router.get("/extrato/:Aluno_Codigo/:ano", async (req, res) => {
   try {
     const { Aluno_Codigo, ano } = req.params;
@@ -130,44 +131,35 @@ router.get("/extrato/:Aluno_Codigo/:ano", async (req, res) => {
       return res.status(404).json({ Erro: "Aluno não encontrado." });
     }
 
-    // Busca faturamentos do aluno que tenham meses no ano selecionado
-    // Inclui faturamentos onde:
-    // - Faturamento_Inicio está no ano selecionado, OU
-    // - Faturamento_Fim está no ano selecionado, OU
-    // - O período atravessa o ano (inicio antes e fim depois)
-    const faturamentos = await Alunos_Faturamento.findAll({
-      where: {
-        Aluno_Codigo,
-        [Op.or]: [
-          // Faturamento começa no ano selecionado
-          {
-            Faturamento_Inicio: {
-              [Op.between]: [`${ano}-01-01`, `${ano}-12-31`],
-            },
-          },
-          // Faturamento termina no ano selecionado
-          {
-            Faturamento_Fim: {
-              [Op.between]: [`${ano}-01-01`, `${ano}-12-31`],
-            },
-          },
-          // Faturamento atravessa o ano (começa antes e termina depois)
-          {
-            [Op.and]: [
+    // Quando ano === "all", busca todos os faturamentos sem filtro de ano
+    const whereClause =
+      ano === "all"
+        ? { Aluno_Codigo }
+        : {
+            Aluno_Codigo,
+            [Op.or]: [
               {
                 Faturamento_Inicio: {
-                  [Op.lt]: `${ano}-01-01`,
+                  [Op.between]: [`${ano}-01-01`, `${ano}-12-31`],
                 },
               },
               {
                 Faturamento_Fim: {
-                  [Op.gt]: `${ano}-12-31`,
+                  [Op.between]: [`${ano}-01-01`, `${ano}-12-31`],
                 },
               },
+              {
+                [Op.and]: [
+                  { Faturamento_Inicio: { [Op.lt]: `${ano}-01-01` } },
+                  { Faturamento_Fim: { [Op.gt]: `${ano}-12-31` } },
+                ],
+              },
             ],
-          },
-        ],
-      },
+          };
+
+    const faturamentos = await Alunos_Faturamento.findAll({
+      where: whereClause,
+      order: [["Faturamento_Inicio", "ASC"]],
       raw: true,
     });
 

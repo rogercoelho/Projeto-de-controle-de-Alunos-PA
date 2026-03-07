@@ -183,7 +183,7 @@ function Faturamento() {
       <MessageToast messageToast={messageToast} />
       <form
         onSubmit={handleSubmit}
-        className="bg-gray-800 rounded-xl p-0 sm:p-6 space-y-4 w-full h-full min-h-[80vh] shadow-lg border-2 border-gray-700"
+        className="bg-gray-800 rounded-xl p-3 sm:p-6 space-y-4 w-full h-full min-h-[80vh] shadow-lg border-2 border-gray-700"
         style={{ minWidth: 0, maxWidth: "100vw" }}
       >
         <div>

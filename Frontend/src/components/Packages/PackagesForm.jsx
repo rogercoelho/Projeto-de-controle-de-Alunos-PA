@@ -122,7 +122,7 @@ function PackagesForm() {
       {messageToast && <MessageToast messageToast={messageToast} />}
       <form
         onSubmit={handleSubmit}
-        className="bg-gray-800 rounded-xl p-6 space-y-4"
+        className="bg-gray-800 rounded-xl p-3 sm:p-6 space-y-4"
       >
         {/* Código do Plano */}
         <div>

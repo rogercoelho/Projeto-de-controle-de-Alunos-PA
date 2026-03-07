@@ -69,7 +69,7 @@ function StudentSearch() {
       return [...alunos].sort((a, b) => a.Alunos_Codigo - b.Alunos_Codigo);
     } else {
       return [...alunos].sort((a, b) =>
-        a.Alunos_Nome.localeCompare(b.Alunos_Nome)
+        a.Alunos_Nome.localeCompare(b.Alunos_Nome),
       );
     }
   };
@@ -172,7 +172,7 @@ function StudentSearch() {
         {
           Alunos_Situacao: novoStatus,
           usuario: localStorage.getItem("usuario") || "Sistema",
-        }
+        },
       );
       /* Se response.data tiver dados e response.data.statusCode for 200, entao traz o conteudo
          de response.data e usa o setSelectedAluno para atualizar o estado repassando o 
@@ -252,7 +252,7 @@ function StudentSearch() {
         }
       } else if (!codigo && cpf && !nome) {
         const response = await api.get(
-          `/alunos/cpf/${encodeURIComponent(cpf)}`
+          `/alunos/cpf/${encodeURIComponent(cpf)}`,
         );
         if (response.data) {
           if (response.data.Aluno) {
@@ -263,7 +263,7 @@ function StudentSearch() {
         }
       } else if (!codigo && !cpf && nome) {
         const response = await api.get(
-          `/alunos/nome/${encodeURIComponent(nome)}`
+          `/alunos/nome/${encodeURIComponent(nome)}`,
         );
         if (response.data && response.data.Listagem_de_Alunos) {
           alunos = response.data.Listagem_de_Alunos;
@@ -376,7 +376,7 @@ function StudentSearch() {
             setArquivosEdit({ foto: null, contrato: null });
             try {
               const response = await api.get(
-                `/alunos/codigo/${updatedAluno.Alunos_Codigo}`
+                `/alunos/codigo/${updatedAluno.Alunos_Codigo}`,
               );
               console.log("Dados retornados do backend:", response.data);
               if (response.data && response.data.Alunos_Codigo) {
@@ -415,7 +415,7 @@ function StudentSearch() {
           {/* Início - Formulario de pesquisa do aluno */}
           <form
             onSubmit={handleSearch}
-            className="bg-gray-800 rounded-xl p-6 space-y-4 mb-6"
+            className="bg-gray-800 rounded-xl p-3 sm:p-6 space-y-4 mb-6"
           >
             <h2 className="text-xl font-bold text-white mb-4">
               Pesquisar Aluno
@@ -505,7 +505,7 @@ function StudentSearch() {
               mostra na tela ordenando por codigo ou nome (clicando nos botoes) e se tiver mais de 
               10 alunos, mostra a paginacao. */}
           {results.length > 0 && (
-            <div className="bg-gray-800 rounded-xl p-6">
+            <div className="bg-gray-800 rounded-xl p-3 sm:p-6">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-semibold text-white">
                   Resultados ({results.length})
@@ -585,5 +585,3 @@ function StudentSearch() {
 }
 
 export default StudentSearch;
-
-

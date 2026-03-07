@@ -185,7 +185,7 @@ function App() {
           path="/*"
           element={
             <ProtectedRoute>
-              <div className="w-full h-auto min-h-screen mx-auto flex flex-col justify-start p-6 bg-gray-900 text-white border-8 border-red-900 rounded-4xl">
+              <div className="w-full h-auto min-h-screen mx-auto flex flex-col justify-start p-3 sm:p-6 bg-gray-900 text-white border-8 border-red-900 rounded-4xl">
                 <div className="relative">
                   {/* Botao de Logout e informacoes do usuario - Desktop */}
                   <div className="hidden md:flex absolute top-0 right-0 items-center gap-4">
@@ -331,15 +331,27 @@ function App() {
                           activeComponent2 === "Financeiro") && (
                           <Financeiro key="financeiro" />
                         )}
+                      {activeComponent === "Relatorios" &&
+                        activeComponent2 === "RelatorioPresenca" && (
+                          <RelatorioPresenca key="relatorio-presenca" />
+                        )}
+                      {activeComponent === "Relatorios" &&
+                        activeComponent2 === "ExtratoAluno" && (
+                          <ExtratoAluno key="extrato-aluno" />
+                        )}
+                      {activeComponent === "Relatorios" &&
+                        activeComponent2 === "RelatorioMensalPA" && (
+                          <Relatorio_PA key="relatorio-mensal-pa" />
+                        )}
+                      {activeComponent === "Relatorios" &&
+                        activeComponent2 === "RelatorioMensalWET" && (
+                          <Relatorio_WET key="relatorio-mensal-wet" />
+                        )}
                       {activeComponent === "Presenca" &&
                         activeComponent2 === "RegistrarPresenca" && (
                           <RegistrarPresenca
                             key={`registrar-presenca-${registrarPresencaKey}`}
                           />
-                        )}
-                      {activeComponent === "Presenca" &&
-                        activeComponent2 === "RelatorioPresenca" && (
-                          <RelatorioPresenca key="relatorio-presenca" />
                         )}
                       {activeComponent === "Aulas" &&
                         activeComponent2 === "ControleHorarios" && (

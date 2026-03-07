@@ -29,7 +29,7 @@ function AdminDelete() {
       return;
     }
     const confirmar = window.confirm(
-      `⚠️ ATENÇÃO: Você está prestes a excluir permanentemente o registro ID ${registroId} da tabela ${tabela}.\n\nEsta ação NÃO PODE SER DESFEITA!\n\nDeseja continuar?`
+      `⚠️ ATENÇÃO: Você está prestes a excluir permanentemente o registro ID ${registroId} da tabela ${tabela}.\n\nEsta ação NÃO PODE SER DESFEITA!\n\nDeseja continuar?`,
     );
     if (!confirmar) return;
     setShowSenhaModal(true);
@@ -56,7 +56,7 @@ function AdminDelete() {
             usuario: usuarioLogado?.login || usuarioLogado?.nome || "Sistema",
             senha,
           },
-        }
+        },
       );
       setMessage({
         type: "success",
@@ -101,7 +101,7 @@ function AdminDelete() {
   };
 
   return (
-    <div className="w-full max-w-2xl mx-auto h-auto p-6 bg-gray-800 rounded-xl">
+    <div className="w-full max-w-2xl mx-auto h-auto p-3 sm:p-6 bg-gray-800 rounded-xl">
       {/* Modal de senha */}
       {showSenhaModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 px-2">

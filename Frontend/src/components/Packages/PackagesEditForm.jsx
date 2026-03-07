@@ -9,7 +9,10 @@ function PackagesEditForm({
   onCancel,
 }) {
   return (
-    <form onSubmit={onSave} className="bg-gray-800 rounded-xl p-6 space-y-4">
+    <form
+      onSubmit={onSave}
+      className="bg-gray-800 rounded-xl p-3 sm:p-6 space-y-4"
+    >
       {/* Código do Plano (readonly) */}
       <div>
         <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -206,5 +209,3 @@ PackagesEditForm.propTypes = {
 };
 
 export default PackagesEditForm;
-
-

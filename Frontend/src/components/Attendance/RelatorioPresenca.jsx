@@ -52,6 +52,16 @@ function nomeMesAno(mes, ano) {
   return `${nomes[mes - 1]} / ${ano}`;
 }
 
+const DIAS_SEMANA_NUMERO = {
+  Domingo: 0,
+  Segunda: 1,
+  Terça: 2,
+  Quarta: 3,
+  Quinta: 4,
+  Sexta: 5,
+  Sábado: 6,
+};
+
 function RelatorioPresenca() {
   const [alunos, setAlunos] = useState([]);
   const [loadingAlunos, setLoadingAlunos] = useState(false);
@@ -62,14 +72,13 @@ function RelatorioPresenca() {
   const [fim, setFim] = useState("");
   const [relatorio, setRelatorio] = useState(null);
   const [messageToast, showToast] = useToast();
+  const [modalDia, setModalDia] = useState(null);
+  const [diasAgendados, setDiasAgendados] = useState(new Set());
 
   const hojeISO = useMemo(() => new Date().toISOString().slice(0, 10), []);
   const primeiroDiaMesISO = useMemo(() => {
     const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
-      2,
-      "0"
-    )}-01`;
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
   }, []);
 
   useEffect(() => {
@@ -113,13 +122,33 @@ function RelatorioPresenca() {
     setLoadingRelatorio(true);
     try {
       const response = await api.get(
-        `/presenca/relatorio/${alunoCodigo}?inicio=${inicio}&fim=${fim}`
+        `/presenca/relatorio/${alunoCodigo}?inicio=${inicio}&fim=${fim}`,
       );
       setRelatorio(response.data || null);
       showToast({ type: "success", text: "Relatório carregado." });
+
+      // Busca os dias da semana agendados para o aluno
+      try {
+        const agResp = await api.get(`/agendamentos/aluno/${alunoCodigo}`);
+        const agendamentos = agResp.data?.Agendamentos || [];
+        const numerosSet = new Set();
+        for (const ag of agendamentos) {
+          const diaNome = ag.Horario?.Horario_Dia_Semana;
+          if (
+            diaNome !== undefined &&
+            DIAS_SEMANA_NUMERO[diaNome] !== undefined
+          ) {
+            numerosSet.add(DIAS_SEMANA_NUMERO[diaNome]);
+          }
+        }
+        setDiasAgendados(numerosSet);
+      } catch {
+        setDiasAgendados(new Set());
+      }
     } catch (error) {
       if (error.response?.status !== 401) {
         setRelatorio(null);
+        setDiasAgendados(new Set());
         showToast({
           type: "error",
           text:
@@ -169,9 +198,7 @@ function RelatorioPresenca() {
       };
 
       const baseUrl = import.meta.env.BASE_URL || "/";
-      const normalizedBaseUrl = baseUrl.endsWith("/")
-        ? baseUrl
-        : `${baseUrl}/`;
+      const normalizedBaseUrl = baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`;
       const logoPath = `${normalizedBaseUrl}logo.png`;
 
       const carregarLogoDataUrl = async () => {
@@ -206,7 +233,7 @@ function RelatorioPresenca() {
       const inicioMes = new Date(
         dataInicio.getFullYear(),
         dataInicio.getMonth(),
-        1
+        1,
       );
       const fimMes = new Date(dataFim.getFullYear(), dataFim.getMonth(), 1);
 
@@ -229,7 +256,7 @@ function RelatorioPresenca() {
         doc.setFillColor(
           coresPdf.fundo[0],
           coresPdf.fundo[1],
-          coresPdf.fundo[2]
+          coresPdf.fundo[2],
         );
         doc.rect(0, 0, larguraPagina, 210, "F");
 
@@ -237,12 +264,12 @@ function RelatorioPresenca() {
         doc.setFillColor(
           coresPdf.header[0],
           coresPdf.header[1],
-          coresPdf.header[2]
+          coresPdf.header[2],
         );
         doc.setDrawColor(
           coresPdf.header[0],
           coresPdf.header[1],
-          coresPdf.header[2]
+          coresPdf.header[2],
         );
         doc.roundedRect(margem, 8, areaLargura, 26, 2, 2, "FD");
 
@@ -265,28 +292,32 @@ function RelatorioPresenca() {
         doc.setDrawColor(
           coresPdf.borda[0],
           coresPdf.borda[1],
-          coresPdf.borda[2]
+          coresPdf.borda[2],
         );
         doc.roundedRect(margem, 38, areaLargura, 14, 2, 2, "FD");
 
         doc.setFontSize(10);
-        doc.setTextColor(coresPdf.texto[0], coresPdf.texto[1], coresPdf.texto[2]);
+        doc.setTextColor(
+          coresPdf.texto[0],
+          coresPdf.texto[1],
+          coresPdf.texto[2],
+        );
         doc.text(
           `Aluno: ${relatorio.aluno?.Alunos_Codigo} - ${relatorio.aluno?.Alunos_Nome}`,
           margem,
-          43.5
+          43.5,
         );
         doc.setTextColor(
           coresPdf.textoSuave[0],
           coresPdf.textoSuave[1],
-          coresPdf.textoSuave[2]
+          coresPdf.textoSuave[2],
         );
         doc.text(
           `Período: ${formatarDataISOParaBR(
-            relatorio.periodo?.inicio
+            relatorio.periodo?.inicio,
           )} até ${formatarDataISOParaBR(relatorio.periodo?.fim)}`,
           margem,
-          49
+          49,
         );
 
         // Faixa de totais
@@ -294,7 +325,7 @@ function RelatorioPresenca() {
         doc.setDrawColor(
           coresPdf.borda[0],
           coresPdf.borda[1],
-          coresPdf.borda[2]
+          coresPdf.borda[2],
         );
         doc.roundedRect(margem, 55, areaLargura, 10, 2, 2, "FD");
         doc.setFontSize(9);
@@ -306,7 +337,7 @@ function RelatorioPresenca() {
             totais.D || 0
           } | Aulas feitas: ${totais.aulasFeitas || 0}`,
           margem,
-          61
+          61,
         );
 
         let y = 72;
@@ -357,10 +388,12 @@ function RelatorioPresenca() {
           if (!dia) return;
 
           const dataISO = `${ano}-${String(mes).padStart(2, "0")}-${String(
-            dia
+            dia,
           ).padStart(2, "0")}`;
           const registro = (mapaPresencas[dataISO] || [])[0];
-          const sigla = registro ? rotuloStatus(registro.Presenca_Status) : null;
+          const sigla = registro
+            ? rotuloStatus(registro.Presenca_Status)
+            : null;
 
           doc.setFontSize(8);
           doc.setTextColor(148, 163, 184);
@@ -381,19 +414,19 @@ function RelatorioPresenca() {
           if (registro?.Presenca_Data_Reposicao_Referencia) {
             doc.text(
               `R1 ${formatarDataISOParaBR(
-                registro.Presenca_Data_Reposicao_Referencia
+                registro.Presenca_Data_Reposicao_Referencia,
               )}`,
               x + 1.4,
-              yCell + 12
+              yCell + 12,
             );
           }
           if (registro?.Presenca_Data_Reposicao_Referencia_2) {
             doc.text(
               `R2 ${formatarDataISOParaBR(
-                registro.Presenca_Data_Reposicao_Referencia_2
+                registro.Presenca_Data_Reposicao_Referencia_2,
               )}`,
               x + 1.4,
-              yCell + 15
+              yCell + 15,
             );
           }
           if (registro?.Presenca_Observacao) {
@@ -401,11 +434,10 @@ function RelatorioPresenca() {
             doc.text(obs, x + 1.4, yCell + 18);
           }
         });
-
       });
 
       doc.save(
-        `Relatorio_Presenca_${relatorio.aluno?.Alunos_Codigo}_${relatorio.periodo?.inicio}_${relatorio.periodo?.fim}.pdf`
+        `Relatorio_Presenca_${relatorio.aluno?.Alunos_Codigo}_${relatorio.periodo?.inicio}_${relatorio.periodo?.fim}.pdf`,
       );
       showToast({ type: "success", text: "PDF gerado com sucesso." });
     } catch (error) {
@@ -441,7 +473,7 @@ function RelatorioPresenca() {
     const inicioMes = new Date(
       dataInicio.getFullYear(),
       dataInicio.getMonth(),
-      1
+      1,
     );
     const fimMes = new Date(dataFim.getFullYear(), dataFim.getMonth(), 1);
 
@@ -457,6 +489,115 @@ function RelatorioPresenca() {
   return (
     <div className="w-full h-auto">
       {messageToast && <MessageToast messageToast={messageToast} />}
+
+      {/* Modal de descrição do dia */}
+      {modalDia && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ backgroundColor: "rgba(0,0,0,0.7)" }}
+          onClick={() => setModalDia(null)}
+        >
+          <div
+            className="bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl w-full max-w-md p-5 space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-400 uppercase tracking-wide">
+                  Detalhes do dia
+                </p>
+                <h3 className="text-lg font-bold text-white">
+                  {formatarDataISOParaBR(modalDia.dataISO)}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setModalDia(null)}
+                className="text-gray-400 hover:text-white transition-colors p-1 rounded-lg hover:bg-gray-700"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="w-5 h-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            {/* Status */}
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-400">Status:</span>
+              {(() => {
+                const s = rotuloStatus(modalDia.registro?.Presenca_Status);
+                return (
+                  <span
+                    className={`text-sm font-bold px-3 py-1 rounded-full ${classeBadgeStatus(s)}`}
+                  >
+                    {modalDia.registro?.Presenca_Status || "-"}
+                  </span>
+                );
+              })()}
+            </div>
+
+            {/* Referências de reposição */}
+            {modalDia.registro?.Presenca_Data_Reposicao_Referencia && (
+              <div className="bg-gray-800 rounded-lg p-3">
+                <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">
+                  Reposição — Referência 1
+                </p>
+                <p className="text-white text-sm">
+                  {formatarDataISOParaBR(
+                    modalDia.registro.Presenca_Data_Reposicao_Referencia,
+                  )}
+                </p>
+              </div>
+            )}
+            {modalDia.registro?.Presenca_Data_Reposicao_Referencia_2 && (
+              <div className="bg-gray-800 rounded-lg p-3">
+                <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">
+                  Reposição — Referência 2
+                </p>
+                <p className="text-white text-sm">
+                  {formatarDataISOParaBR(
+                    modalDia.registro.Presenca_Data_Reposicao_Referencia_2,
+                  )}
+                </p>
+              </div>
+            )}
+
+            {/* Descrição / Observação */}
+            {modalDia.registro?.Presenca_Observacao && (
+              <div className="bg-amber-950/40 border border-amber-700/50 rounded-lg p-3">
+                <p className="text-xs text-amber-400 uppercase tracking-wide mb-1">
+                  Observação
+                </p>
+                <p className="text-amber-100 text-sm leading-relaxed whitespace-pre-wrap">
+                  {modalDia.registro.Presenca_Observacao}
+                </p>
+              </div>
+            )}
+
+            <div className="pt-1">
+              <button
+                type="button"
+                onClick={() => setModalDia(null)}
+                className="w-full py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-white text-sm font-medium transition-colors"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div
         className="bg-gray-800 rounded-xl p-3 sm:p-6 space-y-4 w-full h-full min-h-[80vh] shadow-lg border-2 border-gray-700"
@@ -616,81 +757,135 @@ function RelatorioPresenca() {
                         <h3 className="text-white font-bold mb-3">
                           {nomeMesAno(mes, ano)}
                         </h3>
-                        <div className="grid grid-cols-7 gap-2 mb-2 text-xs text-gray-400 uppercase">
-                          <div className="text-center">Dom</div>
-                          <div className="text-center">Seg</div>
-                          <div className="text-center">Ter</div>
-                          <div className="text-center">Qua</div>
-                          <div className="text-center">Qui</div>
-                          <div className="text-center">Sex</div>
-                          <div className="text-center">Sab</div>
-                        </div>
+                        <div className="overflow-x-auto">
+                          <div
+                            className="grid grid-cols-7 gap-2 mb-2 text-xs text-gray-400 uppercase"
+                            style={{ minWidth: "350px" }}
+                          >
+                            <div className="text-center">Dom</div>
+                            <div className="text-center">Seg</div>
+                            <div className="text-center">Ter</div>
+                            <div className="text-center">Qua</div>
+                            <div className="text-center">Qui</div>
+                            <div className="text-center">Sex</div>
+                            <div className="text-center">Sab</div>
+                          </div>
 
-                        <div className="grid grid-cols-7 gap-2">
-                          {celulas.map((dia, idx) => {
-                            if (!dia) {
+                          <div
+                            className="grid grid-cols-7 gap-2"
+                            style={{ minWidth: "350px" }}
+                          >
+                            {celulas.map((dia, idx) => {
+                              if (!dia) {
+                                return (
+                                  <div
+                                    key={`vazio-${ano}-${mes}-${idx}`}
+                                    className="min-h-[90px] rounded-lg border border-transparent"
+                                  />
+                                );
+                              }
+
+                              const dataISO = `${ano}-${String(mes).padStart(
+                                2,
+                                "0",
+                              )}-${String(dia).padStart(2, "0")}`;
+                              const registros = presencasPorData[dataISO] || [];
+                              const registro = registros[0];
+                              const sigla = registro
+                                ? rotuloStatus(registro.Presenca_Status)
+                                : null;
+
+                              const diaSemanaNum = new Date(
+                                ano,
+                                mes - 1,
+                                dia,
+                              ).getDay();
+                              const ehDiaAgendado =
+                                diasAgendados.size > 0 &&
+                                diasAgendados.has(diaSemanaNum);
+                              const temDescricao =
+                                !!registro?.Presenca_Observacao;
+
                               return (
                                 <div
-                                  key={`vazio-${ano}-${mes}-${idx}`}
-                                  className="min-h-[90px] rounded-lg border border-transparent"
-                                />
-                              );
-                            }
-
-                            const dataISO = `${ano}-${String(mes).padStart(
-                              2,
-                              "0"
-                            )}-${String(dia).padStart(2, "0")}`;
-                            const registros = presencasPorData[dataISO] || [];
-                            const registro = registros[0];
-                            const sigla = registro
-                              ? rotuloStatus(registro.Presenca_Status)
-                              : null;
-
-                            return (
-                              <div
-                                key={dataISO}
-                                className="min-h-[90px] rounded-lg border border-gray-700 bg-gray-800 p-2 flex flex-col gap-1"
-                              >
-                                <div className="text-xs text-gray-400">
-                                  {dia}
-                                </div>
-                                {sigla && (
+                                  key={dataISO}
+                                  className={`min-h-[90px] rounded-lg border p-2 flex flex-col gap-1 ${
+                                    ehDiaAgendado
+                                      ? "border-indigo-600/60 bg-indigo-950/40"
+                                      : "border-gray-700 bg-gray-800"
+                                  }`}
+                                >
                                   <span
-                                    className={`text-xs font-bold px-2 py-0.5 rounded w-fit ${classeBadgeStatus(
-                                      sigla
-                                    )}`}
+                                    className={`text-xs font-semibold ${
+                                      ehDiaAgendado
+                                        ? "text-indigo-300"
+                                        : "text-gray-400"
+                                    }`}
                                   >
-                                    {sigla}
+                                    {dia}
                                   </span>
-                                )}
-                                {registro?.Presenca_Data_Reposicao_Referencia && (
-                                  <div className="text-[10px] text-gray-300">
-                                    Ref1:{" "}
-                                    {formatarDataISOParaBR(
-                                      registro.Presenca_Data_Reposicao_Referencia
-                                    )}
-                                  </div>
-                                )}
-                                {registro?.Presenca_Data_Reposicao_Referencia_2 && (
-                                  <div className="text-[10px] text-gray-300">
-                                    Ref2:{" "}
-                                    {formatarDataISOParaBR(
-                                      registro.Presenca_Data_Reposicao_Referencia_2
-                                    )}
-                                  </div>
-                                )}
-                                {registro?.Presenca_Observacao && (
-                                  <div className="text-[10px] text-gray-300 leading-tight">
-                                    {String(registro.Presenca_Observacao).slice(
-                                      0,
-                                      36
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })}
+                                  {sigla && (
+                                    <span
+                                      className={`text-xs font-bold px-2 py-0.5 rounded w-fit ${classeBadgeStatus(
+                                        sigla,
+                                      )}`}
+                                    >
+                                      {sigla}
+                                    </span>
+                                  )}
+                                  {temDescricao && (
+                                    <div className="flex justify-center">
+                                      <button
+                                        type="button"
+                                        title="Ver descrição"
+                                        onClick={() =>
+                                          setModalDia({
+                                            registro,
+                                            dataISO,
+                                            dia,
+                                            mes,
+                                            ano,
+                                          })
+                                        }
+                                        className="text-amber-400 hover:text-amber-200 transition-colors"
+                                      >
+                                        <svg
+                                          xmlns="http://www.w3.org/2000/svg"
+                                          className="w-5 h-5"
+                                          fill="none"
+                                          viewBox="0 0 24 24"
+                                          stroke="currentColor"
+                                          strokeWidth={2}
+                                        >
+                                          <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            d="M7 8h10M7 12h6m-6 4h10M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                                          />
+                                        </svg>
+                                      </button>
+                                    </div>
+                                  )}
+                                  {registro?.Presenca_Data_Reposicao_Referencia && (
+                                    <div className="text-[10px] text-gray-300">
+                                      Ref1:{" "}
+                                      {formatarDataISOParaBR(
+                                        registro.Presenca_Data_Reposicao_Referencia,
+                                      )}
+                                    </div>
+                                  )}
+                                  {registro?.Presenca_Data_Reposicao_Referencia_2 && (
+                                    <div className="text-[10px] text-gray-300">
+                                      Ref2:{" "}
+                                      {formatarDataISOParaBR(
+                                        registro.Presenca_Data_Reposicao_Referencia_2,
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
                         </div>
                       </div>
                     );
@@ -724,9 +919,3 @@ function RelatorioPresenca() {
 }
 
 export default RelatorioPresenca;
-
-
-
-
-
-

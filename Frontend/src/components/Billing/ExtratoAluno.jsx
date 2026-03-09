@@ -6,6 +6,17 @@ import CustomSelect from "../miscellaneous/CustomSelect";
 import Buttons from "../miscellaneous/Buttons";
 import useToast from "../../hooks/useToast";
 
+/* ── Calcula a data de início do próximo ciclo (Faturamento_Fim + 1 mês) ── */
+function proximaRenovacaoISO(dataISO) {
+  if (!dataISO) return null;
+  const [ano, mes, dia] = String(dataISO).split("-").map(Number);
+  const d = new Date(ano, mes - 1 + 1, dia); // +1 mês sem problemas de timezone
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${dd}`;
+}
+
 /* ── micro helpers ── */
 function StatusBadge({ status }) {
   if (!status) return null;
@@ -235,7 +246,7 @@ function ExtratoAluno() {
         );
         const ultimoFat = planFatsSorted[planFatsSorted.length - 1];
         const dataRenovacao = ultimoFat?.Faturamento_Fim
-          ? formatarDataBR(ultimoFat.Faturamento_Fim)
+          ? formatarDataBR(proximaRenovacaoISO(ultimoFat.Faturamento_Fim))
           : null;
 
         // Cabeçalho do plano
@@ -523,7 +534,7 @@ function ExtratoAluno() {
         </div>
 
         {/* ── Filters ── */}
-        <div className="flex flex-col sm:flex-row gap-3 items-end">
+        <div className="flex flex-row gap-2 items-end">
           <div className="flex-1 flex flex-col gap-1 min-w-0">
             <label className="text-gray-300 text-sm font-medium">
               Aluno <span className="text-red-400">*</span>
@@ -891,7 +902,9 @@ function ExtratoAluno() {
                                 Próxima renovação:
                               </span>
                               <span className="text-yellow-300 font-semibold">
-                                {formatarDataBR(fat.Faturamento_Fim)}
+                                {formatarDataBR(
+                                  proximaRenovacaoISO(fat.Faturamento_Fim),
+                                )}
                               </span>
                             </span>
                           )}

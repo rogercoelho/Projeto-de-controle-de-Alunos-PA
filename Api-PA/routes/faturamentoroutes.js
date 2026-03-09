@@ -435,69 +435,44 @@ router.patch(
                   ],
                 });
 
-                // Debug
-                console.log(
-                  "[contador] aluno",
-                  alunoCodigo,
-                  "plano",
-                  planoCodigo,
-                );
-                console.log(
-                  "[contador] registroAnterior id:",
-                  registroAnterior
-                    ? registroAnterior.id || registroAnterior.Faturamento_ID
-                    : null,
-                );
-                console.log(
-                  "[contador] registroAnterior contador:",
-                  registroAnterior
-                    ? registroAnterior.Faturamento_Contador
-                    : null,
-                );
-
-                const contadorAtual =
-                  registroAnterior &&
-                  registroAnterior.Faturamento_Contador != null
-                    ? parseInt(registroAnterior.Faturamento_Contador, 10)
-                    : 0;
-
                 const limite =
                   planoConfig.Plano_Contador_Limite != null
                     ? parseInt(planoConfig.Plano_Contador_Limite, 10)
                     : null;
 
-                // Nova sequência desejada:
-                // - Se o registro anterior já estava no limite, zera o anterior e grava 1 no novo registro.
-                // - Caso contrário, grava contador = registroAnterior.contador + 1 no novo registro.
-                // - Se o novo registro atinge o limite (==), grava também o repasse no novo registro (mantendo o contador nesse valor).
-                if (
+                const prevContador =
                   registroAnterior &&
-                  registroAnterior.Faturamento_Contador != null &&
-                  limite !== null &&
-                  parseInt(registroAnterior.Faturamento_Contador, 10) === limite
-                ) {
-                  // Registro anterior estava no limite: não alteramos históricos.
-                  // Gravamos contador = 1 no novo registro.
-                  await faturamentoDepois.update({ Faturamento_Contador: 1 });
-                } else {
-                  // incremento normal
-                  const novoContador = contadorAtual + 1;
+                  registroAnterior.Faturamento_Contador != null
+                    ? parseInt(registroAnterior.Faturamento_Contador, 10)
+                    : 0;
 
-                  if (limite !== null && novoContador === limite) {
-                    // atinge o limite: grava repasse e mantém o contador no valor do limite
-                    await faturamentoDepois.update({
-                      Faturamento_Repasse:
-                        planoConfig.Plano_Wet_Valor != null
-                          ? planoConfig.Plano_Wet_Valor
-                          : null,
-                      Faturamento_Contador: novoContador,
-                    });
-                  } else {
-                    await faturamentoDepois.update({
-                      Faturamento_Contador: novoContador,
-                    });
-                  }
+                // Se o ciclo anterior fechou (prevContador >= limite), reinicia do zero.
+                // Caso contrário, continua a partir do contador anterior.
+                const baseContador =
+                  limite !== null && prevContador >= limite ? 0 : prevContador;
+
+                const novoContador = baseContador + 1;
+
+                // Lógica:
+                // - contador vai de 1 até o limite
+                // - ao atingir o limite, grava o repasse neste registro (que será exibido
+                //   no relatório WET do mês seguinte) e o ciclo estará encerrado
+                // - no próximo pagamento o baseContador volta a 0 → inicia novo ciclo
+                const atingiuLimite = limite !== null && novoContador >= limite;
+
+                const updatePayload = { Faturamento_Contador: novoContador };
+                if (atingiuLimite) {
+                  updatePayload.Faturamento_Repasse =
+                    planoConfig.Plano_Wet_Valor != null
+                      ? planoConfig.Plano_Wet_Valor
+                      : null;
                 }
+
+                await faturamentoDepois.update(updatePayload);
+
+                console.log(
+                  `[contador] aluno ${alunoCodigo} plano ${planoCodigo}: prev=${prevContador} base=${baseContador} novo=${novoContador} limite=${limite} repasse=${atingiuLimite}`,
+                );
               }
             }
           } catch (contadorErr) {

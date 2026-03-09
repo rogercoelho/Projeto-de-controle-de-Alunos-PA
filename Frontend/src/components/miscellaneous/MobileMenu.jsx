@@ -545,7 +545,7 @@ function MobileMenu({ onNavigate, ehAdmin }) {
             <div
               className={`overflow-hidden transition-all duration-300 ease-in-out ${
                 menuRelatoriosAberto
-                  ? "max-h-96 opacity-100"
+                  ? "max-h-[32rem] opacity-100"
                   : "max-h-0 opacity-0"
               }`}
             >
@@ -634,6 +634,28 @@ function MobileMenu({ onNavigate, ehAdmin }) {
                     />
                   </svg>
                   <span className="font-medium">Relatório Mensal (WET)</span>
+                </button>
+
+                <button
+                  onClick={() =>
+                    handleNavigation("Relatorios", "RenovacoesPendentes")
+                  }
+                  className="w-full flex items-center gap-3 px-4 py-3 bg-indigo-900/30 hover:bg-indigo-800/40 active:bg-indigo-700/50 rounded-lg text-white text-left transition-all border border-indigo-800/50"
+                >
+                  <svg
+                    className="w-5 h-5 shrink-0"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                  <span className="font-medium">Renovações Pendentes</span>
                 </button>
               </div>
             </div>

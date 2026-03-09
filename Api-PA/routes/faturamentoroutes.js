@@ -91,23 +91,55 @@ router.get("/pendentes", async (req, res) => {
   try {
     const pendentes = await Alunos_Faturamento.findAll({
       where: { Faturamento_Data_Pagamento: null },
-      attributes: ["Aluno_Codigo"],
-      group: ["Aluno_Codigo"],
+      attributes: ["Aluno_Codigo", "Plano_Codigo", "Faturamento_Fim"],
       raw: true,
     });
 
-    // Busca os dados dos alunos na tabela Alunos_Cadastros
-    const codigos = pendentes.map((p) => p.Aluno_Codigo);
-    let alunos = [];
+    // Deduplica por Aluno_Codigo + Plano_Codigo, mantendo o Faturamento_Fim mais recente
+    const deduped = {};
+    for (const p of pendentes) {
+      const key = `${p.Aluno_Codigo}|${p.Plano_Codigo}`;
+      if (!deduped[key] || p.Faturamento_Fim > deduped[key].Faturamento_Fim) {
+        deduped[key] = p;
+      }
+    }
+    const unicos = Object.values(deduped);
+
+    // Busca apenas alunos Ativos
+    const codigos = [...new Set(unicos.map((p) => p.Aluno_Codigo))];
+    let alunosInfo = [];
     if (codigos.length > 0) {
-      alunos = await Alunos_Cadastros.findAll({
-        where: { Alunos_Codigo: codigos },
-        attributes: ["Alunos_Codigo", "Alunos_Nome"],
+      alunosInfo = await Alunos_Cadastros.findAll({
+        where: { Alunos_Codigo: codigos, Alunos_Situacao: "Ativo" },
+        attributes: [
+          "Alunos_Codigo",
+          "Alunos_Nome",
+          "Alunos_CPF",
+          "Alunos_Telefone",
+        ],
         raw: true,
       });
     }
 
-    res.json({ alunos });
+    // Filtra apenas os registros cujo aluno é Ativo
+    const alunosAtivos = new Set(alunosInfo.map((a) => a.Alunos_Codigo));
+    const resultado = unicos
+      .filter((fat) => alunosAtivos.has(fat.Aluno_Codigo))
+      .map((fat) => {
+        const aluno = alunosInfo.find(
+          (a) => a.Alunos_Codigo === fat.Aluno_Codigo,
+        );
+        return {
+          Alunos_Codigo: fat.Aluno_Codigo,
+          Alunos_Nome: aluno.Alunos_Nome || null,
+          Alunos_CPF: aluno.Alunos_CPF || null,
+          Alunos_Telefone: aluno.Alunos_Telefone || null,
+          Plano_Codigo: fat.Plano_Codigo,
+          Faturamento_Fim: fat.Faturamento_Fim,
+        };
+      });
+
+    res.json({ alunos: resultado });
   } catch (error) {
     res.status(500).json({ Erro: "Erro ao buscar alunos com pendências." });
   }
@@ -649,25 +681,28 @@ router.get("/relatorio-mensal/:mes/:ano", async (req, res) => {
 
 module.exports = router;
 
-// Rota para buscar alunos com planos vencendo no mês atual
+// Rota para buscar alunos com renovação pendente
+// Lógica: planos cujo Faturamento_Fim já passou (até fim do mês atual) e não foram renovados
 router.get("/expirando", async (req, res) => {
   try {
     const { Op } = require("sequelize");
     const hoje = new Date();
     const ano = hoje.getFullYear();
-    const mes = hoje.getMonth() + 1; // 1-12
+    const mes = hoje.getMonth() + 1;
 
-    const primeiroDia = `${ano}-${String(mes).padStart(2, "0")}-01`;
+    // Fim do mês atual
     const ultimoDiaDate = new Date(ano, mes, 0);
-    const ultimoDia = `${ano}-${String(mes).padStart(2, "0")}-${String(
-      ultimoDiaDate.getDate(),
-    ).padStart(2, "0")}`;
+    const fimMesAtual = `${ano}-${String(mes).padStart(2, "0")}-${String(ultimoDiaDate.getDate()).padStart(2, "0")}`;
 
-    // Busca faturamentos cujo Faturamento_Fim esteja dentro do mês atual
+    // Lookback de 6 meses para não trazer registros muito antigos
+    const lookbackDate = new Date(ano, mes - 1 - 6, 1);
+    const lookbackISO = `${lookbackDate.getFullYear()}-${String(lookbackDate.getMonth() + 1).padStart(2, "0")}-01`;
+
+    // Busca todos os faturamentos dentro da janela de lookback até fim do mês atual
     const faturamentos = await Alunos_Faturamento.findAll({
       where: {
         Faturamento_Fim: {
-          [Op.between]: [primeiroDia, ultimoDia],
+          [Op.between]: [lookbackISO, fimMesAtual],
         },
       },
       raw: true,
@@ -677,10 +712,74 @@ router.get("/expirando", async (req, res) => {
       return res.json({ alunos: [] });
     }
 
-    // Busca dados dos alunos relacionados
-    const codigosAlunos = [...new Set(faturamentos.map((f) => f.Aluno_Codigo))];
+    // Agrupa por Aluno_Codigo + Plano_Codigo, mantendo o Faturamento_Fim mais recente
+    const mapLatest = {};
+    for (const f of faturamentos) {
+      const key = `${f.Aluno_Codigo}|${f.Plano_Codigo}`;
+      if (
+        !mapLatest[key] ||
+        f.Faturamento_Fim > mapLatest[key].Faturamento_Fim
+      ) {
+        mapLatest[key] = f;
+      }
+    }
+    const candidates = Object.values(mapLatest);
+
+    // Para cada candidato, verifica se existe registro mais novo (Faturamento_Inicio > Faturamento_Fim)
+    // indicando que o plano já foi renovado
+    const alunosCodigos = [...new Set(candidates.map((c) => c.Aluno_Codigo))];
+    const todosFaturamentos = await Alunos_Faturamento.findAll({
+      where: { Aluno_Codigo: alunosCodigos },
+      attributes: [
+        "Aluno_Codigo",
+        "Plano_Codigo",
+        "Faturamento_Inicio",
+        "Faturamento_Fim",
+      ],
+      raw: true,
+    });
+
+    const semRenovacao = candidates.filter((fat) => {
+      // Se o aluno tem QUALQUER plano (mesmo código diferente) com início igual ou após
+      // o fim deste plano, considera que renovou
+      return !todosFaturamentos.some(
+        (f) =>
+          f.Aluno_Codigo === fat.Aluno_Codigo &&
+          f.Faturamento_Inicio >= fat.Faturamento_Fim,
+      );
+    });
+
+    if (semRenovacao.length === 0) {
+      return res.json({ alunos: [] });
+    }
+
+    // Exclui alunos que já possuem pagamento pendente (eles aparecem apenas na seção "pendentes")
+    const codigosComPendencia = new Set(
+      (
+        await Alunos_Faturamento.findAll({
+          where: {
+            Aluno_Codigo: [...new Set(semRenovacao.map((f) => f.Aluno_Codigo))],
+            Faturamento_Data_Pagamento: null,
+          },
+          attributes: ["Aluno_Codigo"],
+          raw: true,
+        })
+      ).map((f) => f.Aluno_Codigo),
+    );
+    const semRenovacaoSemPendencia = semRenovacao.filter(
+      (fat) => !codigosComPendencia.has(fat.Aluno_Codigo),
+    );
+
+    if (semRenovacaoSemPendencia.length === 0) {
+      return res.json({ alunos: [] });
+    }
+
+    // Busca apenas alunos Ativos
+    const codigosFinais = [
+      ...new Set(semRenovacaoSemPendencia.map((f) => f.Aluno_Codigo)),
+    ];
     const alunos = await Alunos_Cadastros.findAll({
-      where: { Alunos_Codigo: codigosAlunos },
+      where: { Alunos_Codigo: codigosFinais, Alunos_Situacao: "Ativo" },
       attributes: [
         "Alunos_Codigo",
         "Alunos_Nome",
@@ -690,20 +789,22 @@ router.get("/expirando", async (req, res) => {
       raw: true,
     });
 
-    // Junta faturamento relevante com aluno
-    const resultado = faturamentos.map((fat) => {
-      const aluno =
-        alunos.find((a) => a.Alunos_Codigo === fat.Aluno_Codigo) || {};
-      return {
-        Alunos_Codigo: fat.Aluno_Codigo,
-        Alunos_Nome: aluno.Alunos_Nome || null,
-        Alunos_CPF: aluno.Alunos_CPF || null,
-        Alunos_Telefone: aluno.Alunos_Telefone || null,
-        Plano_Codigo: fat.Plano_Codigo,
-        Faturamento_Fim: fat.Faturamento_Fim,
-        Faturamento_ID: fat.id || fat.Faturamento_ID,
-      };
-    });
+    // Filtra apenas os registros cujo aluno é Ativo
+    const alunosAtivos = new Set(alunos.map((a) => a.Alunos_Codigo));
+    const resultado = semRenovacaoSemPendencia
+      .filter((fat) => alunosAtivos.has(fat.Aluno_Codigo))
+      .map((fat) => {
+        const aluno = alunos.find((a) => a.Alunos_Codigo === fat.Aluno_Codigo);
+        return {
+          Alunos_Codigo: fat.Aluno_Codigo,
+          Alunos_Nome: aluno.Alunos_Nome || null,
+          Alunos_CPF: aluno.Alunos_CPF || null,
+          Alunos_Telefone: aluno.Alunos_Telefone || null,
+          Plano_Codigo: fat.Plano_Codigo,
+          Faturamento_Fim: fat.Faturamento_Fim,
+          Faturamento_ID: fat.id || fat.Faturamento_ID,
+        };
+      });
 
     res.json({ alunos: resultado });
   } catch (error) {

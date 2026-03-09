@@ -12,6 +12,7 @@ import RegistrarPagamento from "./components/Billing/RegistrarPagamento";
 import ExtratoAluno from "./components/Billing/ExtratoAluno";
 import Relatorio_PA from "./components/Billing/Relatorio_PA";
 import Relatorio_WET from "./components/Billing/Relatorio_WET";
+import RenovacoesPendentes from "./components/Billing/RenovacoesPendentes";
 import RegistrarPresenca from "./components/Attendance/RegistrarPresenca";
 import RelatorioPresenca from "./components/Attendance/RelatorioPresenca";
 import ControleHorarios from "./components/Classes/ControleHorarios";
@@ -40,6 +41,7 @@ function App() {
   const [messageToast, showToast] = useToast();
   const [expiringList, setExpiringList] = useState([]);
   const [showExpiring, setShowExpiring] = useState(false);
+  const [extratoAlunoInicial, setExtratoAlunoInicial] = useState(null);
 
   // Token expiry countdown component
   const TokenExpiry = () => {
@@ -102,13 +104,24 @@ function App() {
       setEhAdmin(isAdmin());
     };
     window.addEventListener("login", updateUserState);
-    // Ao logar, buscar alunos com planos vencendo no mes
+    // Ao logar, buscar alunos com planos vencendo no mes e pagamentos pendentes
     const handleLoginFetchExpiring = async () => {
       try {
-        const res = await api.get("/faturamento/expirando");
-        const alunos = res.data?.alunos || [];
-        if (alunos && alunos.length > 0) {
-          setExpiringList(alunos);
+        const [resExp, resPend] = await Promise.all([
+          api.get("/faturamento/expirando"),
+          api.get("/faturamento/pendentes"),
+        ]);
+        const renovacao = (resExp.data?.alunos || []).map((i) => ({
+          ...i,
+          tipo: "renovacao",
+        }));
+        const pendentes = (resPend.data?.alunos || []).map((i) => ({
+          ...i,
+          tipo: "pendente",
+        }));
+        const combined = [...renovacao, ...pendentes];
+        if (combined.length > 0) {
+          setExpiringList(combined);
           setShowExpiring(true);
         }
       } catch (err) {
@@ -336,16 +349,29 @@ function App() {
                           <RelatorioPresenca key="relatorio-presenca" />
                         )}
                       {activeComponent === "Relatorios" &&
-                        activeComponent2 === "ExtratoAluno" && (
-                          <ExtratoAluno key="extrato-aluno" />
-                        )}
-                      {activeComponent === "Relatorios" &&
                         activeComponent2 === "RelatorioMensalPA" && (
                           <Relatorio_PA key="relatorio-mensal-pa" />
                         )}
                       {activeComponent === "Relatorios" &&
                         activeComponent2 === "RelatorioMensalWET" && (
                           <Relatorio_WET key="relatorio-mensal-wet" />
+                        )}
+                      {activeComponent === "Relatorios" &&
+                        activeComponent2 === "RenovacoesPendentes" && (
+                          <RenovacoesPendentes
+                            key="renovacoes-pendentes"
+                            onAbrirExtrato={(codigo) => {
+                              setExtratoAlunoInicial(codigo);
+                              handleNavigate("Relatorios", "ExtratoAluno");
+                            }}
+                          />
+                        )}
+                      {activeComponent === "Relatorios" &&
+                        activeComponent2 === "ExtratoAluno" && (
+                          <ExtratoAluno
+                            key={`extrato-aluno-${extratoAlunoInicial}`}
+                            initialAlunoCodigo={extratoAlunoInicial}
+                          />
                         )}
                       {activeComponent === "Presenca" &&
                         activeComponent2 === "RegistrarPresenca" && (

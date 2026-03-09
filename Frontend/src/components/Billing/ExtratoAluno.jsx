@@ -10,11 +10,13 @@ import useToast from "../../hooks/useToast";
 function proximaRenovacaoISO(dataISO) {
   if (!dataISO) return null;
   const [ano, mes, dia] = String(dataISO).split("-").map(Number);
-  const d = new Date(ano, mes - 1 + 1, dia); // +1 mês sem problemas de timezone
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${dd}`;
+  // Calcula o mês alvo (1-based) e ano alvo
+  const anoAlvo = mes === 12 ? ano + 1 : ano;
+  const mesAlvo = mes === 12 ? 1 : mes + 1;
+  // Clamp ao último dia do mês alvo (evita overflow: ex. 31/jan → 28/fev, não 03/mar)
+  const ultimoDia = new Date(anoAlvo, mesAlvo, 0).getDate();
+  const diaAlvo = Math.min(dia, ultimoDia);
+  return `${anoAlvo}-${String(mesAlvo).padStart(2, "0")}-${String(diaAlvo).padStart(2, "0")}`;
 }
 
 /* ── micro helpers ── */
@@ -67,8 +69,10 @@ function StatCard({ icon, label, value, colorClass }) {
   );
 }
 
-function ExtratoAluno() {
-  const [codigoAluno, setCodigoAluno] = useState("");
+function ExtratoAluno({ initialAlunoCodigo } = {}) {
+  const [codigoAluno, setCodigoAluno] = useState(
+    initialAlunoCodigo ? String(initialAlunoCodigo) : "",
+  );
   const [alunos, setAlunos] = useState([]);
   const [loading, setLoading] = useState(false);
   const [loadingPdf, setLoadingPdf] = useState(false);
@@ -88,6 +92,19 @@ function ExtratoAluno() {
     };
     fetchAlunos();
   }, []);
+
+  // Auto-carregar extrato quando initialAlunoCodigo for fornecido
+  useEffect(() => {
+    if (initialAlunoCodigo) {
+      setLoading(true);
+      setExtrato(null);
+      api
+        .get(`/faturamento/extrato/${initialAlunoCodigo}/all`)
+        .then((res) => setExtrato(res.data))
+        .catch(() => {})
+        .finally(() => setLoading(false));
+    }
+  }, [initialAlunoCodigo]);
 
   const handleExtrato = async () => {
     if (!codigoAluno) {

@@ -62,11 +62,22 @@ const Alunos_Faturamento = db.sequelizeconnection.define(
       allowNull: true,
       comment: "Caminho do arquivo do comprovante de pagamento",
     },
+    Faturamento_Cancelado: {
+      type: db.Sequelize.BOOLEAN,
+      allowNull: true,
+      defaultValue: false,
+      comment: "Indica se o plano foi cancelado neste faturamento",
+    },
+    Faturamento_Cancelado_Em: {
+      type: db.Sequelize.DATEONLY,
+      allowNull: true,
+      comment: "Data em que o cancelamento foi realizado",
+    },
   },
   {
     timestamps: false,
     tableName: "Alunos_Faturamento",
-  }
+  },
 );
 
 Alunos_Faturamento.sync({ force: false });

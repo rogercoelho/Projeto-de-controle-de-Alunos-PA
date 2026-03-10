@@ -23,6 +23,7 @@ import MobileMenu from "./components/miscellaneous/MobileMenu";
 import { logout, getUsuario, isAdmin, getToken } from "./services/auth";
 import api from "./services/api";
 import ExpiringModal from "./components/miscellaneous/ExpiringModal";
+import SessionWarningModal from "./components/miscellaneous/SessionWarningModal";
 
 import useToast from "./hooks/useToast";
 import MessageToast from "./components/miscellaneous/MessageToast";
@@ -42,10 +43,32 @@ function App() {
   const [expiringList, setExpiringList] = useState([]);
   const [showExpiring, setShowExpiring] = useState(false);
   const [extratoAlunoInicial, setExtratoAlunoInicial] = useState(null);
+  const [showSessionWarning, setShowSessionWarning] = useState(false);
+  const [renewingSession, setRenewingSession] = useState(false);
+  const sessionWarningFiredRef = { current: false };
+
+  const handleRenewSession = async () => {
+    setRenewingSession(true);
+    try {
+      const res = await api.post("/auth/refresh");
+      const { token } = res.data;
+      localStorage.setItem("token", token);
+      sessionWarningFiredRef.current = false;
+      setShowSessionWarning(false);
+      showToast({ type: "success", text: "Sessão renovada por mais 1 hora!" });
+      // Força remontagem do TokenExpiry para ler o novo token
+      window.dispatchEvent(new Event("session-renewed"));
+    } catch {
+      showToast({ type: "error", text: "Erro ao renovar sessão." });
+    } finally {
+      setRenewingSession(false);
+    }
+  };
 
   // Token expiry countdown component
   const TokenExpiry = () => {
     const [remaining, setRemaining] = useState(null);
+    const [, forceUpdate] = useState(0);
 
     const decodeExp = (token) => {
       if (!token) return null;
@@ -61,9 +84,19 @@ function App() {
     };
 
     useEffect(() => {
+      // Relê o token quando a sessão for renovada
+      const onRenewed = () => forceUpdate((n) => n + 1);
+      window.addEventListener("session-renewed", onRenewed);
+      return () => window.removeEventListener("session-renewed", onRenewed);
+    }, []);
+
+    useEffect(() => {
       const token = getToken();
       const expMs = decodeExp(token);
       if (!expMs) return;
+
+      // Reinicia o controle do aviso ao reler o token
+      sessionWarningFiredRef.current = false;
 
       const update = () => {
         const diff = Math.max(0, Math.floor((expMs - Date.now()) / 1000));
@@ -72,13 +105,17 @@ function App() {
           window.dispatchEvent(
             new CustomEvent("token-expired", { detail: "Sua sessão expirou." }),
           );
+        } else if (diff <= 180 && !sessionWarningFiredRef.current) {
+          sessionWarningFiredRef.current = true;
+          setShowSessionWarning(true);
         }
       };
 
       update();
       const iv = setInterval(update, 1000);
       return () => clearInterval(iv);
-    }, []);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [forceUpdate]);
 
     if (remaining === null) return null;
     const mm = String(Math.floor(remaining / 60)).padStart(2, "0");
@@ -191,6 +228,12 @@ function App() {
         open={showExpiring}
         onClose={() => setShowExpiring(false)}
         items={expiringList}
+      />
+      <SessionWarningModal
+        open={showSessionWarning}
+        onClose={() => setShowSessionWarning(false)}
+        onRenew={handleRenewSession}
+        loading={renewingSession}
       />
       <Routes>
         <Route path="/security/login" element={<Login />} />

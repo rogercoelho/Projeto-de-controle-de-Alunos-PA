@@ -79,6 +79,8 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
   const [extrato, setExtrato] = useState(null);
   const [messageToast, showToast] = useToast();
   const [comprovanteModal, setComprovanteModal] = useState(null);
+  const [cancelando, setCancelando] = useState(null);
+  const [confirmCancelModal, setConfirmCancelModal] = useState(null); // fatId pendente de confirmação
 
   // Buscar todos os alunos ao montar
   useEffect(() => {
@@ -105,6 +107,32 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
         .finally(() => setLoading(false));
     }
   }, [initialAlunoCodigo]);
+
+  const handleCancelarPlano = (fatId) => {
+    setConfirmCancelModal(fatId);
+  };
+
+  const handleConfirmarCancelamento = async () => {
+    const fatId = confirmCancelModal;
+    setConfirmCancelModal(null);
+    setCancelando(fatId);
+    try {
+      await api.patch(`/faturamento/cancelar-plano/${fatId}`);
+      showToast({ type: "success", text: "Plano cancelado com sucesso!" });
+      // Recarregar extrato
+      const res = await api.get(`/faturamento/extrato/${codigoAluno}/all`);
+      setExtrato(res.data);
+    } catch (error) {
+      if (error?.response?.status !== 401) {
+        showToast({
+          type: "error",
+          text: error?.response?.data?.Erro || "Erro ao cancelar plano.",
+        });
+      }
+    } finally {
+      setCancelando(null);
+    }
+  };
 
   const handleExtrato = async () => {
     if (!codigoAluno) {
@@ -678,6 +706,7 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
                 return contratacoes.map(({ plano, fat }, cardIdx) => {
                   const fatId = fat.id || fat.Faturamento_ID;
                   const isPago = !!fat.Faturamento_Data_Pagamento;
+                  const isCancelado = !!fat.Faturamento_Cancelado;
                   const fatMeses = gerarMesesFaturamento(
                     [fat],
                     plano.Plano_Pagamento,
@@ -689,6 +718,27 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
                     parseFloat(fat.Faturamento_Valor_Total) || 0;
                   const desconto = parseFloat(fat.Faturamento_Desconto) || 0;
                   const valorLiquido = valorBruto - desconto;
+
+                  // Calcula mês/ano do cancelamento para exibir linhas de cancelamento
+                  const canceladoPartes = fat.Faturamento_Cancelado_Em
+                    ? String(fat.Faturamento_Cancelado_Em)
+                        .split("T")[0]
+                        .split("-")
+                    : null;
+                  const canceladoAno = canceladoPartes
+                    ? parseInt(canceladoPartes[0], 10)
+                    : null;
+                  const canceladoMes = canceladoPartes
+                    ? parseInt(canceladoPartes[1], 10)
+                    : null;
+
+                  // Verifica se o plano tem meses futuros ao mês atual (para exibir botão de cancelar)
+                  const hoje = new Date();
+                  const mesAtualNum = hoje.getFullYear() * 12 + hoje.getMonth();
+                  const temMesFuturo = fatMesesSorted.some(([, m]) => {
+                    const [mAno, mMes] = m.mesAno.split("-").map(Number);
+                    return mAno * 12 + (mMes - 1) > mesAtualNum;
+                  });
 
                   return (
                     <div
@@ -705,6 +755,11 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
                                 {plano.Plano_Codigo}
                               </span>
                             </div>
+                            {isCancelado && (
+                              <span className="inline-flex items-center gap-1 bg-red-900/50 text-red-300 border border-red-700/50 rounded-full px-2 py-0.5 text-xs font-semibold">
+                                🚫 Cancelado
+                              </span>
+                            )}
                             <div>
                               <h4 className="text-white font-bold text-base leading-none">
                                 {plano.Plano_Nome}
@@ -807,91 +862,149 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
                               </tr>
                             </thead>
                             <tbody>
-                              {fatMesesSorted.map(([key, m], rowIdx) => (
-                                <tr
-                                  key={key}
-                                  className={`border-b border-gray-800 transition-colors duration-100 ${
-                                    rowIdx % 2 === 0
-                                      ? "bg-gray-900"
-                                      : "bg-gray-900/60"
-                                  } ${
-                                    m.pago
-                                      ? "hover:bg-emerald-900/15"
-                                      : "hover:bg-amber-900/15"
-                                  }`}
-                                >
-                                  <td className="px-3 py-2 whitespace-nowrap">
-                                    <span className="text-purple-400 font-semibold">
-                                      {m.parcela}/{m.totalParcelas}
-                                    </span>
-                                  </td>
-                                  <td className="px-3 py-2 text-white font-medium whitespace-nowrap">
-                                    {nomeMes(m.mesAno)}
-                                  </td>
-                                  <td className="px-3 py-2 text-gray-300 text-right font-mono whitespace-nowrap">
-                                    R$ {m.valor.toFixed(2)}
-                                  </td>
-                                  <td className="px-3 py-2 text-right whitespace-nowrap">
-                                    {m.desconto > 0 ? (
-                                      <span className="text-amber-400 font-mono text-xs">
-                                        −R$ {m.desconto.toFixed(2)}
-                                      </span>
-                                    ) : (
-                                      <span className="text-gray-600">—</span>
-                                    )}
-                                  </td>
-                                  <td className="px-3 py-2 text-right whitespace-nowrap">
-                                    <span className="text-emerald-400 font-mono font-semibold">
-                                      R$ {(m.valor - m.desconto).toFixed(2)}
-                                    </span>
-                                  </td>
-                                  <td className="px-3 py-2 text-center whitespace-nowrap">
-                                    {m.pago ? (
-                                      <span className="inline-flex items-center gap-1 bg-emerald-900/50 text-emerald-300 border border-emerald-700/50 rounded-full px-2 py-0.5 text-xs font-semibold">
-                                        ✓ Pago
-                                      </span>
-                                    ) : (
-                                      <span className="inline-flex items-center gap-1 bg-amber-900/50 text-amber-300 border border-amber-700/50 rounded-full px-2 py-0.5 text-xs font-semibold">
-                                        ⏳ Pendente
-                                      </span>
-                                    )}
-                                  </td>
-                                  <td className="px-3 py-2 text-sm whitespace-nowrap">
-                                    {m.dataPagamento ? (
-                                      <span className="text-gray-300">
-                                        {formatarDataBR(m.dataPagamento)}
-                                      </span>
-                                    ) : (
-                                      <span className="text-gray-600">—</span>
-                                    )}
-                                  </td>
-                                  <td className="px-3 py-2 text-gray-400 text-xs max-w-[140px]">
-                                    {m.motivo ? (
-                                      <span
-                                        className="line-clamp-2"
-                                        title={m.motivo}
+                              {fatMesesSorted.map(([key, m], rowIdx) => {
+                                const [mAno, mMes] = m.mesAno
+                                  .split("-")
+                                  .map(Number);
+                                const ehMesCancelado =
+                                  isCancelado &&
+                                  canceladoAno !== null &&
+                                  canceladoMes !== null &&
+                                  (mAno > canceladoAno ||
+                                    (mAno === canceladoAno &&
+                                      mMes > canceladoMes));
+
+                                return (
+                                  <>
+                                    <tr
+                                      key={key}
+                                      className={`border-b border-gray-800 transition-colors duration-100 ${
+                                        rowIdx % 2 === 0
+                                          ? "bg-gray-900"
+                                          : "bg-gray-900/60"
+                                      } ${
+                                        m.pago
+                                          ? "hover:bg-emerald-900/15"
+                                          : "hover:bg-amber-900/15"
+                                      }`}
+                                    >
+                                      <td className="px-3 py-2 whitespace-nowrap">
+                                        <span className="text-purple-400 font-semibold">
+                                          {m.parcela}/{m.totalParcelas}
+                                        </span>
+                                      </td>
+                                      <td className="px-3 py-2 text-white font-medium whitespace-nowrap">
+                                        {nomeMes(m.mesAno)}
+                                      </td>
+                                      <td className="px-3 py-2 text-gray-300 text-right font-mono whitespace-nowrap">
+                                        R$ {m.valor.toFixed(2)}
+                                      </td>
+                                      <td className="px-3 py-2 text-right whitespace-nowrap">
+                                        {m.desconto > 0 ? (
+                                          <span className="text-amber-400 font-mono text-xs">
+                                            −R$ {m.desconto.toFixed(2)}
+                                          </span>
+                                        ) : (
+                                          <span className="text-gray-600">
+                                            —
+                                          </span>
+                                        )}
+                                      </td>
+                                      <td className="px-3 py-2 text-right whitespace-nowrap">
+                                        <span className="text-emerald-400 font-mono font-semibold">
+                                          R$ {(m.valor - m.desconto).toFixed(2)}
+                                        </span>
+                                      </td>
+                                      <td className="px-3 py-2 text-center whitespace-nowrap">
+                                        {m.pago ? (
+                                          <span className="inline-flex items-center gap-1 bg-emerald-900/50 text-emerald-300 border border-emerald-700/50 rounded-full px-2 py-0.5 text-xs font-semibold">
+                                            ✓ Pago
+                                          </span>
+                                        ) : (
+                                          <span className="inline-flex items-center gap-1 bg-amber-900/50 text-amber-300 border border-amber-700/50 rounded-full px-2 py-0.5 text-xs font-semibold">
+                                            ⏳ Pendente
+                                          </span>
+                                        )}
+                                      </td>
+                                      <td className="px-3 py-2 text-sm whitespace-nowrap">
+                                        {m.dataPagamento ? (
+                                          <span className="text-gray-300">
+                                            {formatarDataBR(m.dataPagamento)}
+                                          </span>
+                                        ) : (
+                                          <span className="text-gray-600">
+                                            —
+                                          </span>
+                                        )}
+                                      </td>
+                                      <td className="px-3 py-2 text-gray-400 text-xs max-w-[140px]">
+                                        {m.motivo ? (
+                                          <span
+                                            className="line-clamp-2"
+                                            title={m.motivo}
+                                          >
+                                            {m.motivo}
+                                          </span>
+                                        ) : (
+                                          <span className="text-gray-600">
+                                            —
+                                          </span>
+                                        )}
+                                      </td>
+                                      <td className="px-3 py-2 text-center">
+                                        {m.comprovante ? (
+                                          <Buttons.BotaoComprovante
+                                            onClick={() =>
+                                              setComprovanteModal(m.comprovante)
+                                            }
+                                          />
+                                        ) : (
+                                          <span className="text-gray-600 text-xs">
+                                            —
+                                          </span>
+                                        )}
+                                      </td>
+                                    </tr>
+                                    {ehMesCancelado && (
+                                      <tr
+                                        key={`${key}-cancel`}
+                                        className="border-b border-red-900/40 bg-red-950/20"
                                       >
-                                        {m.motivo}
-                                      </span>
-                                    ) : (
-                                      <span className="text-gray-600">—</span>
+                                        <td className="px-3 py-2 whitespace-nowrap">
+                                          <span className="text-red-400 font-semibold">
+                                            {m.parcela}/{m.totalParcelas}
+                                          </span>
+                                        </td>
+                                        <td className="px-3 py-2 text-red-300 font-medium whitespace-nowrap">
+                                          {nomeMes(m.mesAno)}
+                                        </td>
+                                        <td className="px-3 py-2 text-red-400 text-right font-mono whitespace-nowrap">
+                                          −R${" "}
+                                          {(m.valor - m.desconto).toFixed(2)}
+                                        </td>
+                                        <td className="px-3 py-2 text-right whitespace-nowrap">
+                                          <span className="text-gray-600">
+                                            —
+                                          </span>
+                                        </td>
+                                        <td className="px-3 py-2 text-right whitespace-nowrap">
+                                          <span className="text-red-400 font-mono font-semibold">
+                                            R$ 0,00
+                                          </span>
+                                        </td>
+                                        <td
+                                          className="px-3 py-2 text-center whitespace-nowrap"
+                                          colSpan={4}
+                                        >
+                                          <span className="inline-flex items-center gap-1 bg-red-900/50 text-red-300 border border-red-700/50 rounded-full px-2 py-0.5 text-xs font-semibold">
+                                            🚫 Cancelamento
+                                          </span>
+                                        </td>
+                                      </tr>
                                     )}
-                                  </td>
-                                  <td className="px-3 py-2 text-center">
-                                    {m.comprovante ? (
-                                      <Buttons.BotaoComprovante
-                                        onClick={() =>
-                                          setComprovanteModal(m.comprovante)
-                                        }
-                                      />
-                                    ) : (
-                                      <span className="text-gray-600 text-xs">
-                                        —
-                                      </span>
-                                    )}
-                                  </td>
-                                </tr>
-                              ))}
+                                  </>
+                                );
+                              })}
                             </tbody>
                           </table>
                         </div>
@@ -927,6 +1040,18 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
                           )}
                         </div>
                         <div className="flex items-center gap-2">
+                          {!isCancelado && temMesFuturo && (
+                            <button
+                              type="button"
+                              onClick={() => handleCancelarPlano(fatId)}
+                              disabled={cancelando === fatId}
+                              className="inline-flex items-center gap-1.5 bg-red-700/80 hover:bg-red-600 disabled:opacity-50 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
+                            >
+                              {cancelando === fatId
+                                ? "Cancelando..."
+                                : "🚫 Cancelar Plano"}
+                            </button>
+                          )}
                           <span className="text-gray-400 text-sm">
                             Total da contratação:
                           </span>
@@ -1027,6 +1152,42 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
           </div>
         )}
       </div>
+
+      {/* ── Modal Confirmar Cancelamento ── */}
+      {confirmCancelModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 border-2 border-red-600/60 rounded-2xl p-6 max-w-sm w-full shadow-2xl">
+            <div className="flex flex-col items-center gap-3 mb-5">
+              <div className="w-14 h-14 rounded-full bg-red-500/20 border-2 border-red-500/60 flex items-center justify-center text-3xl">
+                🚫
+              </div>
+              <h2 className="text-white font-bold text-lg text-center leading-tight">
+                Cancelar Plano
+              </h2>
+              <p className="text-gray-400 text-sm text-center">
+                Tem certeza que deseja cancelar este plano? As parcelas dos
+                meses seguintes ao atual serão marcadas como canceladas.
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setConfirmCancelModal(null)}
+                className="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 rounded-lg transition-colors"
+              >
+                Não
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmarCancelamento}
+                className="flex-1 bg-red-700 hover:bg-red-600 text-white font-semibold py-2 rounded-lg transition-colors"
+              >
+                Sim, cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Comprovante Modal ── */}
       {comprovanteModal && (

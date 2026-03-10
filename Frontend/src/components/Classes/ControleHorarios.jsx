@@ -11,6 +11,7 @@ function ControleHorarios() {
   const [editandoId, setEditandoId] = useState(null);
   const [sortBy, setSortBy] = useState(null);
   const [sortDir, setSortDir] = useState("asc");
+  const [confirmExcluirId, setConfirmExcluirId] = useState(null);
   const [formData, setFormData] = useState({
     horarioInicio: "",
     horarioFim: "",
@@ -104,9 +105,13 @@ function ControleHorarios() {
     });
   };
 
-  const handleExcluir = async (id) => {
-    if (!confirm("Deseja realmente excluir este horário?")) return;
+  const handleExcluir = (id) => {
+    setConfirmExcluirId(id);
+  };
 
+  const handleConfirmarExclusao = async () => {
+    const id = confirmExcluirId;
+    setConfirmExcluirId(null);
     try {
       setLoading(true);
       await api.delete(`/horarios/${id}`);
@@ -420,6 +425,42 @@ function ControleHorarios() {
           </div>
         )}
       </div>
+
+      {/* ── Modal Confirmar Exclusão ── */}
+      {confirmExcluirId && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 border-2 border-red-600/60 rounded-2xl p-6 max-w-sm w-full shadow-2xl">
+            <div className="flex flex-col items-center gap-3 mb-5">
+              <div className="w-14 h-14 rounded-full bg-red-500/20 border-2 border-red-500/60 flex items-center justify-center text-3xl">
+                🗑️
+              </div>
+              <h2 className="text-white font-bold text-lg text-center">
+                Excluir Horário
+              </h2>
+              <p className="text-gray-400 text-sm text-center">
+                Deseja realmente excluir este horário? Esta ação não pode ser
+                desfeita.
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setConfirmExcluirId(null)}
+                className="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 rounded-lg transition-colors"
+              >
+                Não
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmarExclusao}
+                className="flex-1 bg-red-700 hover:bg-red-600 text-white font-semibold py-2 rounded-lg transition-colors"
+              >
+                Sim, excluir
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

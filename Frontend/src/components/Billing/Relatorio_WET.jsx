@@ -164,6 +164,52 @@ function Relatorio_WET() {
     );
 
     const resultado = [];
+
+    const pushCancelamentoRow = (
+      pag,
+      plano,
+      aluno,
+      parcelaStr,
+      valorMensal,
+      valorComDesconto,
+      valorWET,
+      valorPA,
+    ) => {
+      resultado.push({
+        id: `${pag.id}-cancel`,
+        alunoNome: aluno.Alunos_Nome || "-",
+        alunoCodigo: pag.Aluno_Codigo,
+        planoCodigo: pag.Plano_Codigo,
+        planoNome: plano.Plano_Nome || "-",
+        planoTipo: plano.Plano_Pagamento || "-",
+        dataPagamento: null,
+        parcela: parcelaStr,
+        valorMensal:
+          typeof valorMensal === "number" ? -valorMensal : valorMensal,
+        valorComDesconto:
+          typeof valorComDesconto === "number"
+            ? -valorComDesconto
+            : valorComDesconto,
+        valorWET: typeof valorWET === "number" ? -valorWET : valorWET,
+        valorPA: typeof valorPA === "number" ? -valorPA : valorPA,
+        isCancelamento: true,
+      });
+    };
+
+    const isMesCancelado = (pag, mesSel, anoSel) => {
+      if (!pag.Faturamento_Cancelado || !pag.Faturamento_Cancelado_Em)
+        return false;
+      const partes = String(pag.Faturamento_Cancelado_Em)
+        .split("T")[0]
+        .split("-");
+      const anoCancelado = parseInt(partes[0], 10);
+      const mesCancelado = parseInt(partes[1], 10);
+      return (
+        anoSel > anoCancelado ||
+        (anoSel === anoCancelado && mesSel > mesCancelado)
+      );
+    };
+
     for (const pag of pagamentosFiltrados) {
       const aluno =
         alunos.find((a) => a.Alunos_Codigo === pag.Aluno_Codigo) || {};
@@ -201,6 +247,24 @@ function Relatorio_WET() {
             valorWET: repasse,
             valorPA: 0,
           });
+          if (
+            isMesCancelado(
+              pag,
+              mesSelecionado || parseInt(mes, 10),
+              anoSelecionado || parseInt(ano, 10),
+            )
+          ) {
+            pushCancelamentoRow(
+              pag,
+              plano,
+              aluno,
+              `${parcela}/${totalParcelas}`,
+              repasse,
+              "-",
+              repasse,
+              0,
+            );
+          }
         }
         // se não houver repasse, ignoramos a linha
       } else {
@@ -231,6 +295,24 @@ function Relatorio_WET() {
           valorWET,
           valorPA,
         });
+        if (
+          isMesCancelado(
+            pag,
+            mesSelecionado || parseInt(mes, 10),
+            anoSelecionado || parseInt(ano, 10),
+          )
+        ) {
+          pushCancelamentoRow(
+            pag,
+            plano,
+            aluno,
+            `${parcela}/${totalParcelas}`,
+            valorMensal,
+            valorComDesconto,
+            valorWET,
+            valorPA,
+          );
+        }
       }
     }
 
@@ -748,14 +830,27 @@ function Relatorio_WET() {
                         <tr
                           key={item.id}
                           className={`border-b border-gray-700 ${
-                            idx % 2 === 0 ? "bg-gray-800" : "bg-gray-750"
+                            item.isCancelamento
+                              ? "bg-red-950/30"
+                              : idx % 2 === 0
+                                ? "bg-gray-800"
+                                : "bg-gray-750"
                           }`}
                         >
                           <td className="px-3 py-2 text-gray-400">
                             {item.alunoCodigo}
                           </td>
                           <td className="px-3 py-2 text-white font-medium">
-                            {item.alunoNome}
+                            {item.isCancelamento ? (
+                              <span className="flex items-center gap-1">
+                                {item.alunoNome}
+                                <span className="text-red-400 text-xs font-semibold ml-1">
+                                  cancelamento
+                                </span>
+                              </span>
+                            ) : (
+                              item.alunoNome
+                            )}
                           </td>
                           <td className="px-3 py-2">
                             <span className="text-white font-medium">
@@ -765,7 +860,9 @@ function Relatorio_WET() {
                               ({item.planoCodigo})
                             </span>
                           </td>
-                          <td className="px-3 py-2 text-purple-400 font-semibold">
+                          <td
+                            className={`px-3 py-2 font-semibold ${item.isCancelamento ? "text-red-400" : "text-purple-400"}`}
+                          >
                             {item.parcela}
                           </td>
                           <td className="px-3 py-2 text-gray-300">
@@ -773,17 +870,28 @@ function Relatorio_WET() {
                               ? formatarDataBR(item.dataPagamento)
                               : "-"}
                           </td>
-                          <td className="px-3 py-2 text-green-400 text-right font-semibold">
-                            R$ {item.valorMensal.toFixed(2)}
+                          <td
+                            className={`px-3 py-2 text-right font-semibold ${item.isCancelamento ? "text-red-400" : "text-green-400"}`}
+                          >
+                            {typeof item.valorMensal === "number"
+                              ? `R$ ${item.valorMensal.toFixed(2)}`
+                              : item.valorMensal}
                           </td>
-                          <td className="px-3 py-2 text-yellow-400 text-right font-semibold">
-                            {" "}
+                          <td
+                            className={`px-3 py-2 text-right font-semibold ${item.isCancelamento ? "text-red-400" : "text-yellow-400"}`}
+                          >
                             {item.valorComDesconto === "-"
                               ? "-"
-                              : `R$ ${item.valorComDesconto.toFixed(2)}`}{" "}
+                              : typeof item.valorComDesconto === "number"
+                                ? `R$ ${item.valorComDesconto.toFixed(2)}`
+                                : "-"}
                           </td>
-                          <td className="px-3 py-2 text-blue-400 text-right font-semibold">
-                            R$ {item.valorWET.toFixed(2)}
+                          <td
+                            className={`px-3 py-2 text-right font-semibold ${item.isCancelamento ? "text-red-400" : "text-blue-400"}`}
+                          >
+                            {typeof item.valorWET === "number"
+                              ? `R$ ${item.valorWET.toFixed(2)}`
+                              : item.valorWET}
                           </td>
                         </tr>
                       ))}
@@ -833,7 +941,3 @@ function Relatorio_WET() {
 }
 
 export default Relatorio_WET;
-
-
-
-

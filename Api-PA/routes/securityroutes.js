@@ -27,7 +27,7 @@ router.post("/login", async (req, res) => {
     // Se usuário não for encontrado ou senha estiver incorreta
     if (!usuarioEncontrado) {
       console.warn(
-        `⚠️ Tentativa de login - usuário não encontrado: ${usuario} ⚠️`
+        `⚠️ Tentativa de login - usuário não encontrado: ${usuario} ⚠️`,
       );
       return res.status(403).json({
         statusCode: 403,
@@ -38,7 +38,7 @@ router.post("/login", async (req, res) => {
     // Verifica se a senha está correta usando bcrypt
     const senhaValida = await bcrypt.compare(
       senha,
-      usuarioEncontrado.Usuario_Senha
+      usuarioEncontrado.Usuario_Senha,
     );
 
     if (!senhaValida) {
@@ -60,11 +60,11 @@ router.post("/login", async (req, res) => {
       process.env.JWT_SECRET,
       {
         expiresIn: "1h", // Tempo de expiração do token
-      }
+      },
     );
 
     console.log(
-      `✅ Login bem-sucedido: ${usuario} (${usuarioEncontrado.Usuario_Grupo})`
+      `✅ Login bem-sucedido: ${usuario} (${usuarioEncontrado.Usuario_Grupo})`,
     );
     return res.status(200).json({
       statusCode: 200,
@@ -124,7 +124,7 @@ function autenticarToken(req, res, next) {
 function verificarAdmin(req, res, next) {
   if (req.user.grupo !== "Administrador") {
     console.warn(
-      `🚫 Acesso negado para ${req.user.usuario} - requer permissão de Administrador`
+      `🚫 Acesso negado para ${req.user.usuario} - requer permissão de Administrador`,
     );
     return res.status(403).json({
       statusCode: 403,
@@ -152,7 +152,7 @@ router.post("/verify-password", async (req, res) => {
     }
     const senhaValida = await bcrypt.compare(
       senha,
-      usuarioEncontrado.Usuario_Senha
+      usuarioEncontrado.Usuario_Senha,
     );
     if (!senhaValida) {
       return res.status(401).json({ Mensagem: "Usuário ou senha inválidos." });
@@ -243,7 +243,7 @@ router.post(
       console.log(
         `✅ Novo usuário criado: ${login} (${grupo || "Alunos"})${
           alunoIdFinal ? ` - Aluno ID: ${alunoIdFinal}` : ""
-        }`
+        }`,
       );
 
       // Registra log de criação de usuário
@@ -255,7 +255,7 @@ router.post(
         novoUsuario.Usuario_ID,
         `Usuário ${novoUsuario.Usuario_Login} criado`,
         null,
-        novoUsuario.toJSON()
+        novoUsuario.toJSON(),
       );
 
       return res.status(201).json({
@@ -277,7 +277,7 @@ router.post(
         Erro: error.message,
       });
     }
-  }
+  },
 );
 
 // 🟢 Rota para listar usuários (apenas para Administradores)
@@ -364,14 +364,14 @@ router.patch(
         const senhaHash = await bcrypt.hash(senha, 10);
         usuario.Usuario_Senha = senhaHash;
         console.log(
-          `🔐 Senha atualizada para o usuário: ${usuario.Usuario_Login}`
+          `🔐 Senha atualizada para o usuário: ${usuario.Usuario_Login}`,
         );
       }
 
       await usuario.save();
 
       console.log(
-        `✅ Usuário atualizado: ${usuario.Usuario_Login} (${usuario.Usuario_Grupo})`
+        `✅ Usuário atualizado: ${usuario.Usuario_Login} (${usuario.Usuario_Grupo})`,
       );
 
       // Registra log de atualização de usuário
@@ -384,7 +384,7 @@ router.patch(
         usuario.Usuario_ID,
         `Usuário ${usuario.Usuario_Login} atualizado`,
         null,
-        dadosNovos
+        dadosNovos,
       );
 
       return res.status(200).json({
@@ -406,7 +406,7 @@ router.patch(
         Erro: error.message,
       });
     }
-  }
+  },
 );
 
 // 🟢 Rota para excluir usuário (apenas para Administradores)
@@ -446,7 +446,7 @@ router.delete(
         usuario.Usuario_ID,
         `Usuário ${loginUsuario} excluído`,
         dadosExcluidos,
-        null
+        null,
       );
 
       return res.status(200).json({
@@ -461,8 +461,27 @@ router.delete(
         Erro: error.message,
       });
     }
-  }
+  },
 );
+
+// 🔄 Rota para renovar o token JWT (estende por mais 1 hora)
+router.post("/refresh", autenticarToken, (req, res) => {
+  try {
+    const { id, usuario, nome, grupo } = req.user;
+    const novoToken = jwt.sign(
+      { id, usuario, nome, grupo },
+      process.env.JWT_SECRET,
+      { expiresIn: "1h" },
+    );
+    console.log(`🔄 Token renovado para: ${usuario}`);
+    return res.status(200).json({ token: novoToken });
+  } catch (error) {
+    console.error("❌ Erro ao renovar token:", error);
+    return res
+      .status(500)
+      .json({ Mensagem: "Erro ao renovar token.", Erro: error.message });
+  }
+});
 
 // Exporta o router e os middlewares
 module.exports = { router, autenticarToken, verificarAdmin };

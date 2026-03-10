@@ -679,6 +679,57 @@ router.get("/relatorio-mensal/:mes/:ano", async (req, res) => {
   }
 });
 
+// PATCH /faturamento/cancelar-plano/:id
+// Marca o faturamento como cancelado a partir do mês atual
+router.patch("/cancelar-plano/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const faturamento = await Alunos_Faturamento.findByPk(id);
+    if (!faturamento) {
+      return res.status(404).json({ Erro: "Faturamento não encontrado." });
+    }
+
+    if (faturamento.Faturamento_Cancelado) {
+      return res
+        .status(400)
+        .json({ Erro: "Este faturamento já está cancelado." });
+    }
+
+    const hoje = new Date();
+    const dataCancelamento = hoje.toISOString().split("T")[0];
+
+    await Alunos_Faturamento.update(
+      {
+        Faturamento_Cancelado: true,
+        Faturamento_Cancelado_Em: dataCancelamento,
+      },
+      { where: { id } },
+    );
+
+    const usuarioLog = getUsuarioFromReq(req);
+    await registrarLog(
+      usuarioLog,
+      "UPDATE",
+      "Alunos_Faturamento",
+      id,
+      `Cancelamento de plano para faturamento ${id} do aluno ${faturamento.Aluno_Codigo}`,
+      { Faturamento_Cancelado: false },
+      {
+        Faturamento_Cancelado: true,
+        Faturamento_Cancelado_Em: dataCancelamento,
+      },
+    );
+
+    res.json({ Mensagem: "Plano cancelado com sucesso.", dataCancelamento });
+  } catch (error) {
+    console.error("Erro ao cancelar plano:", error);
+    res
+      .status(500)
+      .json({ Erro: "Erro ao cancelar plano.", Detalhes: error.message });
+  }
+});
+
 module.exports = router;
 
 // Rota para buscar alunos com renovação pendente

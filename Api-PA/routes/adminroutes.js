@@ -134,6 +134,40 @@ router.delete("/delete/:tabela/:id", async (req, res) => {
     // Guarda os dados antes de excluir
     const dadosExcluidos = registro.toJSON();
 
+    // Se for aluno, exclui foto e contrato associados (se existirem)
+    if (tabela === "Alunos_Cadastros") {
+      const baseDir =
+        process.env.NODE_ENV === "production"
+          ? "/home2/goutechc/wwwplantandoalegria_API/uploads"
+          : path.join(__dirname, "../uploads");
+
+      const arquivos = [
+        { campo: registro.Alunos_Foto, subdir: "fotos" },
+        { campo: registro.Alunos_Contrato, subdir: "contratos" },
+      ];
+
+      for (const { campo, subdir } of arquivos) {
+        if (campo) {
+          try {
+            const filePath = path.join(baseDir, subdir, campo);
+            if (fs.existsSync(filePath)) {
+              fs.unlinkSync(filePath);
+              console.log(`🗑️ Arquivo excluído: ${subdir}/${campo}`);
+            } else {
+              console.log(
+                `⚠️ Arquivo não encontrado no disco: ${subdir}/${campo}`,
+              );
+            }
+          } catch (fileError) {
+            console.error(
+              `❌ Erro ao excluir ${subdir}/${campo}: ${fileError.message}`,
+            );
+            // Continua com a exclusão do registro mesmo se falhar ao excluir o arquivo
+          }
+        }
+      }
+    }
+
     // Se for faturamento, exclui o comprovante associado (se existir)
     if (
       (tabela === "faturamento" || tabela === "Alunos_Faturamento") &&

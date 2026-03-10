@@ -1228,9 +1228,9 @@ function RegistrarPresenca() {
               Deslize horizontalmente para ver todos os dias da grade.
             </p>
           </div>
-          <div className="relative overflow-x-auto pb-1">
+          <div className="relative overflow-auto max-h-[72vh] pb-1">
             {(loadingGrade || filtrando) && (
-              <div className="absolute inset-0 z-20 flex items-center justify-center bg-gray-900/70 rounded-lg">
+              <div className="absolute inset-0 z-40 flex items-center justify-center bg-gray-900/70 rounded-lg">
                 <span className="text-white font-semibold text-sm px-5 py-3 bg-gray-800 border border-gray-600 rounded-xl shadow-lg">
                   Carregando grade...
                 </span>
@@ -1238,55 +1238,51 @@ function RegistrarPresenca() {
             )}
             <table
               ref={tabelaRef}
-              className="min-w-[1600px] border-collapse text-xs md:text-sm"
+              className="min-w-[1200px] border-collapse text-xs md:text-sm"
             >
               <thead>
                 <tr>
-                  <th className="border border-gray-600 px-2 py-1 text-left bg-gray-800 min-w-[80px]">
+                  {/* Código — sticky top-left corner */}
+                  <th className="sticky top-0 left-0 z-30 border border-gray-600 px-1 py-1 text-left bg-gray-800 w-28 md:min-w-20">
                     <button
                       type="button"
                       onClick={() => alternarOrdenacaoGrade("codigo")}
-                      className="w-full text-left hover:text-yellow-300"
+                      className="w-full text-left hover:text-yellow-300 text-[10px] md:text-xs leading-tight"
                     >
-                      Código {marcadorOrdenacao("codigo")}
+                      Cód {marcadorOrdenacao("codigo")}
                     </button>
+                    {/* On mobile show student count here since Name col is hidden */}
+                    <div className="md:hidden text-gray-400 text-[9px] leading-none mt-0.5">
+                      {gradeAlunosFiltrados.length} alunos
+                    </div>
                   </th>
-                  <th className="border border-gray-600 px-2 py-1 text-left bg-gray-800 min-w-[200px] md:min-w-[260px]">
+                  {/* Nome — hidden on mobile, sticky on desktop */}
+                  <th className="hidden md:table-cell sticky top-0 left-20 z-30 border border-gray-600 px-1 py-1 text-left bg-gray-800 md:min-w-[260px]">
                     <button
                       type="button"
                       onClick={() => alternarOrdenacaoGrade("nome")}
-                      className="w-full text-left hover:text-yellow-300"
+                      className="w-full text-left hover:text-yellow-300 text-xs leading-tight"
                     >
                       Nome do Aluno {marcadorOrdenacao("nome")}
                     </button>
+                    <div className="text-gray-400 text-[9px] leading-none mt-0.5">
+                      Ativos: {gradeAlunosFiltrados.length}
+                    </div>
                   </th>
-                  {Array.from({ length: totalDiasMes }).map((_, idx) => {
-                    const dia = idx + 1;
-                    return (
-                      <th
-                        key={`wk-${dia}`}
-                        className="border border-gray-600 px-2 py-1 bg-gray-800 text-center min-w-[56px]"
-                      >
-                        {nomeDiaSemana(dia)}
-                      </th>
-                    );
-                  })}
-                </tr>
-                <tr>
-                  <th className="border border-gray-600 px-2 py-1 text-left bg-gray-800 min-w-[80px]">
-                    #
-                  </th>
-                  <th className="border border-gray-600 px-2 py-1 text-left bg-gray-800 min-w-[200px] md:min-w-[260px]">
-                    Alunos ativos ({gradeAlunosFiltrados.length})
-                  </th>
+                  {/* Day columns — sticky top only */}
                   {Array.from({ length: totalDiasMes }).map((_, idx) => {
                     const dia = idx + 1;
                     return (
                       <th
                         key={`day-${dia}`}
-                        className="border border-gray-600 px-2 py-1 bg-blue-900 text-center min-w-[56px]"
+                        className="sticky top-0 z-20 border border-gray-600 px-1 py-1 bg-blue-900 text-center min-w-10 md:min-w-14"
                       >
-                        {dia}
+                        <div className="text-[8px] md:text-[10px] text-blue-200 leading-none">
+                          {nomeDiaSemana(dia)}
+                        </div>
+                        <div className="text-[11px] md:text-sm font-bold leading-tight">
+                          {dia}
+                        </div>
                       </th>
                     );
                   })}
@@ -1297,11 +1293,32 @@ function RegistrarPresenca() {
                   const alunoKey = String(alunoGrade.Alunos_Codigo);
                   return (
                     <tr key={`row-grade-${alunoKey}`}>
-                      <td className="border border-gray-600 px-2 py-1 bg-gray-800 whitespace-nowrap min-w-[80px]">
-                        {alunoGrade.Alunos_Codigo}
+                      {/* Code cell — frozen on all sizes */}
+                      <td className="sticky left-0 z-10 border border-gray-600 px-1 py-1 bg-gray-800 w-28 md:min-w-20 text-center align-top pt-1.5">
+                        <div className="text-[10px] md:text-xs font-bold leading-none">
+                          {alunoGrade.Alunos_Codigo}
+                        </div>
+                        {/* First + last name shown only on mobile where name col is hidden */}
+                        {(() => {
+                          const parts =
+                            alunoGrade.Alunos_Nome.trim().split(/\s+/);
+                          return (
+                            <div className="md:hidden text-xs font-medium text-gray-200 leading-tight max-w-[96px] mx-auto mt-0.5">
+                              <div className="truncate">{parts[0]}</div>
+                              {parts.length > 1 && (
+                                <div className="truncate">
+                                  {parts[parts.length - 1]}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </td>
-                      <td className="border border-gray-600 px-2 py-1 bg-gray-800 whitespace-nowrap min-w-[200px] md:min-w-[260px]">
-                        {alunoGrade.Alunos_Nome}
+                      {/* Name cell — hidden on mobile */}
+                      <td className="hidden md:table-cell sticky left-20 z-10 border border-gray-600 px-1 py-1 bg-gray-800 md:min-w-[260px] overflow-hidden">
+                        <span className="block truncate text-sm">
+                          {alunoGrade.Alunos_Nome}
+                        </span>
                       </td>
                       {Array.from({ length: totalDiasMes }).map((_, idx) => {
                         const dia = idx + 1;
@@ -1345,7 +1362,7 @@ function RegistrarPresenca() {
                                 }}
                               />
                             )}
-                            <div className="min-h-[80px] md:min-h-[70px] flex flex-col items-center justify-center leading-none px-0.5">
+                            <div className="min-h-[52px] md:min-h-[70px] flex flex-col items-center justify-center leading-none px-0.5">
                               <span>{legendaStatus(status)}</span>
                               {observacao && (
                                 <span className="text-[9px] max-w-[34px] truncate opacity-90">
@@ -1429,10 +1446,10 @@ function RegistrarPresenca() {
                 })}
                 {gradeAlunosFiltrados.length === 0 && (
                   <tr>
-                    <td className="border border-gray-600 px-2 py-2 bg-gray-800 min-w-[80px]">
+                    <td className="sticky left-0 z-10 border border-gray-600 px-2 py-2 bg-gray-800 min-w-20">
                       -
                     </td>
-                    <td className="border border-gray-600 px-2 py-2 bg-gray-800 min-w-[200px] md:min-w-[260px]">
+                    <td className="hidden md:table-cell sticky left-20 z-10 border border-gray-600 px-2 py-2 bg-gray-800 min-w-[200px] md:min-w-[260px]">
                       Nenhum aluno encontrado
                     </td>
                     {Array.from({ length: totalDiasMes }).map((_, idx) => (

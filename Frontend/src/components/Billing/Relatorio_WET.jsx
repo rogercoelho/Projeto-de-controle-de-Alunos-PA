@@ -210,6 +210,66 @@ function Relatorio_WET() {
       );
     };
 
+    const pushReajusteRow = (
+      pag,
+      plano,
+      aluno,
+      parcelaStr,
+      valorReajuste,
+      valorMensalBase,
+      valorComDescontoBase,
+      valorWETBase,
+      valorPABase,
+    ) => {
+      const delta = valorReajuste - valorMensalBase;
+      const desc = parseFloat(percentualDesconto) || 0;
+      const deltaComDesconto =
+        typeof valorComDescontoBase === "number"
+          ? delta * (1 - desc / 100)
+          : "-";
+      const deltaWET =
+        typeof valorWETBase === "number"
+          ? typeof deltaComDesconto === "number"
+            ? deltaComDesconto / 2
+            : 0
+          : "-";
+      const deltaPA =
+        typeof valorPABase === "number"
+          ? typeof deltaComDesconto === "number"
+            ? deltaComDesconto / 2
+            : 0
+          : "-";
+      resultado.push({
+        id: `${pag.id}-reajuste`,
+        alunoNome: aluno.Alunos_Nome || "-",
+        alunoCodigo: pag.Aluno_Codigo,
+        planoCodigo: pag.Plano_Codigo,
+        planoNome: plano.Plano_Nome || "-",
+        planoTipo: plano.Plano_Pagamento || "-",
+        dataPagamento: null,
+        parcela: parcelaStr,
+        valorMensal: delta,
+        valorComDesconto: deltaComDesconto,
+        valorWET: deltaWET,
+        valorPA: deltaPA,
+        isReajuste: true,
+      });
+    };
+
+    const isMesReajustado = (pag, mesSel, anoSel) => {
+      if (!pag.Faturamento_Reajuste || !pag.Faturamento_Reajuste_Partir_De)
+        return false;
+      const partes = String(pag.Faturamento_Reajuste_Partir_De)
+        .split("T")[0]
+        .split("-");
+      const anoReajuste = parseInt(partes[0], 10);
+      const mesReajuste = parseInt(partes[1], 10);
+      return (
+        anoSel > anoReajuste ||
+        (anoSel === anoReajuste && mesSel >= mesReajuste)
+      );
+    };
+
     for (const pag of pagamentosFiltrados) {
       const aluno =
         alunos.find((a) => a.Alunos_Codigo === pag.Aluno_Codigo) || {};
@@ -265,6 +325,25 @@ function Relatorio_WET() {
               0,
             );
           }
+          if (
+            isMesReajustado(
+              pag,
+              mesSelecionado || parseInt(mes, 10),
+              anoSelecionado || parseInt(ano, 10),
+            )
+          ) {
+            pushReajusteRow(
+              pag,
+              plano,
+              aluno,
+              `${parcela}/${totalParcelas}`,
+              parseFloat(pag.Faturamento_Reajuste),
+              repasse,
+              "-",
+              repasse,
+              0,
+            );
+          }
         }
         // se não houver repasse, ignoramos a linha
       } else {
@@ -307,6 +386,25 @@ function Relatorio_WET() {
             plano,
             aluno,
             `${parcela}/${totalParcelas}`,
+            valorMensal,
+            valorComDesconto,
+            valorWET,
+            valorPA,
+          );
+        }
+        if (
+          isMesReajustado(
+            pag,
+            mesSelecionado || parseInt(mes, 10),
+            anoSelecionado || parseInt(ano, 10),
+          )
+        ) {
+          pushReajusteRow(
+            pag,
+            plano,
+            aluno,
+            `${parcela}/${totalParcelas}`,
+            parseFloat(pag.Faturamento_Reajuste),
             valorMensal,
             valorComDesconto,
             valorWET,
@@ -832,9 +930,11 @@ function Relatorio_WET() {
                           className={`border-b border-gray-700 ${
                             item.isCancelamento
                               ? "bg-red-950/30"
-                              : idx % 2 === 0
-                                ? "bg-gray-800"
-                                : "bg-gray-750"
+                              : item.isReajuste
+                                ? "bg-blue-950/30"
+                                : idx % 2 === 0
+                                  ? "bg-gray-800"
+                                  : "bg-gray-750"
                           }`}
                         >
                           <td className="px-3 py-2 text-gray-400">
@@ -846,6 +946,13 @@ function Relatorio_WET() {
                                 {item.alunoNome}
                                 <span className="text-red-400 text-xs font-semibold ml-1">
                                   cancelamento
+                                </span>
+                              </span>
+                            ) : item.isReajuste ? (
+                              <span className="flex items-center gap-1">
+                                {item.alunoNome}
+                                <span className="text-blue-400 text-xs font-semibold ml-1">
+                                  reajuste de mudança de plano
                                 </span>
                               </span>
                             ) : (
@@ -861,7 +968,7 @@ function Relatorio_WET() {
                             </span>
                           </td>
                           <td
-                            className={`px-3 py-2 font-semibold ${item.isCancelamento ? "text-red-400" : "text-purple-400"}`}
+                            className={`px-3 py-2 font-semibold ${item.isCancelamento ? "text-red-400" : item.isReajuste ? "text-blue-400" : "text-purple-400"}`}
                           >
                             {item.parcela}
                           </td>
@@ -871,26 +978,26 @@ function Relatorio_WET() {
                               : "-"}
                           </td>
                           <td
-                            className={`px-3 py-2 text-right font-semibold ${item.isCancelamento ? "text-red-400" : "text-green-400"}`}
+                            className={`px-3 py-2 text-right font-semibold ${item.isCancelamento ? "text-red-400" : item.isReajuste ? "text-blue-400" : "text-green-400"}`}
                           >
                             {typeof item.valorMensal === "number"
-                              ? `R$ ${item.valorMensal.toFixed(2)}`
+                              ? `${item.isReajuste && item.valorMensal > 0 ? "+" : ""}R$ ${item.valorMensal.toFixed(2)}`
                               : item.valorMensal}
                           </td>
                           <td
-                            className={`px-3 py-2 text-right font-semibold ${item.isCancelamento ? "text-red-400" : "text-yellow-400"}`}
+                            className={`px-3 py-2 text-right font-semibold ${item.isCancelamento ? "text-red-400" : item.isReajuste ? "text-blue-400" : "text-yellow-400"}`}
                           >
                             {item.valorComDesconto === "-"
                               ? "-"
                               : typeof item.valorComDesconto === "number"
-                                ? `R$ ${item.valorComDesconto.toFixed(2)}`
+                                ? `${item.isReajuste && item.valorComDesconto > 0 ? "+" : ""}R$ ${item.valorComDesconto.toFixed(2)}`
                                 : "-"}
                           </td>
                           <td
-                            className={`px-3 py-2 text-right font-semibold ${item.isCancelamento ? "text-red-400" : "text-blue-400"}`}
+                            className={`px-3 py-2 text-right font-semibold ${item.isCancelamento ? "text-red-400" : item.isReajuste ? "text-blue-400" : "text-blue-400"}`}
                           >
                             {typeof item.valorWET === "number"
-                              ? `R$ ${item.valorWET.toFixed(2)}`
+                              ? `${item.isReajuste && item.valorWET > 0 ? "+" : ""}R$ ${item.valorWET.toFixed(2)}`
                               : item.valorWET}
                           </td>
                         </tr>

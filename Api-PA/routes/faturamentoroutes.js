@@ -730,6 +730,70 @@ router.patch("/cancelar-plano/:id", async (req, res) => {
   }
 });
 
+// PATCH /faturamento/reajuste-plano/:id
+// Aplica um reajuste de valor mensal a partir de um determinado mês
+router.patch("/reajuste-plano/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { novoValor, apartirDe } = req.body;
+
+    if (!novoValor || !apartirDe) {
+      return res
+        .status(400)
+        .json({ Erro: "Os campos novoValor e apartirDe são obrigatórios." });
+    }
+
+    const valorParsed = parseFloat(novoValor);
+    if (isNaN(valorParsed) || valorParsed < 0) {
+      return res.status(400).json({ Erro: "Valor de reajuste inválido." });
+    }
+
+    const faturamento = await Alunos_Faturamento.findByPk(id);
+    if (!faturamento) {
+      return res.status(404).json({ Erro: "Faturamento não encontrado." });
+    }
+
+    const dadosAntigos = {
+      Faturamento_Reajuste: faturamento.Faturamento_Reajuste,
+      Faturamento_Reajuste_Partir_De:
+        faturamento.Faturamento_Reajuste_Partir_De,
+    };
+
+    await Alunos_Faturamento.update(
+      {
+        Faturamento_Reajuste: valorParsed,
+        Faturamento_Reajuste_Partir_De: apartirDe,
+      },
+      { where: { id } },
+    );
+
+    const usuarioLog = getUsuarioFromReq(req);
+    await registrarLog(
+      usuarioLog,
+      "UPDATE",
+      "Alunos_Faturamento",
+      id,
+      `Reajuste de plano aplicado para faturamento ${id} do aluno ${faturamento.Aluno_Codigo} a partir de ${apartirDe}`,
+      dadosAntigos,
+      {
+        Faturamento_Reajuste: valorParsed,
+        Faturamento_Reajuste_Partir_De: apartirDe,
+      },
+    );
+
+    res.json({
+      Mensagem: "Reajuste aplicado com sucesso.",
+      apartirDe,
+      novoValor: valorParsed,
+    });
+  } catch (error) {
+    console.error("Erro ao aplicar reajuste:", error);
+    res
+      .status(500)
+      .json({ Erro: "Erro ao aplicar reajuste.", Detalhes: error.message });
+  }
+});
+
 module.exports = router;
 
 // Rota para buscar alunos com renovação pendente

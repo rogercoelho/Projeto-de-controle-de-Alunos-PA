@@ -73,6 +73,18 @@ const Alunos_Faturamento = db.sequelizeconnection.define(
       allowNull: true,
       comment: "Data em que o cancelamento foi realizado",
     },
+    Faturamento_Reajuste: {
+      type: db.Sequelize.DECIMAL(10, 2),
+      allowNull: true,
+      comment:
+        "Valor do reajuste mensal aplicado a partir de Faturamento_Reajuste_Partir_De",
+    },
+    Faturamento_Reajuste_Partir_De: {
+      type: db.Sequelize.DATEONLY,
+      allowNull: true,
+      comment:
+        "Data a partir da qual o reajuste é aplicado (primeiro dia do mês)",
+    },
   },
   {
     timestamps: false,

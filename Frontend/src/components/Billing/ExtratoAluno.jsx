@@ -81,6 +81,9 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
   const [comprovanteModal, setComprovanteModal] = useState(null);
   const [cancelando, setCancelando] = useState(null);
   const [confirmCancelModal, setConfirmCancelModal] = useState(null); // fatId pendente de confirmação
+  const [reajusteModal, setReajusteModal] = useState(null);
+  // reajusteModal = { fatId, mesFuturos: [{value, label}], mesAPartirDe, novoValor }
+  const [aplicandoReajuste, setAplicandoReajuste] = useState(false);
 
   // Buscar todos os alunos ao montar
   useEffect(() => {
@@ -131,6 +134,53 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
       }
     } finally {
       setCancelando(null);
+    }
+  };
+
+  const handleAbrirReajuste = (fatId, fatMesesSorted) => {
+    const hoje = new Date();
+    const mesAtualNum = hoje.getFullYear() * 12 + hoje.getMonth();
+    const mesFuturos = fatMesesSorted
+      .filter(([, m]) => {
+        const [mAno, mMes] = m.mesAno.split("-").map(Number);
+        return mAno * 12 + (mMes - 1) > mesAtualNum;
+      })
+      .map(([, m]) => ({
+        value: m.mesAno,
+        label: nomeMes(m.mesAno),
+      }));
+    setReajusteModal({
+      fatId,
+      mesFuturos,
+      mesAPartirDe: mesFuturos[0]?.value || "",
+      novoValor: "",
+    });
+  };
+
+  const handleSalvarReajuste = async () => {
+    if (!reajusteModal.mesAPartirDe || !reajusteModal.novoValor) {
+      showToast({ type: "error", text: "Preencha todos os campos." });
+      return;
+    }
+    setAplicandoReajuste(true);
+    try {
+      await api.patch(`/faturamento/reajuste-plano/${reajusteModal.fatId}`, {
+        novoValor: reajusteModal.novoValor,
+        apartirDe: reajusteModal.mesAPartirDe + "-01",
+      });
+      showToast({ type: "success", text: "Reajuste aplicado com sucesso!" });
+      setReajusteModal(null);
+      const res = await api.get(`/faturamento/extrato/${codigoAluno}/all`);
+      setExtrato(res.data);
+    } catch (error) {
+      if (error?.response?.status !== 401) {
+        showToast({
+          type: "error",
+          text: error?.response?.data?.Erro || "Erro ao aplicar reajuste.",
+        });
+      }
+    } finally {
+      setAplicandoReajuste(false);
     }
   };
 
@@ -707,6 +757,23 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
                   const fatId = fat.id || fat.Faturamento_ID;
                   const isPago = !!fat.Faturamento_Data_Pagamento;
                   const isCancelado = !!fat.Faturamento_Cancelado;
+                  const temReajuste =
+                    !!fat.Faturamento_Reajuste &&
+                    !!fat.Faturamento_Reajuste_Partir_De;
+                  const reajustePartes = fat.Faturamento_Reajuste_Partir_De
+                    ? String(fat.Faturamento_Reajuste_Partir_De)
+                        .split("T")[0]
+                        .split("-")
+                    : null;
+                  const reajusteAno = reajustePartes
+                    ? parseInt(reajustePartes[0], 10)
+                    : null;
+                  const reajusteMes = reajustePartes
+                    ? parseInt(reajustePartes[1], 10)
+                    : null;
+                  const reajusteValor = fat.Faturamento_Reajuste
+                    ? parseFloat(fat.Faturamento_Reajuste)
+                    : 0;
                   const fatMeses = gerarMesesFaturamento(
                     [fat],
                     plano.Plano_Pagamento,
@@ -760,6 +827,17 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
                                 🚫 Cancelado
                               </span>
                             )}
+                            {temReajuste && (
+                              <span className="inline-flex items-center gap-1 bg-blue-900/50 text-blue-300 border border-blue-700/50 rounded-full px-2 py-0.5 text-xs font-semibold">
+                                🔧 Reajuste a partir de{" "}
+                                {nomeMes(
+                                  fat.Faturamento_Reajuste_Partir_De.slice(
+                                    0,
+                                    7,
+                                  ),
+                                )}
+                              </span>
+                            )}
                             <div>
                               <h4 className="text-white font-bold text-base leading-none">
                                 {plano.Plano_Nome}
@@ -788,21 +866,21 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
                           </div>
 
                           {/* Right: totals + status */}
-                          <div className="flex flex-wrap gap-3 items-center justify-end">
+                          <div className="flex flex-wrap gap-2 sm:gap-3 items-center sm:justify-end">
                             {isPago ? (
-                              <span className="inline-flex items-center gap-1 bg-emerald-900/50 text-emerald-300 border border-emerald-700/50 rounded-full px-3 py-1 text-sm font-semibold">
+                              <span className="inline-flex items-center gap-1 bg-emerald-900/50 text-emerald-300 border border-emerald-700/50 rounded-full px-3 py-1 text-xs sm:text-sm font-semibold">
                                 ✓ Pago
                               </span>
                             ) : (
-                              <span className="inline-flex items-center gap-1 bg-amber-900/50 text-amber-300 border border-amber-700/50 rounded-full px-3 py-1 text-sm font-semibold">
+                              <span className="inline-flex items-center gap-1 bg-amber-900/50 text-amber-300 border border-amber-700/50 rounded-full px-3 py-1 text-xs sm:text-sm font-semibold">
                                 ⏳ Pendente
                               </span>
                             )}
                             <div className="text-right">
-                              <p className="text-gray-500 text-xs">
+                              <p className="text-gray-500 text-[10px] sm:text-xs">
                                 Bruto / Desc / Líquido
                               </p>
-                              <p className="text-sm leading-tight font-mono">
+                              <p className="text-xs sm:text-sm leading-tight font-mono">
                                 <span className="text-gray-300">
                                   R$ {valorBruto.toFixed(2)}
                                 </span>
@@ -873,6 +951,17 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
                                   (mAno > canceladoAno ||
                                     (mAno === canceladoAno &&
                                       mMes > canceladoMes));
+
+                                const ehMesReajustado =
+                                  temReajuste &&
+                                  reajusteAno !== null &&
+                                  reajusteMes !== null &&
+                                  (mAno > reajusteAno ||
+                                    (mAno === reajusteAno &&
+                                      mMes >= reajusteMes));
+                                const reajusteDelta = ehMesReajustado
+                                  ? reajusteValor - m.valor
+                                  : 0;
 
                                 return (
                                   <>
@@ -1002,6 +1091,43 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
                                         </td>
                                       </tr>
                                     )}
+                                    {ehMesReajustado && (
+                                      <tr
+                                        key={`${key}-reajuste`}
+                                        className="border-b border-blue-900/40 bg-blue-950/20"
+                                      >
+                                        <td className="px-3 py-2 whitespace-nowrap">
+                                          <span className="text-blue-400 font-semibold">
+                                            {m.parcela}/{m.totalParcelas}
+                                          </span>
+                                        </td>
+                                        <td className="px-3 py-2 text-blue-300 font-medium whitespace-nowrap">
+                                          {nomeMes(m.mesAno)}
+                                        </td>
+                                        <td className="px-3 py-2 text-blue-400 text-right font-mono whitespace-nowrap">
+                                          {reajusteDelta >= 0 ? "+" : ""}R${" "}
+                                          {reajusteDelta.toFixed(2)}
+                                        </td>
+                                        <td className="px-3 py-2 text-right whitespace-nowrap">
+                                          <span className="text-gray-600">
+                                            —
+                                          </span>
+                                        </td>
+                                        <td className="px-3 py-2 text-right whitespace-nowrap">
+                                          <span className="text-blue-300 font-mono font-semibold">
+                                            R$ {reajusteValor.toFixed(2)}
+                                          </span>
+                                        </td>
+                                        <td
+                                          className="px-3 py-2 text-center whitespace-nowrap"
+                                          colSpan={4}
+                                        >
+                                          <span className="inline-flex items-center gap-1 bg-blue-900/50 text-blue-300 border border-blue-700/50 rounded-full px-2 py-0.5 text-xs font-semibold">
+                                            🔧 Reajuste
+                                          </span>
+                                        </td>
+                                      </tr>
+                                    )}
                                   </>
                                 );
                               })}
@@ -1011,8 +1137,9 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
                       ) : null}
 
                       {/* Card footer */}
-                      <div className="bg-gray-800/50 border-t border-gray-700 px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                        <div className="flex items-center gap-4 text-sm flex-wrap">
+                      <div className="bg-gray-800/50 border-t border-gray-700 px-4 py-3 flex flex-col gap-3">
+                        {/* Info row: paid/renewal */}
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
                           {isPago && fat.Faturamento_Data_Pagamento ? (
                             <span className="text-gray-400">
                               Pago em:{" "}
@@ -1026,7 +1153,7 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
                             </span>
                           )}
                           {fat.Faturamento_Fim && (
-                            <span className="flex items-center gap-1.5">
+                            <span className="flex items-center gap-1.5 flex-wrap">
                               <span className="text-yellow-400">🔄</span>
                               <span className="text-gray-400">
                                 Próxima renovação:
@@ -1039,27 +1166,47 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
                             </span>
                           )}
                         </div>
-                        <div className="flex items-center gap-2">
-                          {!isCancelado && temMesFuturo && (
-                            <button
-                              type="button"
-                              onClick={() => handleCancelarPlano(fatId)}
-                              disabled={cancelando === fatId}
-                              className="inline-flex items-center gap-1.5 bg-red-700/80 hover:bg-red-600 disabled:opacity-50 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
+
+                        {/* Actions + total */}
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          {/* Buttons */}
+                          <div className="flex flex-wrap gap-2">
+                            {!isCancelado && temMesFuturo && (
+                              <button
+                                type="button"
+                                onClick={() => handleCancelarPlano(fatId)}
+                                disabled={cancelando === fatId}
+                                className="inline-flex items-center gap-1.5 bg-red-700/80 hover:bg-red-600 active:bg-red-700 disabled:opacity-50 text-white text-xs font-semibold px-3 py-2 rounded-lg transition-colors"
+                              >
+                                {cancelando === fatId
+                                  ? "Cancelando..."
+                                  : "🚫 Cancelar Plano"}
+                              </button>
+                            )}
+                            {temMesFuturo && (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleAbrirReajuste(fatId, fatMesesSorted)
+                                }
+                                className="inline-flex items-center gap-1.5 bg-blue-700/80 hover:bg-blue-600 active:bg-blue-700 text-white text-xs font-semibold px-3 py-2 rounded-lg transition-colors"
+                              >
+                                🔧 Reajuste
+                              </button>
+                            )}
+                          </div>
+
+                          {/* Total */}
+                          <div className="flex items-center gap-2 ml-auto">
+                            <span className="text-gray-400 text-xs sm:text-sm whitespace-nowrap">
+                              Total da contratação:
+                            </span>
+                            <span
+                              className={`font-bold text-base sm:text-lg ${isPago ? "text-emerald-400" : "text-amber-400"}`}
                             >
-                              {cancelando === fatId
-                                ? "Cancelando..."
-                                : "🚫 Cancelar Plano"}
-                            </button>
-                          )}
-                          <span className="text-gray-400 text-sm">
-                            Total da contratação:
-                          </span>
-                          <span
-                            className={`font-bold text-lg ${isPago ? "text-emerald-400" : "text-amber-400"}`}
-                          >
-                            R$ {valorLiquido.toFixed(2)}
-                          </span>
+                              R$ {valorLiquido.toFixed(2)}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -1152,6 +1299,85 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
           </div>
         )}
       </div>
+
+      {/* ── Modal Reajuste ── */}
+      {reajusteModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 border-2 border-blue-600/60 rounded-2xl p-6 max-w-sm w-full shadow-2xl">
+            <div className="flex flex-col items-center gap-2 mb-5">
+              <div className="w-14 h-14 rounded-full bg-blue-500/20 border-2 border-blue-500/60 flex items-center justify-center text-3xl">
+                🔧
+              </div>
+              <h2 className="text-white font-bold text-lg text-center">
+                Aplicar Reajuste
+              </h2>
+              <p className="text-gray-400 text-sm text-center">
+                Selecione a partir de qual mês e o valor do reajuste mensal.
+              </p>
+            </div>
+            <div className="space-y-4 mb-5">
+              <div className="flex flex-col gap-1">
+                <label className="text-gray-300 text-sm font-medium">
+                  A partir de qual mês
+                </label>
+                <select
+                  value={reajusteModal.mesAPartirDe}
+                  onChange={(e) =>
+                    setReajusteModal((prev) => ({
+                      ...prev,
+                      mesAPartirDe: e.target.value,
+                    }))
+                  }
+                  className="bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  {reajusteModal.mesFuturos.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-gray-300 text-sm font-medium">
+                  Valor do reajuste (R$)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="Ex: 50,00"
+                  value={reajusteModal.novoValor}
+                  onChange={(e) =>
+                    setReajusteModal((prev) => ({
+                      ...prev,
+                      novoValor: e.target.value,
+                    }))
+                  }
+                  className="bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setReajusteModal(null)}
+                disabled={aplicandoReajuste}
+                className="flex-1 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 text-white font-semibold py-2 rounded-lg transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleSalvarReajuste}
+                disabled={aplicandoReajuste}
+                className="flex-1 bg-blue-700 hover:bg-blue-600 disabled:opacity-50 text-white font-semibold py-2 rounded-lg transition-colors"
+              >
+                {aplicandoReajuste ? "Salvando..." : "Aplicar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Modal Confirmar Cancelamento ── */}
       {confirmCancelModal && (

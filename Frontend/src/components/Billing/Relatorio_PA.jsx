@@ -178,6 +178,55 @@ function Relatorio_PA() {
       );
     };
 
+    const pushReajusteRow = (
+      pag,
+      plano,
+      aluno,
+      parcelaStr,
+      valorReajuste,
+      valorMensalBase,
+      valorComDescontoBase,
+      valorWETBase,
+      valorPABase,
+    ) => {
+      const delta = valorReajuste - valorMensalBase;
+      const desconto = parseFloat(percentualDesconto) || 0;
+      const deltaComDesconto = delta * (1 - desconto / 100);
+      const deltaWET =
+        typeof valorWETBase === "number" ? deltaComDesconto / 2 : "-";
+      const deltaPA =
+        typeof valorPABase === "number" ? deltaComDesconto / 2 : "-";
+      resultado.push({
+        id: `${pag.id}-reajuste`,
+        alunoNome: aluno.Alunos_Nome || "-",
+        alunoCodigo: pag.Aluno_Codigo,
+        planoCodigo: pag.Plano_Codigo,
+        planoNome: plano.Plano_Nome || "-",
+        planoTipo: plano.Plano_Pagamento || "-",
+        dataPagamento: null,
+        parcela: parcelaStr,
+        valorMensal: delta,
+        valorComDesconto: deltaComDesconto,
+        valorWET: deltaWET,
+        valorPA: deltaPA,
+        isReajuste: true,
+      });
+    };
+
+    const isMesReajustado = (pag, mesSel, anoSel) => {
+      if (!pag.Faturamento_Reajuste || !pag.Faturamento_Reajuste_Partir_De)
+        return false;
+      const partes = String(pag.Faturamento_Reajuste_Partir_De)
+        .split("T")[0]
+        .split("-");
+      const anoReajuste = parseInt(partes[0], 10);
+      const mesReajuste = parseInt(partes[1], 10);
+      return (
+        anoSel > anoReajuste ||
+        (anoSel === anoReajuste && mesSel >= mesReajuste)
+      );
+    };
+
     for (const pag of pagamentos) {
       const aluno =
         alunos.find((a) => a.Alunos_Codigo === pag.Aluno_Codigo) || {};
@@ -236,6 +285,25 @@ function Relatorio_PA() {
               valorMensal - repasse,
             );
           }
+          if (
+            isMesReajustado(
+              pag,
+              mesSelecionado || parseInt(mes, 10),
+              anoSelecionado || parseInt(ano, 10),
+            )
+          ) {
+            pushReajusteRow(
+              pag,
+              plano,
+              aluno,
+              `${parcela}/${totalParcelas}`,
+              parseFloat(pag.Faturamento_Reajuste),
+              valorMensal,
+              valorComDesconto,
+              repasse,
+              valorMensal - repasse,
+            );
+          }
         } else {
           // contador presente mas sem repasse: WET = '-', PA = valorMensal
           const { parcela, totalParcelas } = calcularParcela(
@@ -271,6 +339,25 @@ function Relatorio_PA() {
               plano,
               aluno,
               `${parcela}/${totalParcelas}`,
+              valorMensal,
+              valorComDesconto,
+              "-",
+              valorMensal,
+            );
+          }
+          if (
+            isMesReajustado(
+              pag,
+              mesSelecionado || parseInt(mes, 10),
+              anoSelecionado || parseInt(ano, 10),
+            )
+          ) {
+            pushReajusteRow(
+              pag,
+              plano,
+              aluno,
+              `${parcela}/${totalParcelas}`,
+              parseFloat(pag.Faturamento_Reajuste),
               valorMensal,
               valorComDesconto,
               "-",
@@ -315,6 +402,25 @@ function Relatorio_PA() {
             plano,
             aluno,
             `${parcela}/${totalParcelas}`,
+            valorMensal,
+            valorComDesconto,
+            valorWET,
+            valorPA,
+          );
+        }
+        if (
+          isMesReajustado(
+            pag,
+            mesSelecionado || parseInt(mes, 10),
+            anoSelecionado || parseInt(ano, 10),
+          )
+        ) {
+          pushReajusteRow(
+            pag,
+            plano,
+            aluno,
+            `${parcela}/${totalParcelas}`,
+            parseFloat(pag.Faturamento_Reajuste),
             valorMensal,
             valorComDesconto,
             valorWET,
@@ -770,9 +876,11 @@ function Relatorio_PA() {
                           className={`border-b border-gray-700 ${
                             item.isCancelamento
                               ? "bg-red-950/30"
-                              : idx % 2 === 0
-                                ? "bg-gray-800"
-                                : "bg-gray-750"
+                              : item.isReajuste
+                                ? "bg-blue-950/30"
+                                : idx % 2 === 0
+                                  ? "bg-gray-800"
+                                  : "bg-gray-750"
                           }`}
                         >
                           <td className="px-3 py-2 text-gray-400">
@@ -784,6 +892,13 @@ function Relatorio_PA() {
                                 {item.alunoNome}
                                 <span className="text-red-400 text-xs font-semibold ml-1">
                                   cancelamento
+                                </span>
+                              </span>
+                            ) : item.isReajuste ? (
+                              <span className="flex items-center gap-1">
+                                {item.alunoNome}
+                                <span className="text-blue-400 text-xs font-semibold ml-1">
+                                  reajuste de mudança de plano
                                 </span>
                               </span>
                             ) : (
@@ -799,7 +914,7 @@ function Relatorio_PA() {
                             </span>
                           </td>
                           <td
-                            className={`px-3 py-2 font-semibold ${item.isCancelamento ? "text-red-400" : "text-purple-400"}`}
+                            className={`px-3 py-2 font-semibold ${item.isCancelamento ? "text-red-400" : item.isReajuste ? "text-blue-400" : "text-purple-400"}`}
                           >
                             {item.parcela}
                           </td>
@@ -809,29 +924,30 @@ function Relatorio_PA() {
                               : "-"}
                           </td>
                           <td
-                            className={`px-3 py-2 text-right font-semibold ${item.isCancelamento ? "text-red-400" : "text-green-400"}`}
+                            className={`px-3 py-2 text-right font-semibold ${item.isCancelamento ? "text-red-400" : item.isReajuste ? "text-blue-400" : "text-green-400"}`}
                           >
+                            {item.isReajuste && item.valorMensal > 0 ? "+" : ""}
                             R$ {Number(item.valorMensal || 0).toFixed(2)}
                           </td>
                           <td
-                            className={`px-3 py-2 text-right font-semibold ${item.isCancelamento ? "text-red-400" : "text-yellow-400"}`}
+                            className={`px-3 py-2 text-right font-semibold ${item.isCancelamento ? "text-red-400" : item.isReajuste ? "text-blue-400" : "text-yellow-400"}`}
                           >
                             {typeof item.valorComDesconto === "number"
-                              ? `R$ ${Number(item.valorComDesconto || 0).toFixed(2)}`
+                              ? `${item.isReajuste && item.valorComDesconto > 0 ? "+" : ""}R$ ${Number(item.valorComDesconto || 0).toFixed(2)}`
                               : "-"}
                           </td>
                           <td
-                            className={`px-3 py-2 text-right font-semibold ${item.isCancelamento ? "text-red-400" : "text-blue-400"}`}
+                            className={`px-3 py-2 text-right font-semibold ${item.isCancelamento ? "text-red-400" : item.isReajuste ? "text-blue-400" : "text-blue-400"}`}
                           >
                             {typeof item.valorWET === "number"
-                              ? `R$ ${Number(item.valorWET || 0).toFixed(2)}`
+                              ? `${item.isReajuste && item.valorWET > 0 ? "+" : ""}R$ ${Number(item.valorWET || 0).toFixed(2)}`
                               : "-"}
                           </td>
                           <td
-                            className={`px-3 py-2 text-right font-semibold ${item.isCancelamento ? "text-red-400" : "text-purple-400"}`}
+                            className={`px-3 py-2 text-right font-semibold ${item.isCancelamento ? "text-red-400" : item.isReajuste ? "text-blue-400" : "text-purple-400"}`}
                           >
                             {typeof item.valorPA === "number"
-                              ? `R$ ${Number(item.valorPA || 0).toFixed(2)}`
+                              ? `${item.isReajuste && item.valorPA > 0 ? "+" : ""}R$ ${Number(item.valorPA || 0).toFixed(2)}`
                               : "-"}
                           </td>
                         </tr>

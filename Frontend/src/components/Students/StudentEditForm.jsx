@@ -2,12 +2,15 @@
   calcularIdade,
   validarCPF,
   formatarCPF,
+  formatarTelefone,
+  formatarCEP,
   converterData,
   corCampoEditavel,
 } from "../../utils/Utils";
 import api from "../../services/api";
 import MessageToast from "../miscellaneous/MessageToast";
 import useToast from "../../hooks/useToast";
+import useBuscarCEP from "../../hooks/BuscarCep";
 import React, { useRef } from "react";
 import PropTypes from "prop-types";
 import PhotoSkeleton from "../miscellaneous/PhotoSkeleton";
@@ -23,12 +26,49 @@ function StudentEditForm({
   loadingCep,
   selectedAluno,
 }) {
+  const formRef = useRef(null);
+  const codigoOriginalRef = useRef(initialFormData?.Alunos_Codigo);
   // Estado local do formulário de edição
   const [editFormData, setEditFormData] = React.useState(initialFormData);
   // Atualiza o estado local se mudar o aluno selecionado
   React.useEffect(() => {
     setEditFormData(initialFormData);
+    codigoOriginalRef.current = initialFormData?.Alunos_Codigo;
   }, [initialFormData]);
+
+  // Estado para Aluno de Aplicativo
+  const [alunoAplicativo, setAlunoAplicativo] = React.useState(
+    !!(initialFormData?.Alunos_Aplicativo),
+  );
+  React.useEffect(() => {
+    setAlunoAplicativo(!!(initialFormData?.Alunos_Aplicativo));
+  }, [initialFormData]);
+
+  const {
+    loadingCep: loadingCepBuscando,
+    dadosCep,
+    erroCep,
+  } = useBuscarCEP(editFormData.Alunos_Endereco_CEP);
+
+  // Handler do checkbox Aluno de Aplicativo
+  const handleAlunoAplicativoChange = (e) => {
+    const novoValor = e.target.checked;
+    setAlunoAplicativo(novoValor);
+    setEditFormData((prev) => ({ ...prev, Alunos_Aplicativo: novoValor }));
+  };
+
+  const isCampoVazio = (fieldValue) =>
+    fieldValue === undefined ||
+    fieldValue === null ||
+    String(fieldValue).trim() === "" ||
+    String(fieldValue).trim().toLowerCase() === "null" ||
+    String(fieldValue).trim().toLowerCase() === "undefined" ||
+    String(fieldValue).trim() === "0000-00-00";
+
+  const fieldEditable = (fieldValue) => {
+    if (alunoAplicativo) return true;
+    return isCampoVazio(fieldValue);
+  };
   // Ref para o input de foto
   const fotoInputRef = useRef(null);
   // Ref para o input de contrato
@@ -47,10 +87,29 @@ function StudentEditForm({
   // Toast custom hook
   const [messageToast, showToast] = useToast();
 
+  React.useEffect(() => {
+    if (dadosCep) {
+      setEditFormData((prev) => ({
+        ...prev,
+        Alunos_Endereco: dadosCep.logradouro || "",
+        Alunos_Endereco_Bairro: dadosCep.bairro || "",
+        Alunos_Endereco_Localidade: dadosCep.localidade || "",
+        Alunos_Endereco_Cidade: dadosCep.localidade || "",
+        Alunos_Endereco_Estado: dadosCep.uf || "",
+      }));
+    }
+    if (erroCep) {
+      showToast({ type: "error", text: erroCep });
+    }
+  }, [dadosCep, erroCep, showToast]);
+
   // Handler local para campos do formulário
   const handleChange = (e) => {
     const { name, value } = e.target;
     let newValue = value;
+    if (typeof e.target.setCustomValidity === "function") {
+      e.target.setCustomValidity("");
+    }
     if (
       name === "Alunos_CPF" ||
       name === "Alunos_CPF_Pai_Responsavel" ||
@@ -58,7 +117,24 @@ function StudentEditForm({
     ) {
       newValue = formatarCPF(value);
     }
+    if (
+      name === "Alunos_Telefone" ||
+      name === "Alunos_Telefone_Emergencia_1" ||
+      name === "Alunos_Telefone_Emergencia_2"
+    ) {
+      newValue = formatarTelefone(value);
+    }
     setEditFormData((prev) => ({ ...prev, [name]: newValue }));
+  };
+
+  const handleCepChangeFormatado = (e) => {
+    const { value } = e.target;
+    const cepFormatado = formatarCEP(value);
+    setEditFormData((prev) => ({
+      ...prev,
+      Alunos_Endereco_CEP: cepFormatado,
+    }));
+    showToast({ type: "", text: "" });
   };
   // Lógica de controle de edição dos campos
   const idade = calcularIdade(editFormData.Alunos_Data_Nascimento);
@@ -68,6 +144,100 @@ function StudentEditForm({
   const cpfAlunoReadOnly = false;
   // CPF do aluno: obrigatório se maior de 18 anos
   const cpfAlunoObrigatorio = idade >= 18;
+  const dataNascimentoEditavel = fieldEditable(
+    editFormData.Alunos_Data_Nascimento
+  );
+  const dataMatriculaEditavel = fieldEditable(
+    editFormData.Alunos_Data_Matricula
+  );
+
+  const focarCampo = (fieldName) => {
+    const campo = formRef.current?.querySelector(`[name="${fieldName}"]`);
+    return campo || null;
+  };
+
+  const apontarCampoObrigatorio = (
+    fieldName,
+    mensagem = "Preencha este campo."
+  ) => {
+    const campo = focarCampo(fieldName);
+    if (!campo) return false;
+    if (typeof campo.setCustomValidity === "function") {
+      campo.setCustomValidity(mensagem);
+    }
+    if (typeof campo.reportValidity === "function") {
+      campo.reportValidity();
+    }
+    return false;
+  };
+
+  const validarCamposObrigatorios = () => {
+    if (alunoAplicativo) return true;
+
+    const camposObrigatorios = [
+      { name: "Alunos_Codigo", label: "Código do Aluno" },
+      { name: "Alunos_Nome", label: "Nome Completo" },
+      { name: "Alunos_Data_Nascimento", label: "Data de Nascimento" },
+      { name: "Alunos_Data_Matricula", label: "Data de Matrícula" },
+      { name: "Alunos_Endereco_CEP", label: "CEP" },
+      { name: "Alunos_Endereco", label: "Endereço" },
+      { name: "Alunos_Endereco_Bairro", label: "Bairro" },
+      { name: "Alunos_Endereco_Localidade", label: "Localidade" },
+      { name: "Alunos_Endereco_Cidade", label: "Cidade" },
+      { name: "Alunos_Endereco_Estado", label: "Estado" },
+      { name: "Alunos_Telefone", label: "Telefone" },
+      { name: "Alunos_Email", label: "Email" },
+      {
+        name: "Alunos_Contato_Emergencia",
+        label: "Nome do Contato de Emergência",
+      },
+      {
+        name: "Alunos_Telefone_Emergencia_1",
+        label: "Telefone Emergência 1",
+      },
+    ];
+
+    const primeiroCampoFaltante = camposObrigatorios.find(({ name }) => {
+      const valor = editFormData[name];
+      return isCampoVazio(valor);
+    });
+
+    if (primeiroCampoFaltante) {
+      return apontarCampoObrigatorio(primeiroCampoFaltante.name);
+    }
+
+    if (cpfAlunoObrigatorio && !editFormData.Alunos_CPF?.trim()) {
+      return apontarCampoObrigatorio("Alunos_CPF");
+    }
+
+    if (!cpfAlunoObrigatorio) {
+      const paiNome = !!editFormData.Alunos_Nome_Pai_Responsavel?.trim();
+      const paiCpf = !!editFormData.Alunos_CPF_Pai_Responsavel?.trim();
+      const maeNome = !!editFormData.Alunos_Nome_Mae_Responsavel?.trim();
+      const maeCpf = !!editFormData.Alunos_CPF_Mae_Responsavel?.trim();
+
+      const paiCompleto = paiNome && paiCpf;
+      const maeCompleta = maeNome && maeCpf;
+
+      if (!paiCompleto && !maeCompleta) {
+        if (paiNome && !paiCpf) {
+          return apontarCampoObrigatorio("Alunos_CPF_Pai_Responsavel");
+        }
+        if (!paiNome && paiCpf) {
+          return apontarCampoObrigatorio("Alunos_Nome_Pai_Responsavel");
+        }
+        if (maeNome && !maeCpf) {
+          return apontarCampoObrigatorio("Alunos_CPF_Mae_Responsavel");
+        }
+        if (!maeNome && maeCpf) {
+          return apontarCampoObrigatorio("Alunos_Nome_Mae_Responsavel");
+        }
+        return apontarCampoObrigatorio("Alunos_Nome_Pai_Responsavel");
+      }
+    }
+
+    return true;
+  };
 
   // Observação: validações específicas de pai/mãe para menores são
   // realizadas no submit (exigem pai ou mãe com nome+CPF). Removidas
@@ -79,10 +249,14 @@ function StudentEditForm({
   return (
     <div>
       <form
+        ref={formRef}
         onSubmit={async (e) => {
           e.preventDefault();
           setLoadingbutton(true);
           try {
+            if (!validarCamposObrigatorios()) {
+              return;
+            }
             // Validação de CPF do aluno
             if (
               editFormData.Alunos_CPF &&
@@ -92,7 +266,8 @@ function StudentEditForm({
               return;
             }
             // Para menores: exigir (pai nome + pai cpf válidos) OU (mae nome + mae cpf válidos)
-            if (calcularIdade(editFormData.Alunos_Data_Nascimento) < 18) {
+            // Somente se não for aluno de aplicativo
+            if (!alunoAplicativo && calcularIdade(editFormData.Alunos_Data_Nascimento) < 18) {
               const paiHasName = !!(
                 editFormData.Alunos_Nome_Pai_Responsavel &&
                 editFormData.Alunos_Nome_Pai_Responsavel.trim()
@@ -174,13 +349,13 @@ function StudentEditForm({
               if (arquivosEdit.contrato)
                 data.append("contrato", arquivosEdit.contrato);
               response = await api.patch(
-                `/alunos/update/${editFormData.Alunos_Codigo}`,
+                `/alunos/update/${codigoOriginalRef.current}`,
                 data,
                 { headers: { "Content-Type": "multipart/form-data" } },
               );
             } else {
               response = await api.patch(
-                `/alunos/update/${editFormData.Alunos_Codigo}`,
+                `/alunos/update/${codigoOriginalRef.current}`,
                 formDataConvertido,
               );
             }
@@ -353,15 +528,34 @@ function StudentEditForm({
             value={editFormData.Alunos_Nome || ""}
             onChange={handleChange}
             className={`w-full px-4 py-2 ${corCampoEditavel(
-              true,
+              fieldEditable(editFormData.Alunos_Nome),
             )} text-white rounded-md`}
             required
+            readOnly={!fieldEditable(editFormData.Alunos_Nome)}
           />
         </div>
 
+        {/* Início - Aluno de Aplicativo */}
+        <div className="flex items-center gap-3 py-1">
+          <input
+            type="checkbox"
+            id="editAlunoAplicativo"
+            checked={alunoAplicativo}
+            onChange={handleAlunoAplicativoChange}
+            className="w-4 h-4 accent-blue-500 cursor-pointer"
+          />
+          <label
+            htmlFor="editAlunoAplicativo"
+            className="text-sm font-medium text-blue-400 cursor-pointer select-none"
+          >
+            Aluno de Aplicativo
+          </label>
+        </div>
+        {/* FIM - Aluno de Aplicativo */}
+
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
-            Data de Nascimento *
+            Data de Nascimento{!alunoAplicativo ? " *" : ""}
           </label>
           <input
             type="date"
@@ -369,16 +563,16 @@ function StudentEditForm({
             value={editFormData.Alunos_Data_Nascimento || ""}
             onChange={handleChange}
             className={`w-full px-4 py-2 ${corCampoEditavel(
-              false,
+              dataNascimentoEditavel,
             )} text-white rounded-md`}
-            required
-            readOnly
+            required={!alunoAplicativo}
+            disabled={!dataNascimentoEditavel}
           />
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
-            CPF{cpfAlunoObrigatorio ? " *" : ""}
+            CPF{!alunoAplicativo && cpfAlunoObrigatorio ? " *" : ""}
           </label>
           <input
             type="text"
@@ -386,12 +580,12 @@ function StudentEditForm({
             value={editFormData.Alunos_CPF || ""}
             onChange={handleChange}
             className={`w-full px-4 py-2 ${corCampoEditavel(
-              !cpfAlunoReadOnly,
+              fieldEditable(editFormData.Alunos_CPF),
             )} text-white rounded-md`}
             placeholder="000.000.000-00"
             maxLength="14"
-            readOnly={cpfAlunoReadOnly}
-            required={cpfAlunoObrigatorio}
+            readOnly={cpfAlunoReadOnly || !fieldEditable(editFormData.Alunos_CPF)}
+            required={!alunoAplicativo && cpfAlunoObrigatorio}
           />
         </div>
 
@@ -399,7 +593,8 @@ function StudentEditForm({
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
             Nome do Pai / Responsavel
-            {calcularIdade(editFormData.Alunos_Data_Nascimento) < 18
+            {!alunoAplicativo &&
+            calcularIdade(editFormData.Alunos_Data_Nascimento) < 18
               ? " *"
               : ""}
           </label>
@@ -409,15 +604,17 @@ function StudentEditForm({
             value={editFormData.Alunos_Nome_Pai_Responsavel || ""}
             onChange={handleChange}
             className={`w-full px-4 py-2 ${corCampoEditavel(
-              true,
+              fieldEditable(editFormData.Alunos_Nome_Pai_Responsavel),
             )} text-white rounded-md`}
             placeholder="Deixe em branco se for maior de idade"
+            readOnly={!fieldEditable(editFormData.Alunos_Nome_Pai_Responsavel)}
           />
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
             CPF do Pai / Responsavel
-            {calcularIdade(editFormData.Alunos_Data_Nascimento) < 18
+            {!alunoAplicativo &&
+            calcularIdade(editFormData.Alunos_Data_Nascimento) < 18
               ? " *"
               : ""}
           </label>
@@ -427,10 +624,11 @@ function StudentEditForm({
             value={editFormData.Alunos_CPF_Pai_Responsavel || ""}
             onChange={handleChange}
             className={`w-full px-4 py-2 ${corCampoEditavel(
-              true,
+              fieldEditable(editFormData.Alunos_CPF_Pai_Responsavel),
             )} text-white rounded-md`}
             placeholder="000.000.000-00"
             maxLength="14"
+            readOnly={!fieldEditable(editFormData.Alunos_CPF_Pai_Responsavel)}
           />
         </div>
         {/* FIM - Pai */}
@@ -439,7 +637,8 @@ function StudentEditForm({
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
             Nome da Mãe / Responsavel
-            {calcularIdade(editFormData.Alunos_Data_Nascimento) < 18
+            {!alunoAplicativo &&
+            calcularIdade(editFormData.Alunos_Data_Nascimento) < 18
               ? " *"
               : ""}
           </label>
@@ -449,15 +648,17 @@ function StudentEditForm({
             value={editFormData.Alunos_Nome_Mae_Responsavel || ""}
             onChange={handleChange}
             className={`w-full px-4 py-2 ${corCampoEditavel(
-              true,
+              fieldEditable(editFormData.Alunos_Nome_Mae_Responsavel),
             )} text-white rounded-md`}
             placeholder="Deixe em branco se for maior de idade"
+            readOnly={!fieldEditable(editFormData.Alunos_Nome_Mae_Responsavel)}
           />
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
             CPF da Mãe / Responsavel
-            {calcularIdade(editFormData.Alunos_Data_Nascimento) < 18
+            {!alunoAplicativo &&
+            calcularIdade(editFormData.Alunos_Data_Nascimento) < 18
               ? " *"
               : ""}
           </label>
@@ -467,32 +668,34 @@ function StudentEditForm({
             value={editFormData.Alunos_CPF_Mae_Responsavel || ""}
             onChange={handleChange}
             className={`w-full px-4 py-2 ${corCampoEditavel(
-              true,
+              fieldEditable(editFormData.Alunos_CPF_Mae_Responsavel),
             )} text-white rounded-md`}
             placeholder="000.000.000-00"
             maxLength="14"
+            readOnly={!fieldEditable(editFormData.Alunos_CPF_Mae_Responsavel)}
           />
         </div>
         {/* FIM - Mae */}
 
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
-            CEP *
+            CEP{!alunoAplicativo ? " *" : ""}
           </label>
           <div className="relative w-full">
             <input
               type="text"
               name="Alunos_Endereco_CEP"
               value={editFormData.Alunos_Endereco_CEP || ""}
-              onChange={handleChange}
+              onChange={handleCepChangeFormatado}
               className={`w-full px-4 py-2 ${corCampoEditavel(
-                true,
+                fieldEditable(editFormData.Alunos_Endereco_CEP),
               )} text-white rounded-md`}
               placeholder="00000-000"
               maxLength="9"
-              required
+              required={!alunoAplicativo}
+              readOnly={!fieldEditable(editFormData.Alunos_Endereco_CEP)}
             />
-            {loadingCep && (
+            {(loadingCepBuscando || loadingCep) && (
               <span className="absolute right-2 top-2 text-white text-sm">
                 Buscando...
               </span>
@@ -502,17 +705,18 @@ function StudentEditForm({
 
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
-            Endereço *
+            Endereço{!alunoAplicativo ? " *" : ""}
           </label>
           <input
             type="text"
             name="Alunos_Endereco"
             value={editFormData.Alunos_Endereco || ""}
+            onChange={handleChange}
             className={`w-full px-4 py-2 ${corCampoEditavel(
-              false,
+              fieldEditable(editFormData.Alunos_Endereco),
             )} text-white rounded-md`}
-            readOnly
-            required
+            readOnly={!fieldEditable(editFormData.Alunos_Endereco)}
+            required={!alunoAplicativo}
           />
         </div>
 
@@ -526,63 +730,84 @@ function StudentEditForm({
             value={editFormData.Alunos_Endereco_Complemento || ""}
             onChange={handleChange}
             className={`w-full px-4 py-2 ${corCampoEditavel(
-              true,
+              fieldEditable(editFormData.Alunos_Endereco_Complemento),
             )} text-white rounded-md`}
+            readOnly={!fieldEditable(editFormData.Alunos_Endereco_Complemento)}
           />
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
-            Bairro *
+            Bairro{!alunoAplicativo ? " *" : ""}
           </label>
           <input
             type="text"
             name="Alunos_Endereco_Bairro"
             value={editFormData.Alunos_Endereco_Bairro || ""}
+            onChange={handleChange}
             className={`w-full px-4 py-2 ${corCampoEditavel(
-              false,
+              fieldEditable(editFormData.Alunos_Endereco_Bairro),
             )} text-white rounded-md`}
-            readOnly
-            required
+            readOnly={!fieldEditable(editFormData.Alunos_Endereco_Bairro)}
+            required={!alunoAplicativo}
           />
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
-            Cidade *
+            Localidade{!alunoAplicativo ? " *" : ""}
+          </label>
+          <input
+            type="text"
+            name="Alunos_Endereco_Localidade"
+            value={editFormData.Alunos_Endereco_Localidade || ""}
+            onChange={handleChange}
+            className={`w-full px-4 py-2 ${corCampoEditavel(
+              fieldEditable(editFormData.Alunos_Endereco_Localidade),
+            )} text-white rounded-md`}
+            readOnly={!fieldEditable(editFormData.Alunos_Endereco_Localidade)}
+            required={!alunoAplicativo}
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-300 mb-2">
+            Cidade{!alunoAplicativo ? " *" : ""}
           </label>
           <input
             type="text"
             name="Alunos_Endereco_Cidade"
             value={editFormData.Alunos_Endereco_Cidade || ""}
+            onChange={handleChange}
             className={`w-full px-4 py-2 ${corCampoEditavel(
-              false,
+              fieldEditable(editFormData.Alunos_Endereco_Cidade),
             )} text-white rounded-md`}
-            readOnly
-            required
+            readOnly={!fieldEditable(editFormData.Alunos_Endereco_Cidade)}
+            required={!alunoAplicativo}
           />
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
-            Estado *
+            Estado{!alunoAplicativo ? " *" : ""}
           </label>
           <input
             type="text"
             name="Alunos_Endereco_Estado"
             value={editFormData.Alunos_Endereco_Estado || ""}
+            onChange={handleChange}
             className={`w-full px-4 py-2 ${corCampoEditavel(
-              false,
+              fieldEditable(editFormData.Alunos_Endereco_Estado),
             )} text-white rounded-md`}
             maxLength="2"
-            readOnly
-            required
+            readOnly={!fieldEditable(editFormData.Alunos_Endereco_Estado)}
+            required={!alunoAplicativo}
           />
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
-            Telefone *
+            Telefone{!alunoAplicativo ? " *" : ""}
           </label>
           <input
             type="tel"
@@ -590,17 +815,18 @@ function StudentEditForm({
             value={editFormData.Alunos_Telefone || ""}
             onChange={handleChange}
             className={`w-full px-4 py-2 ${corCampoEditavel(
-              true,
+              fieldEditable(editFormData.Alunos_Telefone),
             )} text-white rounded-md`}
             placeholder="(00) 00000-0000"
             maxLength="15"
-            required
+            required={!alunoAplicativo}
+            readOnly={!fieldEditable(editFormData.Alunos_Telefone)}
           />
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
-            Email *
+            Email{!alunoAplicativo ? " *" : ""}
           </label>
           <input
             type="email"
@@ -608,15 +834,16 @@ function StudentEditForm({
             value={editFormData.Alunos_Email || ""}
             onChange={handleChange}
             className={`w-full px-4 py-2 ${corCampoEditavel(
-              true,
+              fieldEditable(editFormData.Alunos_Email),
             )} text-white rounded-md`}
-            required
+            required={!alunoAplicativo}
+            readOnly={!fieldEditable(editFormData.Alunos_Email)}
           />
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
-            Nome do Contato de Emergência *
+            Nome do Contato de Emergência{!alunoAplicativo ? " *" : ""}
           </label>
           <input
             type="text"
@@ -624,15 +851,16 @@ function StudentEditForm({
             value={editFormData.Alunos_Contato_Emergencia || ""}
             onChange={handleChange}
             className={`w-full px-4 py-2 ${corCampoEditavel(
-              true,
+              fieldEditable(editFormData.Alunos_Contato_Emergencia),
             )} text-white rounded-md`}
-            required
+            required={!alunoAplicativo}
+            readOnly={!fieldEditable(editFormData.Alunos_Contato_Emergencia)}
           />
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
-            Telefone Emergência 1 *
+            Telefone Emergência 1{!alunoAplicativo ? " *" : ""}
           </label>
           <input
             type="tel"
@@ -640,11 +868,12 @@ function StudentEditForm({
             value={editFormData.Alunos_Telefone_Emergencia_1 || ""}
             onChange={handleChange}
             className={`w-full px-4 py-2 ${corCampoEditavel(
-              true,
+              fieldEditable(editFormData.Alunos_Telefone_Emergencia_1),
             )} text-white rounded-md`}
             placeholder="(00) 00000-0000"
             maxLength="15"
-            required
+            required={!alunoAplicativo}
+            readOnly={!fieldEditable(editFormData.Alunos_Telefone_Emergencia_1)}
           />
         </div>
 
@@ -658,10 +887,28 @@ function StudentEditForm({
             value={editFormData.Alunos_Telefone_Emergencia_2 || ""}
             onChange={handleChange}
             className={`w-full px-4 py-2 ${corCampoEditavel(
-              true,
+              fieldEditable(editFormData.Alunos_Telefone_Emergencia_2),
             )} text-white rounded-md`}
             placeholder="(00) 00000-0000"
             maxLength="15"
+            readOnly={!fieldEditable(editFormData.Alunos_Telefone_Emergencia_2)}
+          />
+        </div>
+
+        <div className="md:col-span-2">
+          <label className="block text-sm font-medium text-gray-300 mb-2">
+            Data de Matrícula{!alunoAplicativo ? " *" : ""}
+          </label>
+          <input
+            type="date"
+            name="Alunos_Data_Matricula"
+            value={editFormData.Alunos_Data_Matricula || ""}
+            onChange={handleChange}
+            className={`w-full px-4 py-2 ${corCampoEditavel(
+              dataMatriculaEditavel,
+            )} text-white rounded-md`}
+            required={!alunoAplicativo}
+            disabled={!dataMatriculaEditavel}
           />
         </div>
 
@@ -683,7 +930,6 @@ function StudentEditForm({
 
         <div className="flex justify-center gap-4 pt-4">
           <Buttons.BotaoSalvarAlteracoes
-            onClick={onclick}
             loading={loadingbutton}
             disabled={loadingbutton}
           />

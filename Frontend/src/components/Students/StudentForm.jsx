@@ -87,6 +87,30 @@ function StudentForm({ aluno, onSaveSuccess }) {
   de loading e feedback (resultado) do toast */
   const [loading, setLoading] = useState(false);
 
+  /* Estado para checkbox Aluno de Aplicativo */
+  const [alunoAplicativo, setAlunoAplicativo] = useState(false);
+
+  const buscarProximoCodigoDisponivel = React.useCallback(() => {
+    api
+      .get("/alunos/proximo-codigo")
+      .then((res) => {
+        if (res.data?.proximoCodigo) {
+          setFormData((prev) => ({
+            ...prev,
+            Alunos_Codigo: res.data.proximoCodigo,
+          }));
+        }
+      })
+      .catch(() => {}); // silently fail - usuario pode inserir manualmente
+  }, []);
+
+  /* Busca o proximo codigo disponivel ao montar o formulario (somente para novo aluno) */
+  React.useEffect(() => {
+    if (!aluno) {
+      buscarProximoCodigoDisponivel();
+    }
+  }, [aluno, buscarProximoCodigoDisponivel]);
+
   /*  Uso do react useEffect para limpar mensagens do toast 
   após 1.5 segundos */
   // React.useEffect(() => {
@@ -155,149 +179,142 @@ function StudentForm({ aluno, onSaveSuccess }) {
     e.preventDefault();
     setLoading(true);
     showToast({ type: "", text: "" });
-    /* Usa a funcao utilitaria validarTelefone importado do utils
-       para validar os telefones */
-    if (
-      formData.Alunos_Telefone &&
-      !validarTelefone(formData.Alunos_Telefone)
-    ) {
-      showToast({
-        type: "error",
-        text: "Telefone principal deve ter 11 dígitos.",
-      });
-      setLoading(false);
-      return;
-    }
-    if (
-      formData.Alunos_Telefone_Emergencia_1 &&
-      !validarTelefone(formData.Alunos_Telefone_Emergencia_1)
-    ) {
-      showToast({
-        type: "error",
-        text: "Telefone de emergência 1 deve ter 11 dígitos.",
-      });
-      setLoading(false);
-      return;
-    }
-    if (
-      formData.Alunos_Telefone_Emergencia_2 &&
-      !validarTelefone(formData.Alunos_Telefone_Emergencia_2)
-    ) {
-      showToast({
-        type: "error",
-        text: "Telefone de emergência 2 deve ter 11 dígitos.",
-      });
-      setLoading(false);
-      return;
-    }
 
-    /* Faz a validacao do email usando o utilitario 
-       validarEmail importado do utils */
-
-    if (formData.Alunos_Email && !validarEmail(formData.Alunos_Email)) {
-      showToast({
-        type: "error",
-        text: "E-mail inválido.",
-      });
-      setLoading(false);
-      return;
-    }
-
-    /* Validação de CPF usando o utilitario validarCPF 
-       importado do utils */
-    if (
-      formData.Alunos_CPF &&
-      calcularIdade(formData.Alunos_Data_Nascimento) >= 18 &&
-      !validarCPF(formData.Alunos_CPF)
-    ) {
-      showToast({
-        type: "error",
-        text: "CPF do aluno inválido.",
-      });
-      setLoading(false);
-      return;
-    }
-    // Para menores: exigir (pai nome + pai cpf válidos) OU (mae nome + mae cpf válidos)
-    if (calcularIdade(formData.Alunos_Data_Nascimento) < 18) {
-      const paiHasName = !!(
-        formData.Alunos_Nome_Pai_Responsavel &&
-        formData.Alunos_Nome_Pai_Responsavel.trim()
-      );
-      const paiHasCpf = !!(
-        formData.Alunos_CPF_Pai_Responsavel &&
-        formData.Alunos_CPF_Pai_Responsavel.trim()
-      );
-      const paiCpfInvalid =
-        paiHasCpf && !validarCPF(formData.Alunos_CPF_Pai_Responsavel);
-      const paiValido = paiHasName && paiHasCpf && !paiCpfInvalid;
-
-      const maeHasName = !!(
-        formData.Alunos_Nome_Mae_Responsavel &&
-        formData.Alunos_Nome_Mae_Responsavel.trim()
-      );
-      const maeHasCpf = !!(
-        formData.Alunos_CPF_Mae_Responsavel &&
-        formData.Alunos_CPF_Mae_Responsavel.trim()
-      );
-      const maeCpfInvalid =
-        maeHasCpf && !validarCPF(formData.Alunos_CPF_Mae_Responsavel);
-      const maeValida = maeHasName && maeHasCpf && !maeCpfInvalid;
-
-      // Validações conforme regras: se ambos CPFs preenchidos, valida ambos; se apenas um preenchido, valida esse
-      if (paiHasCpf && maeHasCpf) {
-        if (paiCpfInvalid && !maeCpfInvalid) {
-          showToast({ type: "error", text: "CPF do pai inválido" });
-          setLoading(false);
-          return;
-        }
-        if (maeCpfInvalid && !paiCpfInvalid) {
-          showToast({ type: "error", text: "CPF da mãe inválido" });
-          setLoading(false);
-          return;
-        }
-        if (paiCpfInvalid && maeCpfInvalid) {
-          showToast({
-            type: "error",
-            text: "CPF do pai inválido e CPF da mãe inválido",
-          });
-          setLoading(false);
-          return;
-        }
-      } else if (paiHasCpf && !maeHasCpf) {
-        if (paiCpfInvalid) {
-          showToast({ type: "error", text: "CPF do pai inválido" });
-          setLoading(false);
-          return;
-        }
-      } else if (maeHasCpf && !paiHasCpf) {
-        if (maeCpfInvalid) {
-          showToast({ type: "error", text: "CPF da mãe inválido" });
-          setLoading(false);
-          return;
-        }
-      }
-
-      // Se não há CPFs inválidos, garantir que ao menos uma combinação nome+cpf válida exista
-      if (!paiValido && !maeValida) {
+    if (!alunoAplicativo) {
+      /* Usa a funcao utilitaria validarTelefone importado do utils
+         para validar os telefones */
+      if (
+        formData.Alunos_Telefone &&
+        !validarTelefone(formData.Alunos_Telefone)
+      ) {
         showToast({
           type: "error",
-          text: "Nome e CPF do pai ou nome e CPF da mãe são obrigatórios para menores de 18 anos.",
+          text: "Telefone principal deve ter 11 dígitos.",
         });
         setLoading(false);
         return;
       }
-    }
+      if (
+        formData.Alunos_Telefone_Emergencia_1 &&
+        !validarTelefone(formData.Alunos_Telefone_Emergencia_1)
+      ) {
+        showToast({
+          type: "error",
+          text: "Telefone de emergência 1 deve ter 11 dígitos.",
+        });
+        setLoading(false);
+        return;
+      }
+      if (
+        formData.Alunos_Telefone_Emergencia_2 &&
+        !validarTelefone(formData.Alunos_Telefone_Emergencia_2)
+      ) {
+        showToast({
+          type: "error",
+          text: "Telefone de emergência 2 deve ter 11 dígitos.",
+        });
+        setLoading(false);
+        return;
+      }
 
-    /* Se estiver tudo ok, tenta enviar os dados para a API
-     Cria a variavel response para armazenar a resposta da API
-     Se aluno e aluno.Alunos_Codigo existirem ele faz a atualizacao (Patch).
-     Se foto ou contrato foram alterados, cria um FormData
-     Cria uma variável constante data que "seta" como um FormData
-     Object.entries transforma o formData em um array de pares [chave, valor]
-     para cada key (chave) e value (valor) do formData, adiciona ao FormData
-     => (arrow function) significa que para cada par chave-valor, executa a função que esta no bloco { }
-     Data.append (variavel data do tipo FormData) append (adiciona) "o proximo". como no começo nao tem nada
-     ele adiciona o primeiro par chave-valor, depois o segundo, e assim por diante*/
+      /* Faz a validacao do email usando o utilitario 
+         validarEmail importado do utils */
+      if (formData.Alunos_Email && !validarEmail(formData.Alunos_Email)) {
+        showToast({
+          type: "error",
+          text: "E-mail inválido.",
+        });
+        setLoading(false);
+        return;
+      }
+
+      /* Validação de CPF usando o utilitario validarCPF 
+         importado do utils */
+      if (
+        formData.Alunos_CPF &&
+        calcularIdade(formData.Alunos_Data_Nascimento) >= 18 &&
+        !validarCPF(formData.Alunos_CPF)
+      ) {
+        showToast({
+          type: "error",
+          text: "CPF do aluno inválido.",
+        });
+        setLoading(false);
+        return;
+      }
+      // Para menores: exigir (pai nome + pai cpf válidos) OU (mae nome + mae cpf válidos)
+      if (calcularIdade(formData.Alunos_Data_Nascimento) < 18) {
+        const paiHasName = !!(
+          formData.Alunos_Nome_Pai_Responsavel &&
+          formData.Alunos_Nome_Pai_Responsavel.trim()
+        );
+        const paiHasCpf = !!(
+          formData.Alunos_CPF_Pai_Responsavel &&
+          formData.Alunos_CPF_Pai_Responsavel.trim()
+        );
+        const paiCpfInvalid =
+          paiHasCpf && !validarCPF(formData.Alunos_CPF_Pai_Responsavel);
+        const paiValido = paiHasName && paiHasCpf && !paiCpfInvalid;
+
+        const maeHasName = !!(
+          formData.Alunos_Nome_Mae_Responsavel &&
+          formData.Alunos_Nome_Mae_Responsavel.trim()
+        );
+        const maeHasCpf = !!(
+          formData.Alunos_CPF_Mae_Responsavel &&
+          formData.Alunos_CPF_Mae_Responsavel.trim()
+        );
+        const maeCpfInvalid =
+          maeHasCpf && !validarCPF(formData.Alunos_CPF_Mae_Responsavel);
+        const maeValida = maeHasName && maeHasCpf && !maeCpfInvalid;
+
+        // Validações conforme regras: se ambos CPFs preenchidos, valida ambos; se apenas um preenchido, valida esse
+        if (paiHasCpf && maeHasCpf) {
+          if (paiCpfInvalid && !maeCpfInvalid) {
+            showToast({ type: "error", text: "CPF do pai inválido" });
+            setLoading(false);
+            return;
+          }
+          if (maeCpfInvalid && !paiCpfInvalid) {
+            showToast({ type: "error", text: "CPF da mãe inválido" });
+            setLoading(false);
+            return;
+          }
+          if (paiCpfInvalid && maeCpfInvalid) {
+            showToast({
+              type: "error",
+              text: "CPF do pai inválido e CPF da mãe inválido",
+            });
+            setLoading(false);
+            return;
+          }
+        } else if (paiHasCpf && !maeHasCpf) {
+          if (paiCpfInvalid) {
+            showToast({ type: "error", text: "CPF do pai inválido" });
+            setLoading(false);
+            return;
+          }
+        } else if (maeHasCpf && !paiHasCpf) {
+          if (maeCpfInvalid) {
+            showToast({ type: "error", text: "CPF da mãe inválido" });
+            setLoading(false);
+            return;
+          }
+        }
+
+        // Se não há CPFs inválidos, garantir que ao menos uma combinação nome+cpf válida exista
+        if (!paiValido && !maeValida) {
+          showToast({
+            type: "error",
+            text: "Nome e CPF do pai ou nome e CPF da mãe são obrigatórios para menores de 18 anos.",
+          });
+          setLoading(false);
+          return;
+        }
+      }
+    } // fim if (!alunoAplicativo)
+
+    /* Se estiver tudo ok, tenta enviar os dados para a API */
     try {
       /* Converte datas do formato brasileiro para ISO antes de enviar usando 
          o utilitario converterData importado do utils */
@@ -305,6 +322,7 @@ function StudentForm({ aluno, onSaveSuccess }) {
         ...formData,
         Alunos_Data_Nascimento: converterData(formData.Alunos_Data_Nascimento),
         Alunos_Data_Matricula: converterData(formData.Alunos_Data_Matricula),
+        Alunos_Aplicativo: alunoAplicativo,
       };
       /* cria uma variavel do tipo let (response).
          Se aluno e aluno.Alunos_Codigo existirem ele faz a atualizacao (Patch).
@@ -462,8 +480,12 @@ function StudentForm({ aluno, onSaveSuccess }) {
   const handleReset = () => {
     setFormData(limparFormData());
     setArquivos({ foto: null, contrato: null });
+    setAlunoAplicativo(false);
     if (fotoInputRef.current) fotoInputRef.current.value = "";
     if (contratoInputRef.current) contratoInputRef.current.value = "";
+    if (!aluno) {
+      buscarProximoCodigoDisponivel();
+    }
   };
   /*   Cria uma variavel constante handleFileChange que lida com mudanças nos inputs de
        arquivos. Ele recebe a variavel (e) "event" variavel de sitema. (e) recebe o resultado
@@ -551,10 +573,27 @@ function StudentForm({ aluno, onSaveSuccess }) {
           />
         </div>
         {/* FIM - Nome Completo */}
+        {/* Início - Aluno de Aplicativo */}
+        <div className="flex items-center gap-3 py-1">
+          <input
+            type="checkbox"
+            id="alunoAplicativo"
+            checked={alunoAplicativo}
+            onChange={(e) => setAlunoAplicativo(e.target.checked)}
+            className="w-4 h-4 accent-blue-500 cursor-pointer"
+          />
+          <label
+            htmlFor="alunoAplicativo"
+            className="text-sm font-medium text-blue-400 cursor-pointer select-none"
+          >
+            Aluno de Aplicativo
+          </label>
+        </div>
+        {/* FIM - Aluno de Aplicativo */}
         {/* Início - Data de Nascimento */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
-            Data de Nascimento *
+            Data de Nascimento{!alunoAplicativo ? " *" : ""}
           </label>
           <input
             type="date"
@@ -562,7 +601,7 @@ function StudentForm({ aluno, onSaveSuccess }) {
             value={formData.Alunos_Data_Nascimento}
             onChange={handleChange}
             className="w-full px-4 py-2 bg-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            required
+            required={!alunoAplicativo}
           />
         </div>
         {/* FIM - Data de Nascimento */}
@@ -582,7 +621,7 @@ function StudentForm({ aluno, onSaveSuccess }) {
             placeholder="000.000.000-00"
             maxLength="14"
             /* inclui o required para o campo */
-            required={calcularIdade(formData.Alunos_Data_Nascimento) >= 18}
+            required={!alunoAplicativo && calcularIdade(formData.Alunos_Data_Nascimento) >= 18}
           />
         </div>
         {/* FIM - CPF */}
@@ -590,7 +629,10 @@ function StudentForm({ aluno, onSaveSuccess }) {
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
             Nome do Pai / Responsavel
-            {calcularIdade(formData.Alunos_Data_Nascimento) < 18 ? " *" : ""}
+            {!alunoAplicativo &&
+            calcularIdade(formData.Alunos_Data_Nascimento) < 18
+              ? " *"
+              : ""}
           </label>
           <input
             type="text"
@@ -604,7 +646,10 @@ function StudentForm({ aluno, onSaveSuccess }) {
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
             CPF do Pai / Responsavel
-            {calcularIdade(formData.Alunos_Data_Nascimento) < 18 ? " *" : ""}
+            {!alunoAplicativo &&
+            calcularIdade(formData.Alunos_Data_Nascimento) < 18
+              ? " *"
+              : ""}
           </label>
           <input
             type="text"
@@ -622,7 +667,10 @@ function StudentForm({ aluno, onSaveSuccess }) {
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
             Nome da Mãe / Responsavel
-            {calcularIdade(formData.Alunos_Data_Nascimento) < 18 ? " *" : ""}
+            {!alunoAplicativo &&
+            calcularIdade(formData.Alunos_Data_Nascimento) < 18
+              ? " *"
+              : ""}
           </label>
           <input
             type="text"
@@ -636,7 +684,10 @@ function StudentForm({ aluno, onSaveSuccess }) {
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
             CPF da Mãe / Responsavel
-            {calcularIdade(formData.Alunos_Data_Nascimento) < 18 ? " *" : ""}
+            {!alunoAplicativo &&
+            calcularIdade(formData.Alunos_Data_Nascimento) < 18
+              ? " *"
+              : ""}
           </label>
           <input
             type="text"
@@ -652,7 +703,7 @@ function StudentForm({ aluno, onSaveSuccess }) {
         {/* CEP */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
-            CEP *
+            CEP{!alunoAplicativo ? " *" : ""}
           </label>
           <div className="relative w-full">
             <input
@@ -664,7 +715,7 @@ function StudentForm({ aluno, onSaveSuccess }) {
               className="w-full px-4 py-2 bg-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="00000-000"
               maxLength="9"
-              required
+              required={!alunoAplicativo}
             />
             {loadingCep && (
               <span className="absolute right-2 top-2 text-orange-500 text-base">
@@ -677,7 +728,7 @@ function StudentForm({ aluno, onSaveSuccess }) {
         {/* Início - Endereço */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
-            Endereço *
+            Endereço{!alunoAplicativo ? " *" : ""}
           </label>
           <input
             type="text"
@@ -686,7 +737,7 @@ function StudentForm({ aluno, onSaveSuccess }) {
             onChange={handleChange}
             className="w-full px-4 py-2 bg-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             readOnly
-            required
+            required={!alunoAplicativo}
           />
         </div>
         {/* FIM - Endereço */}
@@ -707,7 +758,7 @@ function StudentForm({ aluno, onSaveSuccess }) {
         {/* Início - Bairro */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
-            Bairro *
+            Bairro{!alunoAplicativo ? " *" : ""}
           </label>
           <input
             type="text"
@@ -716,14 +767,14 @@ function StudentForm({ aluno, onSaveSuccess }) {
             onChange={handleChange}
             className="w-full px-4 py-2 bg-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             readOnly
-            required
+            required={!alunoAplicativo}
           />
         </div>
         {/* FIM - Bairro */}
         {/* Início - Localidade */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
-            Localidade *
+            Localidade{!alunoAplicativo ? " *" : ""}
           </label>
           <input
             type="text"
@@ -732,14 +783,14 @@ function StudentForm({ aluno, onSaveSuccess }) {
             onChange={handleChange}
             className="w-full px-4 py-2 bg-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             readOnly
-            required
+            required={!alunoAplicativo}
           />
         </div>
         {/* FIM - Localidade */}
         {/* Início - Cidade */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
-            Cidade *
+            Cidade{!alunoAplicativo ? " *" : ""}
           </label>
           <input
             type="text"
@@ -748,14 +799,14 @@ function StudentForm({ aluno, onSaveSuccess }) {
             onChange={handleChange}
             className="w-full px-4 py-2 bg-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             readOnly
-            required
+            required={!alunoAplicativo}
           />
         </div>
         {/* FIM - Cidade */}
         {/* Início - Estado */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
-            Estado *
+            Estado{!alunoAplicativo ? " *" : ""}
           </label>
           <input
             type="text"
@@ -765,14 +816,14 @@ function StudentForm({ aluno, onSaveSuccess }) {
             className="w-full px-4 py-2 bg-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             maxLength="2"
             readOnly
-            required
+            required={!alunoAplicativo}
           />
         </div>
         {/* FIM - Estado */}
         {/* Início - Telefone */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
-            Telefone *
+            Telefone{!alunoAplicativo ? " *" : ""}
           </label>
           <input
             type="tel"
@@ -782,14 +833,14 @@ function StudentForm({ aluno, onSaveSuccess }) {
             className="w-full px-4 py-2 bg-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="(00) 00000-0000"
             maxLength="15"
-            required
+            required={!alunoAplicativo}
           />
         </div>
         {/* FIM - Telefone */}
         {/* Início - Email */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
-            Email *
+            Email{!alunoAplicativo ? " *" : ""}
           </label>
           <input
             type="email"
@@ -797,14 +848,14 @@ function StudentForm({ aluno, onSaveSuccess }) {
             value={formData.Alunos_Email}
             onChange={handleChange}
             className="w-full px-4 py-2 bg-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            required
+            required={!alunoAplicativo}
           />
         </div>
         {/* FIM - Email */}
         {/* Início - Nome do Contato de Emergência */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
-            Nome do Contato de Emergência *
+            Nome do Contato de Emergência{!alunoAplicativo ? " *" : ""}
           </label>
           <input
             type="text"
@@ -812,14 +863,14 @@ function StudentForm({ aluno, onSaveSuccess }) {
             value={formData.Alunos_Contato_Emergencia}
             onChange={handleChange}
             className="w-full px-4 py-2 bg-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            required
+            required={!alunoAplicativo}
           />
         </div>
         {/* FIM - Nome do Contato de Emergência */}
         {/* Início - Telefone Emergência 1 */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
-            Telefone Emergência 1 *
+            Telefone Emergência 1{!alunoAplicativo ? " *" : ""}
           </label>
           <input
             type="tel"
@@ -829,7 +880,7 @@ function StudentForm({ aluno, onSaveSuccess }) {
             className="w-full px-4 py-2 bg-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="(00) 00000-0000"
             maxLength="15"
-            required
+            required={!alunoAplicativo}
           />
         </div>
         {/* FIM - Telefone Emergência 1 */}
@@ -907,7 +958,7 @@ function StudentForm({ aluno, onSaveSuccess }) {
         {/* Início - Data de Matrícula */}
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-2">
-            Data de Matrícula *
+            Data de Matrícula{!alunoAplicativo ? " *" : ""}
           </label>
           <input
             type="date"
@@ -915,7 +966,7 @@ function StudentForm({ aluno, onSaveSuccess }) {
             value={formData.Alunos_Data_Matricula}
             onChange={handleChange}
             className="w-full px-4 py-2 bg-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            required
+            required={!alunoAplicativo}
           />
         </div>
         {/* FIM - Data de Matrícula */}

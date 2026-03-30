@@ -84,6 +84,80 @@ const upload = multer({
   limits: { fileSize: 5 * 1024 * 1024 }, // Limite de 5MB por arquivo
 });
 
+function valorPreenchido(valor) {
+  return valor !== undefined && valor !== null && String(valor).trim() !== "";
+}
+
+function calcularIdadeFromString(dataStr) {
+  if (!dataStr) return 0;
+  let nascimento;
+  if (dataStr.includes("-")) {
+    const p = dataStr.split("-");
+    nascimento = new Date(p[0], p[1] - 1, p[2]);
+  } else if (dataStr.includes("/")) {
+    const p = dataStr.split("/");
+    nascimento = new Date(p[2], p[1] - 1, p[0]);
+  } else {
+    nascimento = new Date(dataStr);
+  }
+  const hoje = new Date();
+  let idade = hoje.getFullYear() - nascimento.getFullYear();
+  const m = hoje.getMonth() - nascimento.getMonth();
+  if (m < 0 || (m === 0 && hoje.getDate() < nascimento.getDate())) idade--;
+  return idade;
+}
+
+function isCadastroCompletoParaAlunoPadrao(data) {
+  const camposObrigatorios = [
+    data.Alunos_Codigo,
+    data.Alunos_Nome,
+    data.Alunos_Data_Nascimento,
+    data.Alunos_Data_Matricula,
+    data.Alunos_Endereco_CEP,
+    data.Alunos_Endereco,
+    data.Alunos_Endereco_Bairro,
+    data.Alunos_Endereco_Localidade,
+    data.Alunos_Endereco_Cidade,
+    data.Alunos_Endereco_Estado,
+    data.Alunos_Telefone,
+    data.Alunos_Email,
+    data.Alunos_Contato_Emergencia,
+    data.Alunos_Telefone_Emergencia_1,
+  ];
+
+  if (!camposObrigatorios.every(valorPreenchido)) return false;
+
+  const idade = calcularIdadeFromString(data.Alunos_Data_Nascimento);
+
+  if (idade >= 18) {
+    return valorPreenchido(data.Alunos_CPF);
+  }
+
+  const paiCompleto =
+    valorPreenchido(data.Alunos_Nome_Pai_Responsavel) &&
+    valorPreenchido(data.Alunos_CPF_Pai_Responsavel);
+  const maeCompleto =
+    valorPreenchido(data.Alunos_Nome_Mae_Responsavel) &&
+    valorPreenchido(data.Alunos_CPF_Mae_Responsavel);
+
+  return paiCompleto || maeCompleto;
+}
+
+function valorCadastroAluno(valor, isAplicativo) {
+  if (valorPreenchido(valor)) return valor;
+  return isAplicativo ? "" : null;
+}
+
+function normalizarBoolean(valor) {
+  return (
+    valor === true ||
+    valor === "true" ||
+    valor === 1 ||
+    valor === "1" ||
+    valor === "on"
+  );
+}
+
 async function converterPdfEmImagensBase64(arquivoPdfPath) {
   let pdf2picModule;
   try {
@@ -243,6 +317,23 @@ router.get("/contrato-preview", async (req, res) => {
 });
 
 // ✅ Inicio - Rota para obter todos os alunos.
+// ✅ Inicio - Rota para obter o próximo código de aluno disponível
+router.get("/proximo-codigo", async (req, res) => {
+  try {
+    const alunos = await Alunos_Cadastros.findAll({
+      attributes: ["Alunos_Codigo"],
+      order: [["Alunos_Codigo", "ASC"]],
+    });
+    const codigos = new Set(alunos.map((a) => a.Alunos_Codigo));
+    let proximo = 1;
+    while (codigos.has(proximo)) proximo++;
+    res.json({ proximoCodigo: proximo });
+  } catch (error) {
+    res.status(500).json({ Erro: "Erro ao buscar próximo código de aluno." });
+  }
+});
+// ✅ Fim - Rota para obter o próximo código de aluno disponível
+
 router.get("/", async (req, res) => {
   // Definindo a rota GET para obter todos os alunos o "/" define que é na raiz dessa rota alunos "/alunos"
   try {
@@ -305,7 +396,9 @@ router.post(
         Alunos_Situacao,
         Alunos_Data_Matricula,
         Alunos_Observacoes,
+        Alunos_Aplicativo,
       } = req.body;
+      const isAplicativo = normalizarBoolean(Alunos_Aplicativo);
       // Se CPF vier vazio string, enviar null para o banco (evita conflito com índice UNIQUE sobre "")
       if (Alunos_CPF !== undefined && typeof Alunos_CPF === "string") {
         Alunos_CPF = Alunos_CPF.trim() === "" ? null : Alunos_CPF;
@@ -314,57 +407,40 @@ router.post(
       // We'll set these placeholders only after determining the student's age.
 
       // Se for menor de idade, exigir pai ou mãe com CPF
-      const calcularIdadeFromString = (dataStr) => {
-        if (!dataStr) return 0;
-        let nascimento;
-        if (dataStr.includes("-")) {
-          const p = dataStr.split("-");
-          nascimento = new Date(p[0], p[1] - 1, p[2]);
-        } else if (dataStr.includes("/")) {
-          const p = dataStr.split("/");
-          nascimento = new Date(p[2], p[1] - 1, p[0]);
-        } else {
-          nascimento = new Date(dataStr);
-        }
-        const hoje = new Date();
-        let idade = hoje.getFullYear() - nascimento.getFullYear();
-        const m = hoje.getMonth() - nascimento.getMonth();
-        if (m < 0 || (m === 0 && hoje.getDate() < nascimento.getDate()))
-          idade--;
-        return idade;
-      };
       const idade = calcularIdadeFromString(Alunos_Data_Nascimento);
 
-      // If student is adult (>=18) ensure both parent name fields are set to placeholder.
-      if (idade >= 18) {
-        if (
-          !Alunos_Nome_Pai_Responsavel ||
-          Alunos_Nome_Pai_Responsavel.trim() === ""
-        ) {
-          Alunos_Nome_Pai_Responsavel = "Aluno Maior de Idade";
+      if (!isAplicativo) {
+        // If student is adult (>=18) ensure both parent name fields are set to placeholder.
+        if (idade >= 18) {
+          if (
+            !Alunos_Nome_Pai_Responsavel ||
+            Alunos_Nome_Pai_Responsavel.trim() === ""
+          ) {
+            Alunos_Nome_Pai_Responsavel = "Aluno Maior de Idade";
+          }
+          if (
+            !Alunos_Nome_Mae_Responsavel ||
+            Alunos_Nome_Mae_Responsavel.trim() === ""
+          ) {
+            Alunos_Nome_Mae_Responsavel = "Aluno Maior de Idade";
+          }
         }
-        if (
-          !Alunos_Nome_Mae_Responsavel ||
-          Alunos_Nome_Mae_Responsavel.trim() === ""
-        ) {
-          Alunos_Nome_Mae_Responsavel = "Aluno Maior de Idade";
-        }
-      }
 
-      if (idade < 18) {
-        const temPai =
-          Alunos_Nome_Pai_Responsavel &&
-          Alunos_CPF_Pai_Responsavel &&
-          Alunos_CPF_Pai_Responsavel.trim() !== "";
-        const temMae =
-          Alunos_Nome_Mae_Responsavel &&
-          Alunos_CPF_Mae_Responsavel &&
-          Alunos_CPF_Mae_Responsavel.trim() !== "";
-        if (!temPai && !temMae) {
-          return res.status(400).json({
-            Mensagem:
-              "Nome e CPF do pai ou nome e CPF da mãe são obrigatórios para menores de 18 anos.",
-          });
+        if (idade < 18) {
+          const temPai =
+            Alunos_Nome_Pai_Responsavel &&
+            Alunos_CPF_Pai_Responsavel &&
+            Alunos_CPF_Pai_Responsavel.trim() !== "";
+          const temMae =
+            Alunos_Nome_Mae_Responsavel &&
+            Alunos_CPF_Mae_Responsavel &&
+            Alunos_CPF_Mae_Responsavel.trim() !== "";
+          if (!temPai && !temMae) {
+            return res.status(400).json({
+              Mensagem:
+                "Nome e CPF do pai ou nome e CPF da mãe são obrigatórios para menores de 18 anos.",
+            });
+          }
         }
       }
 
@@ -378,29 +454,72 @@ router.post(
       const novoAluno = await Alunos_Cadastros.create({
         Alunos_Codigo,
         Alunos_Nome,
-        Alunos_CPF,
-        Alunos_Data_Nascimento,
-        Alunos_Nome_Pai_Responsavel,
-        Alunos_CPF_Pai_Responsavel,
-        Alunos_Nome_Mae_Responsavel,
-        Alunos_CPF_Mae_Responsavel,
-        Alunos_Endereco_CEP,
-        Alunos_Endereco,
-        Alunos_Endereco_Complemento,
-        Alunos_Endereco_Bairro,
-        Alunos_Endereco_Localidade,
-        Alunos_Endereco_Cidade,
-        Alunos_Endereco_Estado,
-        Alunos_Telefone,
-        Alunos_Email,
-        Alunos_Contato_Emergencia,
-        Alunos_Telefone_Emergencia_1,
-        Alunos_Telefone_Emergencia_2,
-        Alunos_Situacao,
-        Alunos_Data_Matricula,
+        Alunos_CPF: Alunos_CPF || null,
+        Alunos_Data_Nascimento: valorCadastroAluno(
+          Alunos_Data_Nascimento,
+          isAplicativo
+        ),
+        Alunos_Nome_Pai_Responsavel: valorCadastroAluno(
+          Alunos_Nome_Pai_Responsavel,
+          isAplicativo
+        ),
+        Alunos_CPF_Pai_Responsavel: valorCadastroAluno(
+          Alunos_CPF_Pai_Responsavel,
+          isAplicativo
+        ),
+        Alunos_Nome_Mae_Responsavel: valorCadastroAluno(
+          Alunos_Nome_Mae_Responsavel,
+          isAplicativo
+        ),
+        Alunos_CPF_Mae_Responsavel: valorCadastroAluno(
+          Alunos_CPF_Mae_Responsavel,
+          isAplicativo
+        ),
+        Alunos_Endereco_CEP: valorCadastroAluno(Alunos_Endereco_CEP, isAplicativo),
+        Alunos_Endereco: valorCadastroAluno(Alunos_Endereco, isAplicativo),
+        Alunos_Endereco_Complemento: valorCadastroAluno(
+          Alunos_Endereco_Complemento,
+          isAplicativo
+        ),
+        Alunos_Endereco_Bairro: valorCadastroAluno(
+          Alunos_Endereco_Bairro,
+          isAplicativo
+        ),
+        Alunos_Endereco_Localidade: valorCadastroAluno(
+          Alunos_Endereco_Localidade,
+          isAplicativo
+        ),
+        Alunos_Endereco_Cidade: valorCadastroAluno(
+          Alunos_Endereco_Cidade,
+          isAplicativo
+        ),
+        Alunos_Endereco_Estado: valorCadastroAluno(
+          Alunos_Endereco_Estado,
+          isAplicativo
+        ),
+        Alunos_Telefone: valorCadastroAluno(Alunos_Telefone, isAplicativo),
+        Alunos_Email: valorCadastroAluno(Alunos_Email, isAplicativo),
+        Alunos_Contato_Emergencia: valorCadastroAluno(
+          Alunos_Contato_Emergencia,
+          isAplicativo
+        ),
+        Alunos_Telefone_Emergencia_1: valorCadastroAluno(
+          Alunos_Telefone_Emergencia_1,
+          isAplicativo
+        ),
+        Alunos_Telefone_Emergencia_2: valorCadastroAluno(
+          Alunos_Telefone_Emergencia_2,
+          isAplicativo
+        ),
+        Alunos_Situacao: Alunos_Situacao || "Ativo",
+        Alunos_Data_Matricula: valorCadastroAluno(
+          Alunos_Data_Matricula,
+          isAplicativo
+        ),
         Alunos_Foto,
         Alunos_Contrato,
-        Alunos_Observacoes,
+        Alunos_Observacoes: valorCadastroAluno(Alunos_Observacoes, isAplicativo),
+        Alunos_Aplicativo: isAplicativo ? true : false,
       });
 
       // Registra log de criação
@@ -500,40 +619,52 @@ router.patch(
             : dadosAtualizacao.Alunos_CPF;
       }
 
-      // Removed automatic placeholder assignment here; decide after computing age below.
+      // Verifica se o aluno é ou está sendo marcado como aplicativo
+      const updIsAplicativo = Object.prototype.hasOwnProperty.call(
+        dadosAtualizacao,
+        "Alunos_Aplicativo"
+      )
+        ? normalizarBoolean(dadosAtualizacao.Alunos_Aplicativo)
+        : !!atualizaaluno.Alunos_Aplicativo;
+
+      if (
+        Object.prototype.hasOwnProperty.call(dadosAtualizacao, "Alunos_Aplicativo")
+      ) {
+        dadosAtualizacao.Alunos_Aplicativo = updIsAplicativo;
+      }
+
+      const removendoFlagAplicativo =
+        atualizaaluno.Alunos_Aplicativo === true && !updIsAplicativo;
+
+      const dadosFinais = {
+        ...atualizaaluno.toJSON(),
+        ...dadosAtualizacao,
+        Alunos_Aplicativo: updIsAplicativo,
+      };
+
+      if (
+        removendoFlagAplicativo &&
+        !isCadastroCompletoParaAlunoPadrao(dadosFinais)
+      ) {
+        return res.status(400).json({
+          Mensagem:
+            "Para converter este aluno de aplicativo para aluno padrão, o cadastro precisa estar completamente preenchido.",
+        });
+      }
 
       // Validação: se aluno for menor de 18 anos (usando data nova ou atual), exigir pai ou mãe com CPF
-      const calcularIdadeFromString = (dataStr) => {
-        if (!dataStr) return 0;
-        let nascimento;
-        if (dataStr.includes("-")) {
-          const p = dataStr.split("-");
-          nascimento = new Date(p[0], p[1] - 1, p[2]);
-        } else if (dataStr.includes("/")) {
-          const p = dataStr.split("/");
-          nascimento = new Date(p[2], p[1] - 1, p[0]);
-        } else {
-          nascimento = new Date(dataStr);
-        }
-        const hoje = new Date();
-        let idade = hoje.getFullYear() - nascimento.getFullYear();
-        const m = hoje.getMonth() - nascimento.getMonth();
-        if (m < 0 || (m === 0 && hoje.getDate() < nascimento.getDate()))
-          idade--;
-        return idade;
-      };
       const dataNascimento =
         dadosAtualizacao.Alunos_Data_Nascimento ||
         atualizaaluno.Alunos_Data_Nascimento;
       const idade = calcularIdadeFromString(dataNascimento);
 
-      // If student is adult (>=18) set both parent name fields to placeholder.
-      if (idade >= 18) {
+      // If student is adult (>=18) set both parent name fields to placeholder (only for non-aplicativo).
+      if (!updIsAplicativo && idade >= 18) {
         dadosAtualizacao.Alunos_Nome_Pai_Responsavel = "Aluno Maior de Idade";
         dadosAtualizacao.Alunos_Nome_Mae_Responsavel = "Aluno Maior de Idade";
       }
 
-      if (idade < 18) {
+      if (!updIsAplicativo && idade < 18) {
         const paiNome =
           dadosAtualizacao.Alunos_Nome_Pai_Responsavel !== undefined
             ? dadosAtualizacao.Alunos_Nome_Pai_Responsavel

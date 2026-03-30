@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from "react";
+﻿import { useState, useEffect, useRef } from "react";
 import { Routes, Route } from "react-router-dom";
 import Login from "./components/security/Login";
 import StudentForm from "./components/students/StudentForm";
@@ -45,7 +45,7 @@ function App() {
   const [extratoAlunoInicial, setExtratoAlunoInicial] = useState(null);
   const [showSessionWarning, setShowSessionWarning] = useState(false);
   const [renewingSession, setRenewingSession] = useState(false);
-  const sessionWarningFiredRef = { current: false };
+  const sessionWarningFiredRef = useRef(false);
 
   const handleRenewSession = async () => {
     setRenewingSession(true);

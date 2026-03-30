@@ -48,15 +48,15 @@ const Alunos_Cadastros = db.sequelizeconnection.define(
     },
     Alunos_Data_Nascimento: {
       type: db.Sequelize.STRING,
-      allowNull: false,
+      allowNull: true,
     },
     Alunos_Endereco_CEP: {
       type: db.Sequelize.STRING(9),
-      allowNull: false,
+      allowNull: true,
     },
     Alunos_Endereco: {
       type: db.Sequelize.STRING,
-      allowNull: false,
+      allowNull: true,
     },
     Alunos_Endereco_Complemento: {
       type: db.Sequelize.STRING,
@@ -64,35 +64,35 @@ const Alunos_Cadastros = db.sequelizeconnection.define(
     },
     Alunos_Endereco_Bairro: {
       type: db.Sequelize.STRING,
-      allowNull: false,
+      allowNull: true,
     },
     Alunos_Endereco_Localidade: {
       type: db.Sequelize.STRING,
-      allowNull: false,
+      allowNull: true,
     },
     Alunos_Endereco_Cidade: {
       type: db.Sequelize.STRING,
-      allowNull: false,
+      allowNull: true,
     },
     Alunos_Endereco_Estado: {
       type: db.Sequelize.STRING,
-      allowNull: false,
+      allowNull: true,
     },
     Alunos_Telefone: {
       type: db.Sequelize.STRING(14),
-      allowNull: false,
+      allowNull: true,
     },
     Alunos_Email: {
       type: db.Sequelize.STRING,
-      allowNull: false,
+      allowNull: true,
     },
     Alunos_Contato_Emergencia: {
       type: db.Sequelize.STRING,
-      allowNull: false,
+      allowNull: true,
     },
     Alunos_Telefone_Emergencia_1: {
       type: db.Sequelize.STRING(14),
-      allowNull: false,
+      allowNull: true,
     },
     Alunos_Telefone_Emergencia_2: {
       type: db.Sequelize.STRING(14),
@@ -114,6 +114,11 @@ const Alunos_Cadastros = db.sequelizeconnection.define(
     Alunos_Observacoes: {
       type: db.Sequelize.TEXT,
       allowNull: true,
+    },
+    Alunos_Aplicativo: {
+      type: db.Sequelize.BOOLEAN,
+      allowNull: true,
+      defaultValue: false,
     },
   },
   {

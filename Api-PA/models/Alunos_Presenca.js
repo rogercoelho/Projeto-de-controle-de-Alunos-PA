@@ -47,6 +47,6 @@ const Alunos_Presenca = db.sequelizeconnection.define(
   },
 );
 
-Alunos_Presenca.sync({ alter: true });
 
 module.exports = Alunos_Presenca;
+

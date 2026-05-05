@@ -168,36 +168,48 @@ router.delete("/delete/:tabela/:id", async (req, res) => {
       }
     }
 
-    // Se for faturamento, exclui o comprovante associado (se existir)
-    if (
-      (tabela === "faturamento" || tabela === "Alunos_Faturamento") &&
-      registro.Faturamento_Comprovante
-    ) {
-      try {
-        const baseDir =
-          process.env.NODE_ENV === "production"
-            ? "/home2/goutechc/wwwplantandoalegria_API/uploads"
-            : path.join(__dirname, "../uploads");
+    // Se for faturamento, exclui os comprovantes associados (se existirem)
+    if (tabela === "faturamento" || tabela === "Alunos_Faturamento") {
+      const baseDir =
+        process.env.NODE_ENV === "production"
+          ? "/home2/goutechc/wwwplantandoalegria_API/uploads"
+          : path.join(__dirname, "../uploads");
 
-        const comprovantePath = path.join(
-          baseDir,
-          "comprovantes",
-          registro.Faturamento_Comprovante,
-        );
+      const comprovantes = [
+        {
+          nome: registro.Faturamento_Comprovante,
+          descricao: "Comprovante de pagamento",
+        },
+        {
+          nome: registro.Faturamento_Reajuste_Comprovante,
+          descricao: "Comprovante de reajuste",
+        },
+      ].filter((item) => item.nome);
 
-        if (fs.existsSync(comprovantePath)) {
-          fs.unlinkSync(comprovantePath);
-          console.log(
-            `🗑️ Comprovante excluído: ${registro.Faturamento_Comprovante}`,
+      for (const comprovante of comprovantes) {
+        try {
+          const comprovantePath = path.join(
+            baseDir,
+            "comprovantes",
+            comprovante.nome,
           );
-        } else {
-          console.log(
-            `⚠️ Comprovante não encontrado no disco: ${registro.Faturamento_Comprovante}`,
+
+          if (fs.existsSync(comprovantePath)) {
+            fs.unlinkSync(comprovantePath);
+            console.log(
+              `🗑️ ${comprovante.descricao} excluído: ${comprovante.nome}`,
+            );
+          } else {
+            console.log(
+              `⚠️ ${comprovante.descricao} não encontrado no disco: ${comprovante.nome}`,
+            );
+          }
+        } catch (fileError) {
+          console.error(
+            `❌ Erro ao excluir ${comprovante.descricao.toLowerCase()}: ${fileError.message}`,
           );
+          // Continua com a exclusão do registro mesmo se falhar ao excluir o arquivo
         }
-      } catch (fileError) {
-        console.error(`❌ Erro ao excluir comprovante: ${fileError.message}`);
-        // Continua com a exclusão do registro mesmo se falhar ao excluir o arquivo
       }
     }
 

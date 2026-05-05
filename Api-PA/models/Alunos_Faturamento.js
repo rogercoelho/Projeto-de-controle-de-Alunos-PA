@@ -35,7 +35,7 @@ const Alunos_Faturamento = db.sequelizeconnection.define(
     Faturamento_Contador: {
       type: db.Sequelize.INTEGER,
       allowNull: true,
-      comment: "Contador utilizado para lógica de WET",
+      comment: "Contador utilizado para lÃ³gica de WET",
     },
     Faturamento_Repasse: {
       type: db.Sequelize.DECIMAL(10, 2),
@@ -52,10 +52,10 @@ const Alunos_Faturamento = db.sequelizeconnection.define(
       allowNull: true,
       comment: "Valor do desconto aplicado no pagamento",
     },
-    Faturamento_Motivo: {
+    Faturamento_Desconto_Motivo: {
       type: db.Sequelize.STRING,
       allowNull: true,
-      comment: "Motivo do desconto ou observação do pagamento",
+      comment: "Motivo do desconto aplicado no pagamento",
     },
     Faturamento_Comprovante: {
       type: db.Sequelize.STRING,
@@ -73,6 +73,11 @@ const Alunos_Faturamento = db.sequelizeconnection.define(
       allowNull: true,
       comment: "Data em que o cancelamento foi realizado",
     },
+    Faturamento_Cancelado_Motivo: {
+      type: db.Sequelize.STRING,
+      allowNull: true,
+      comment: "Motivo do cancelamento do plano",
+    },
     Faturamento_Reajuste: {
       type: db.Sequelize.DECIMAL(10, 2),
       allowNull: true,
@@ -83,7 +88,17 @@ const Alunos_Faturamento = db.sequelizeconnection.define(
       type: db.Sequelize.DATEONLY,
       allowNull: true,
       comment:
-        "Data a partir da qual o reajuste é aplicado (primeiro dia do mês)",
+        "Data a partir da qual o reajuste Ã© aplicado (primeiro dia do mÃªs)",
+    },
+    Faturamento_Reajuste_Motivo: {
+      type: db.Sequelize.STRING,
+      allowNull: true,
+      comment: "Motivo do reajuste aplicado ao plano",
+    },
+    Faturamento_Reajuste_Comprovante: {
+      type: db.Sequelize.STRING,
+      allowNull: true,
+      comment: "Caminho do arquivo do comprovante do reajuste",
     },
   },
   {
@@ -92,6 +107,6 @@ const Alunos_Faturamento = db.sequelizeconnection.define(
   },
 );
 
-Alunos_Faturamento.sync({ force: false });
 
 module.exports = Alunos_Faturamento;
+

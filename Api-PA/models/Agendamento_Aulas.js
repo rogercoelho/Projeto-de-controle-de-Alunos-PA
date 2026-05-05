@@ -10,7 +10,7 @@ const Agendamento_Aulas = db.sequelizeconnection.define(
       allowNull: false,
       primaryKey: true,
       autoIncrement: true,
-      comment: "ID único do agendamento",
+      comment: "ID Ãºnico do agendamento",
     },
     Horario_Id: {
       type: db.Sequelize.INTEGER,
@@ -19,7 +19,7 @@ const Agendamento_Aulas = db.sequelizeconnection.define(
         model: Horarios_Aulas,
         key: "Horario_Id",
       },
-      comment: "ID do horário vinculado",
+      comment: "ID do horÃ¡rio vinculado",
     },
     Aluno_Codigo: {
       type: db.Sequelize.INTEGER,
@@ -28,7 +28,7 @@ const Agendamento_Aulas = db.sequelizeconnection.define(
         model: Alunos_Cadastros,
         key: "Alunos_Codigo",
       },
-      comment: "Código do aluno vinculado",
+      comment: "CÃ³digo do aluno vinculado",
     },
   },
   {
@@ -46,7 +46,7 @@ const Agendamento_Aulas = db.sequelizeconnection.define(
   },
 );
 
-// Definindo associações
+// Definindo associaÃ§Ãµes
 Agendamento_Aulas.belongsTo(Horarios_Aulas, {
   foreignKey: "Horario_Id",
   as: "Horario",
@@ -67,13 +67,5 @@ Alunos_Cadastros.hasMany(Agendamento_Aulas, {
   as: "Agendamentos",
 });
 
-// Sincroniza o modelo com o banco de dados
-Agendamento_Aulas.sync({ alter: true })
-  .then(() => {
-    console.log("✅ Tabela Agendamento_Aulas sincronizada com sucesso!");
-  })
-  .catch((error) => {
-    console.error("❌ Erro ao sincronizar tabela Agendamento_Aulas:", error);
-  });
-
 module.exports = Agendamento_Aulas;
+

@@ -405,7 +405,7 @@ router.patch(
           id,
           Faturamento_Data_Pagamento,
           Faturamento_Desconto,
-          Faturamento_Motivo,
+          Faturamento_Desconto_Motivo,
         } = pag;
         if (!id) continue;
 
@@ -415,7 +415,7 @@ router.patch(
         const updateData = {
           Faturamento_Data_Pagamento: Faturamento_Data_Pagamento || null,
           Faturamento_Desconto: Faturamento_Desconto || null,
-          Faturamento_Motivo: Faturamento_Motivo || null,
+          Faturamento_Desconto_Motivo: Faturamento_Desconto_Motivo || null,
         };
 
         // Se existe comprovante para esse faturamento
@@ -684,6 +684,13 @@ router.get("/relatorio-mensal/:mes/:ano", async (req, res) => {
 router.patch("/cancelar-plano/:id", async (req, res) => {
   try {
     const { id } = req.params;
+    const motivoCancelamento = String(req.body?.motivo || "").trim();
+
+    if (!motivoCancelamento) {
+      return res
+        .status(400)
+        .json({ Erro: "O motivo do cancelamento é obrigatório." });
+    }
 
     const faturamento = await Alunos_Faturamento.findByPk(id);
     if (!faturamento) {
@@ -703,6 +710,7 @@ router.patch("/cancelar-plano/:id", async (req, res) => {
       {
         Faturamento_Cancelado: true,
         Faturamento_Cancelado_Em: dataCancelamento,
+        Faturamento_Cancelado_Motivo: motivoCancelamento,
       },
       { where: { id } },
     );
@@ -713,15 +721,23 @@ router.patch("/cancelar-plano/:id", async (req, res) => {
       "UPDATE",
       "Alunos_Faturamento",
       id,
-      `Cancelamento de plano para faturamento ${id} do aluno ${faturamento.Aluno_Codigo}`,
-      { Faturamento_Cancelado: false },
+      `Cancelamento de plano para faturamento ${id} do aluno ${faturamento.Aluno_Codigo}. Motivo: ${motivoCancelamento}`,
+      {
+        Faturamento_Cancelado: false,
+        Faturamento_Cancelado_Motivo: faturamento.Faturamento_Cancelado_Motivo,
+      },
       {
         Faturamento_Cancelado: true,
         Faturamento_Cancelado_Em: dataCancelamento,
+        Faturamento_Cancelado_Motivo: motivoCancelamento,
       },
     );
 
-    res.json({ Mensagem: "Plano cancelado com sucesso.", dataCancelamento });
+    res.json({
+      Mensagem: "Plano cancelado com sucesso.",
+      dataCancelamento,
+      motivo: motivoCancelamento,
+    });
   } catch (error) {
     console.error("Erro ao cancelar plano:", error);
     res
@@ -732,21 +748,32 @@ router.patch("/cancelar-plano/:id", async (req, res) => {
 
 // PATCH /faturamento/reajuste-plano/:id
 // Aplica um reajuste de valor mensal a partir de um determinado mês
-router.patch("/reajuste-plano/:id", async (req, res) => {
+router.patch(
+  "/reajuste-plano/:id",
+  uploadComprovante.single("comprovante"),
+  async (req, res) => {
   try {
     const { id } = req.params;
-    const { novoValor, apartirDe } = req.body;
+    const { novoValor, apartirDe, motivo } = req.body;
 
-    if (!novoValor || !apartirDe) {
-      return res
-        .status(400)
-        .json({ Erro: "Os campos novoValor e apartirDe são obrigatórios." });
+    if (
+      !novoValor ||
+      !apartirDe ||
+      !String(motivo || "").trim() ||
+      !req.file
+    ) {
+      return res.status(400).json({
+        Erro:
+          "Os campos novoValor, apartirDe, motivo e comprovante são obrigatórios.",
+      });
     }
 
     const valorParsed = parseFloat(novoValor);
     if (isNaN(valorParsed) || valorParsed < 0) {
       return res.status(400).json({ Erro: "Valor de reajuste inválido." });
     }
+
+    const motivoAjustado = String(motivo).trim();
 
     const faturamento = await Alunos_Faturamento.findByPk(id);
     if (!faturamento) {
@@ -757,12 +784,17 @@ router.patch("/reajuste-plano/:id", async (req, res) => {
       Faturamento_Reajuste: faturamento.Faturamento_Reajuste,
       Faturamento_Reajuste_Partir_De:
         faturamento.Faturamento_Reajuste_Partir_De,
+      Faturamento_Reajuste_Motivo: faturamento.Faturamento_Reajuste_Motivo,
+      Faturamento_Reajuste_Comprovante:
+        faturamento.Faturamento_Reajuste_Comprovante,
     };
 
     await Alunos_Faturamento.update(
       {
         Faturamento_Reajuste: valorParsed,
         Faturamento_Reajuste_Partir_De: apartirDe,
+        Faturamento_Reajuste_Motivo: motivoAjustado,
+        Faturamento_Reajuste_Comprovante: req.file.filename,
       },
       { where: { id } },
     );
@@ -773,11 +805,13 @@ router.patch("/reajuste-plano/:id", async (req, res) => {
       "UPDATE",
       "Alunos_Faturamento",
       id,
-      `Reajuste de plano aplicado para faturamento ${id} do aluno ${faturamento.Aluno_Codigo} a partir de ${apartirDe}`,
+      `Reajuste de plano aplicado para faturamento ${id} do aluno ${faturamento.Aluno_Codigo} a partir de ${apartirDe}. Motivo: ${motivoAjustado}`,
       dadosAntigos,
       {
         Faturamento_Reajuste: valorParsed,
         Faturamento_Reajuste_Partir_De: apartirDe,
+        Faturamento_Reajuste_Motivo: motivoAjustado,
+        Faturamento_Reajuste_Comprovante: req.file.filename,
       },
     );
 
@@ -785,6 +819,8 @@ router.patch("/reajuste-plano/:id", async (req, res) => {
       Mensagem: "Reajuste aplicado com sucesso.",
       apartirDe,
       novoValor: valorParsed,
+      motivo: motivoAjustado,
+      comprovante: req.file.filename,
     });
   } catch (error) {
     console.error("Erro ao aplicar reajuste:", error);

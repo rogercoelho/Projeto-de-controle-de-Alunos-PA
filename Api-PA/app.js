@@ -12,8 +12,10 @@ const adminroutes = require("./routes/adminroutes"); // Importando as rotas de a
 const planosroutes = require("./routes/planosroutes"); // Importando as rotas de planos
 const faturamentoroutes = require("./routes/faturamentoroutes");
 const presencaroutes = require("./routes/presencaroutes");
-const horarioroutes = require("./routes/horarioroutes"); // Importando as rotas de horários
+const horarioroutes = require("./routes/horarioroutes"); // Importando as rotas de horarios
 const agendamentoroutes = require("./routes/agendamentoroutes"); // Importando as rotas de agendamento
+const { testConnection, logConnectionError } = require("./models/db");
+const syncDatabase = require("./models/sync");
 const app = express(); // Criando uma variavel constante para iniciar o express
 
 //middlewares basicos
@@ -31,14 +33,36 @@ app.use("/uploads", express.static(uploadsPath));
 
 //CORS  - Libera acesso apenas do dominio especificado
 // Inicio - Restringindo o acesso a API apenas para o site especificado
+const allowedOrigins = [
+  "https://www.plantandoalegria.com.br",
+  "https://plantandoalegria.com.br",
+];
+
 const corsOptions = {
-  origin: [
-    "https://www.plantandoalegria.com.br",
-    "https://plantandoalegria.com.br",
-    "http://localhost:5173",
-    "http://localhost:5174",
-    "http://127.0.0.1:5173",
-  ], // Dominios permitidos (com e sem www)
+  origin(origin, callback) {
+    if (!origin) {
+      return callback(null, true);
+    }
+
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    try {
+      const { hostname, protocol } = new URL(origin);
+      const isLocalDev =
+        protocol === "http:" &&
+        ["localhost", "127.0.0.1", "::1"].includes(hostname);
+
+      if (isLocalDev) {
+        return callback(null, true);
+      }
+    } catch {
+      // Continua para a rejeicao padrao abaixo.
+    }
+
+    return callback(new Error(`Origem nao permitida pelo CORS: ${origin}`));
+  }, // Dominios permitidos (com e sem www) e localhost em desenvolvimento
   methods: ["GET", "DELETE", "PATCH", "POST"], // Metodos HTTP permitidos
   credentials: true, // Permite envio de cookies e headers de autenticacao
   optionsSuccessStatus: 200, // Alguns navegadores (como o IE11) exigem um status 200 para respostas de pre-voo
@@ -115,8 +139,24 @@ app.get("/", (req, res) => {
 
 // SERVIDOR -- Inicializando o servidor
 
-// Iniciando o servidor escutando na porta 8081
-app.listen(8081, () => {
-  // Iniciando o servidor na porta 8081
-  console.log("Servidor rodando na url http://localhost:8081"); // Mensagem que aparece no terminal quando o servidor e iniciado.
-});
+async function startServer() {
+  try {
+    await testConnection();
+
+    if (process.env.DB_SYNC !== "false") {
+      await syncDatabase();
+    }
+
+    // Iniciando o servidor escutando na porta 8081
+    app.listen(8081, () => {
+      // Iniciando o servidor na porta 8081
+      console.log("Servidor rodando na url http://localhost:8081"); // Mensagem que aparece no terminal quando o servidor e iniciado.
+    });
+  } catch (error) {
+    logConnectionError(error);
+    process.exit(1);
+  }
+}
+
+startServer();
+

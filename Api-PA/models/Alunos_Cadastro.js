@@ -122,11 +122,9 @@ const Alunos_Cadastros = db.sequelizeconnection.define(
     },
   },
   {
-    timestamps: false, // ⛔ Desativa createdAt e updatedAt automaticos do Sequelize
+    timestamps: false, // â›” Desativa createdAt e updatedAt automaticos do Sequelize
   }
 );
-// Sincronizando o modelo com o banco de dados (criando a tabela se não existir)
-//force: false -> não apaga a tabela se já existir. true -> apaga a tabela e cria novamente
-Alunos_Cadastros.sync({ force: false });
 // Exportando o modelo Alunos_Cadastro para ser usado em outros arquivos
 module.exports = Alunos_Cadastros;
+

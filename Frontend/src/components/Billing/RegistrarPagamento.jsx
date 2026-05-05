@@ -125,7 +125,7 @@ function RegistrarPagamento() {
         id: fatId,
         Faturamento_Data_Pagamento: datasPagamento[fatId] || null,
         Faturamento_Desconto: descontos[fatId] || null,
-        Faturamento_Motivo: motivosDesconto[fatId] || null,
+        Faturamento_Desconto_Motivo: motivosDesconto[fatId] || null,
         ...(novoContador !== null && { Faturamento_Contador: novoContador }),
         ...(repasse !== null && { Faturamento_Repasse: repasse }),
       };

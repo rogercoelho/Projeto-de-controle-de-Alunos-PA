@@ -1,24 +1,7 @@
 ﻿import { useState, useEffect, useRef } from "react";
+import { Suspense, lazy } from "react";
 import { Routes, Route } from "react-router-dom";
-import Login from "./components/security/Login";
-import StudentForm from "./components/students/StudentForm";
-import StudentSearch from "./components/students/StudentSearch";
-import { UsersComponents } from "./components/Security/Users";
-import PackagesForm from "./components/Packages/PackagesForm";
-import PackagesSearch from "./components/Packages/PackagesSearch";
-import Financeiro from "./components/Financeiro";
-import Faturamento from "./components/Billing/Faturamento";
-import RegistrarPagamento from "./components/Billing/RegistrarPagamento";
-import ExtratoAluno from "./components/Billing/ExtratoAluno";
-import Relatorio_PA from "./components/Billing/Relatorio_PA";
-import Relatorio_WET from "./components/Billing/Relatorio_WET";
-import RenovacoesPendentes from "./components/Billing/RenovacoesPendentes";
-import RegistrarPresenca from "./components/Attendance/RegistrarPresenca";
-import RelatorioPresenca from "./components/Attendance/RelatorioPresenca";
-import ControleHorarios from "./components/Classes/ControleHorarios";
-import AgendamentoAulas from "./components/Classes/AgendamentoAulas";
-import ProtectedRoute from "./components/Security/ProtectedRoute";
-import AdminDelete from "./components/Security/AdminDelete";
+import ProtectedRoute from "./components/security/ProtectedRoute";
 import MobileMenu from "./components/miscellaneous/MobileMenu";
 import { logout, getUsuario, isAdmin, getToken } from "./services/auth";
 import api from "./services/api";
@@ -27,6 +10,54 @@ import SessionWarningModal from "./components/miscellaneous/SessionWarningModal"
 
 import useToast from "./hooks/useToast";
 import MessageToast from "./components/miscellaneous/MessageToast";
+
+const Login = lazy(() => import("./components/security/Login"));
+const StudentForm = lazy(() => import("./components/students/StudentForm"));
+const StudentSearch = lazy(() => import("./components/students/StudentSearch"));
+const UserForm = lazy(() =>
+  import("./components/security/Users").then(({ UsersComponents }) => ({
+    default: UsersComponents.UserForm,
+  })),
+);
+const UserList = lazy(() =>
+  import("./components/security/Users").then(({ UsersComponents }) => ({
+    default: UsersComponents.UserList,
+  })),
+);
+const PackagesForm = lazy(() => import("./components/Packages/PackagesForm"));
+const PackagesSearch = lazy(() =>
+  import("./components/Packages/PackagesSearch"),
+);
+const Financeiro = lazy(() => import("./components/Financeiro"));
+const Faturamento = lazy(() => import("./components/Billing/Faturamento"));
+const RegistrarPagamento = lazy(() =>
+  import("./components/Billing/RegistrarPagamento"),
+);
+const ExtratoAluno = lazy(() => import("./components/Billing/ExtratoAluno"));
+const Relatorio_PA = lazy(() => import("./components/Billing/Relatorio_PA"));
+const Relatorio_WET = lazy(() => import("./components/Billing/Relatorio_WET"));
+const RenovacoesPendentes = lazy(() =>
+  import("./components/Billing/RenovacoesPendentes"),
+);
+const RegistrarPresenca = lazy(() =>
+  import("./components/Attendance/RegistrarPresenca"),
+);
+const RelatorioPresenca = lazy(() =>
+  import("./components/Attendance/RelatorioPresenca"),
+);
+const ControleHorarios = lazy(() =>
+  import("./components/Classes/ControleHorarios"),
+);
+const AgendamentoAulas = lazy(() =>
+  import("./components/Classes/AgendamentoAulas"),
+);
+const AdminDelete = lazy(() => import("./components/security/AdminDelete"));
+
+const loadingFallback = (
+  <div className="w-full p-6 text-center text-sm text-gray-300">
+    Carregando...
+  </div>
+);
 
 function App() {
   const [activeComponent, setActiveComponent] = useState(null);
@@ -45,6 +76,7 @@ function App() {
   const [extratoAlunoInicial, setExtratoAlunoInicial] = useState(null);
   const [showSessionWarning, setShowSessionWarning] = useState(false);
   const [renewingSession, setRenewingSession] = useState(false);
+  const [sessionRemaining, setSessionRemaining] = useState(null);
   const sessionWarningFiredRef = useRef(false);
 
   const handleRenewSession = async () => {
@@ -65,42 +97,36 @@ function App() {
     }
   };
 
-  // Token expiry countdown component
-  const TokenExpiry = () => {
-    const [remaining, setRemaining] = useState(null);
-    const [, forceUpdate] = useState(0);
+  const decodeExp = (token) => {
+    if (!token) return null;
+    try {
+      const payload = token.split(".")[1];
+      if (!payload) return null;
+      const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
+      const json = JSON.parse(atob(base64));
+      return json.exp ? json.exp * 1000 : null;
+    } catch {
+      return null;
+    }
+  };
 
-    const decodeExp = (token) => {
-      if (!token) return null;
-      try {
-        const payload = token.split(".")[1];
-        if (!payload) return null;
-        const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
-        const json = JSON.parse(atob(base64));
-        return json.exp ? json.exp * 1000 : null;
-      } catch {
-        return null;
-      }
-    };
-
-    useEffect(() => {
-      // Relê o token quando a sessão for renovada
-      const onRenewed = () => forceUpdate((n) => n + 1);
-      window.addEventListener("session-renewed", onRenewed);
-      return () => window.removeEventListener("session-renewed", onRenewed);
-    }, []);
-
-    useEffect(() => {
+  useEffect(() => {
+    const atualizarContadorSessao = () => {
       const token = getToken();
       const expMs = decodeExp(token);
-      if (!expMs) return;
 
-      // Reinicia o controle do aviso ao reler o token
+      if (!expMs) {
+        setSessionRemaining(null);
+        setShowSessionWarning(false);
+        return;
+      }
+
       sessionWarningFiredRef.current = false;
 
       const update = () => {
         const diff = Math.max(0, Math.floor((expMs - Date.now()) / 1000));
-        setRemaining(diff);
+        setSessionRemaining(diff);
+
         if (diff <= 0) {
           window.dispatchEvent(
             new CustomEvent("token-expired", { detail: "Sua sessão expirou." }),
@@ -112,20 +138,42 @@ function App() {
       };
 
       update();
-      const iv = setInterval(update, 1000);
-      return () => clearInterval(iv);
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [forceUpdate]);
+      return setInterval(update, 1000);
+    };
 
-    if (remaining === null) return null;
-    const mm = String(Math.floor(remaining / 60)).padStart(2, "0");
-    const ss = String(remaining % 60).padStart(2, "0");
-    return (
-      <span className="text-xs text-gray-400 ml-2">
-        expira em - {mm}:{ss}
-      </span>
-    );
-  };
+    let intervalId = atualizarContadorSessao();
+
+    const reiniciarContadorSessao = () => {
+      if (intervalId) clearInterval(intervalId);
+      intervalId = atualizarContadorSessao();
+    };
+
+    const limparContadorSessao = () => {
+      if (intervalId) clearInterval(intervalId);
+      intervalId = null;
+      sessionWarningFiredRef.current = false;
+      setShowSessionWarning(false);
+      setSessionRemaining(null);
+    };
+
+    window.addEventListener("login", reiniciarContadorSessao);
+    window.addEventListener("session-renewed", reiniciarContadorSessao);
+    window.addEventListener("logout", limparContadorSessao);
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+      window.removeEventListener("login", reiniciarContadorSessao);
+      window.removeEventListener("session-renewed", reiniciarContadorSessao);
+      window.removeEventListener("logout", limparContadorSessao);
+    };
+  }, []);
+
+  const sessionRemainingLabel =
+    sessionRemaining === null
+      ? null
+      : `${String(Math.floor(sessionRemaining / 60)).padStart(2, "0")}:${String(
+          sessionRemaining % 60,
+        ).padStart(2, "0")}`;
 
   const handleLogout = () => {
     if (confirm("Deseja realmente sair?")) {
@@ -235,12 +283,13 @@ function App() {
         onRenew={handleRenewSession}
         loading={renewingSession}
       />
-      <Routes>
-        <Route path="/security/login" element={<Login />} />
-        <Route
-          path="/*"
-          element={
-            <ProtectedRoute>
+      <Suspense fallback={loadingFallback}>
+        <Routes>
+          <Route path="/security/login" element={<Login />} />
+          <Route
+            path="/*"
+            element={
+              <ProtectedRoute>
               <div className="w-full h-auto min-h-screen mx-auto flex flex-col justify-start p-3 sm:p-6 bg-gray-900 text-white border-8 border-red-900 rounded-4xl">
                 <div className="relative">
                   {/* Botao de Logout e informacoes do usuario - Desktop */}
@@ -267,7 +316,11 @@ function App() {
                           ? "Administrador"
                           : "Aluno"}
                       </p>
-                      <TokenExpiry />
+                      {sessionRemainingLabel && (
+                        <span className="text-xs text-gray-400 ml-2">
+                          expira em - {sessionRemainingLabel}
+                        </span>
+                      )}
                     </div>
                     <button
                       onClick={handleLogout}
@@ -309,7 +362,11 @@ function App() {
                             ? "Administrador"
                             : "Aluno"}
                         </p>
-                        <TokenExpiry />
+                        {sessionRemainingLabel && (
+                          <span className="text-xs text-gray-400 ml-2">
+                            expira em - {sessionRemainingLabel}
+                          </span>
+                        )}
                       </div>
                       <button
                         onClick={handleLogout}
@@ -345,12 +402,10 @@ function App() {
                         />
                       )}
                       {activeComponent2 === "UserForm" && (
-                        <UsersComponents.UserForm key="user-form" />
+                        <UserForm key="user-form" />
                       )}
                       {activeComponent2 === "UserList" && (
-                        <UsersComponents.UserList
-                          key={`user-list-${userListKey}`}
-                        />
+                        <UserList key={`user-list-${userListKey}`} />
                       )}
                       {activeComponent2 === "PackagesForm" && (
                         <PackagesForm key={`packages-form`} />
@@ -434,10 +489,11 @@ function App() {
                   </div>
                 )}
               </div>
-            </ProtectedRoute>
-          }
-        />
-      </Routes>
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
+      </Suspense>
     </>
   );
 }

@@ -11,7 +11,7 @@ function MessageToast({ messageToast }) {
 
   return (
     <div
-      className={`fixed bottom-4 right-4 z-50 p-4 rounded-md shadow-lg max-w-md w-auto border-2 ${bgColor}`}
+      className={`fixed bottom-4 right-4 z-[9999] p-4 rounded-md shadow-lg max-w-md w-auto border-2 ${bgColor}`}
       //style={{ minWidth: 200, textAlign: "center" }}
     >
       {messageToast.text}

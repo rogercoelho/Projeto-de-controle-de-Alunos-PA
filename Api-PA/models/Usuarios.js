@@ -1,67 +1,59 @@
 // ==============================
-// 👤 Usuarios.js - Modelo de Usuários
+// ðŸ‘¤ Usuarios.js - Modelo de UsuÃ¡rios
 // ==============================
 
-const db = require("./db"); // Importa a conexão com o banco de dados
+const db = require("./db"); // Importa a conexÃ£o com o banco de dados
 
-// Define o modelo de Usuários usando Sequelize
+// Define o modelo de UsuÃ¡rios usando Sequelize
 const Usuarios = db.sequelizeconnection.define(
   "Usuarios", // Nome do modelo
   {
-    // Definição dos campos da tabela
+    // DefiniÃ§Ã£o dos campos da tabela
     Usuario_ID: {
-      type: db.Sequelize.INTEGER, // Tipo: número inteiro
-      primaryKey: true, // Define como chave primária
+      type: db.Sequelize.INTEGER, // Tipo: nÃºmero inteiro
+      primaryKey: true, // Define como chave primÃ¡ria
       autoIncrement: true, // Auto incremento
-      allowNull: false, // Não permite valor nulo
+      allowNull: false, // NÃ£o permite valor nulo
     },
     Usuario_Login: {
-      type: db.Sequelize.STRING(50), // Tipo: string com tamanho máximo de 50 caracteres
-      allowNull: false, // Não permite valor nulo
-      unique: true, // Login deve ser único
+      type: db.Sequelize.STRING(50), // Tipo: string com tamanho mÃ¡ximo de 50 caracteres
+      allowNull: false, // NÃ£o permite valor nulo
+      unique: true, // Login deve ser Ãºnico
     },
     Usuario_Senha: {
-      type: db.Sequelize.STRING(255), // Tipo: string com tamanho máximo de 255 caracteres (para hash)
-      allowNull: false, // Não permite valor nulo
+      type: db.Sequelize.STRING(255), // Tipo: string com tamanho mÃ¡ximo de 255 caracteres (para hash)
+      allowNull: false, // NÃ£o permite valor nulo
     },
     Usuario_Nome: {
-      type: db.Sequelize.STRING(100), // Tipo: string com tamanho máximo de 100 caracteres
-      allowNull: false, // Não permite valor nulo
+      type: db.Sequelize.STRING(100), // Tipo: string com tamanho mÃ¡ximo de 100 caracteres
+      allowNull: false, // NÃ£o permite valor nulo
     },
     Usuario_Grupo: {
       type: db.Sequelize.ENUM("Administrador", "Alunos"), // Tipo: ENUM com valores permitidos
-      allowNull: false, // Não permite valor nulo
-      defaultValue: "Alunos", // Valor padrão é 'Alunos'
+      allowNull: false, // NÃ£o permite valor nulo
+      defaultValue: "Alunos", // Valor padrÃ£o Ã© 'Alunos'
     },
     Usuario_Aluno_ID: {
-      type: db.Sequelize.INTEGER, // Tipo: número inteiro (FK para tabela Alunos_Cadastros)
-      allowNull: true, // Permite nulo (Administradores não precisam ter ID de aluno)
-      unique: true, // Cada aluno pode ter apenas um usuário vinculado
+      type: db.Sequelize.INTEGER, // Tipo: nÃºmero inteiro (FK para tabela Alunos_Cadastros)
+      allowNull: true, // Permite nulo (Administradores nÃ£o precisam ter ID de aluno)
+      unique: true, // Cada aluno pode ter apenas um usuÃ¡rio vinculado
       references: {
         model: "Alunos_Cadastros", // Nome da tabela referenciada
-        key: "Alunos_Codigo", // Chave primária da tabela Alunos_Cadastros
+        key: "Alunos_Codigo", // Chave primÃ¡ria da tabela Alunos_Cadastros
       },
     },
     Usuario_Ativo: {
       type: db.Sequelize.BOOLEAN, // Tipo: booleano
-      allowNull: false, // Não permite valor nulo
-      defaultValue: true, // Valor padrão é true (ativo)
+      allowNull: false, // NÃ£o permite valor nulo
+      defaultValue: true, // Valor padrÃ£o Ã© true (ativo)
     },
   },
   {
-    freezeTableName: true, // Mantém o nome da tabela como definido (não pluraliza)
+    freezeTableName: true, // MantÃ©m o nome da tabela como definido (nÃ£o pluraliza)
     timestamps: true, // Adiciona campos createdAt e updatedAt automaticamente
   }
 );
 
-// Sincroniza o modelo com o banco de dados (cria a tabela se não existir)
-Usuarios.sync({ alter: false })
-  .then(() => {
-    console.log("✅ Tabela 'Usuarios' sincronizada com sucesso!");
-  })
-  .catch((error) => {
-    console.error("❌ Erro ao sincronizar tabela 'Usuarios':", error);
-  });
-
-// Exporta o modelo para ser usado em outras partes da aplicação
+// Exporta o modelo para ser usado em outras partes da aplicaÃ§Ã£o
 module.exports = Usuarios;
+

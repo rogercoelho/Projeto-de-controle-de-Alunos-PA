@@ -28,7 +28,7 @@ const Log_Alteracoes = db.sequelizeconnection.define(
     Log_Acao: {
       type: db.Sequelize.STRING(50),
       allowNull: false,
-      comment: "Tipo de ação: CREATE, UPDATE, DELETE, ATIVAR, DESATIVAR",
+      comment: "Tipo de aÃ§Ã£o: CREATE, UPDATE, DELETE, ATIVAR, DESATIVAR",
     },
     Log_Tabela: {
       type: db.Sequelize.STRING(100),
@@ -43,26 +43,25 @@ const Log_Alteracoes = db.sequelizeconnection.define(
     Log_Descricao: {
       type: db.Sequelize.TEXT,
       allowNull: true,
-      comment: "Descrição detalhada da alteração",
+      comment: "DescriÃ§Ã£o detalhada da alteraÃ§Ã£o",
     },
     Log_Dados_Antigos: {
       type: db.Sequelize.JSON,
       allowNull: true,
-      comment: "Dados antes da alteração (formato JSON)",
+      comment: "Dados antes da alteraÃ§Ã£o (formato JSON)",
     },
     Log_Dados_Novos: {
       type: db.Sequelize.JSON,
       allowNull: true,
-      comment: "Dados depois da alteração (formato JSON)",
+      comment: "Dados depois da alteraÃ§Ã£o (formato JSON)",
     },
   },
   {
-    timestamps: false, // Desativa createdAt e updatedAt automáticos do Sequelize
+    timestamps: false, // Desativa createdAt e updatedAt automÃ¡ticos do Sequelize
   }
 );
 
-// Sincronizando o modelo com o banco de dados (criando a tabela se não existir)
-Log_Alteracoes.sync({ force: false });
 
 // Exportando o modelo Log_Alteracoes para ser usado em outros arquivos
 module.exports = Log_Alteracoes;
+

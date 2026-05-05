@@ -8,6 +8,7 @@ function AdminDelete() {
   const [registroId, setRegistroId] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showSenhaModal, setShowSenhaModal] = useState(false);
   const [senha, setSenha] = useState("");
   const [senhaError, setSenhaError] = useState("");
@@ -28,10 +29,14 @@ function AdminDelete() {
       });
       return;
     }
-    const confirmar = window.confirm(
+    const confirmar = true; /*
       `⚠️ ATENÇÃO: Você está prestes a excluir permanentemente o registro ID ${registroId} da tabela ${tabela}.\n\nEsta ação NÃO PODE SER DESFEITA!\n\nDeseja continuar?`,
-    );
-    if (!confirmar) return;
+    ); */
+    setShowConfirmModal(true);
+  };
+
+  const handleOpenSenhaModal = () => {
+    setShowConfirmModal(false);
     setShowSenhaModal(true);
     setSenha("");
     setSenhaError("");
@@ -64,6 +69,7 @@ function AdminDelete() {
       });
       setTabela("");
       setRegistroId("");
+      setShowConfirmModal(false);
       setShowSenhaModal(false);
       setSenha("");
       setTimeout(() => {
@@ -97,11 +103,48 @@ function AdminDelete() {
   const handleReset = () => {
     setTabela("");
     setRegistroId("");
+    setShowConfirmModal(false);
+    setShowSenhaModal(false);
+    setSenha("");
+    setSenhaError("");
     setMessage({ type: "", text: "" });
   };
 
   return (
     <div className="w-full max-w-2xl mx-auto h-auto p-3 sm:p-6 bg-gray-800 rounded-xl">
+      {/* Modal de confirmação da exclusão */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 px-2">
+          <div
+            className="bg-gray-800 rounded-2xl p-6 w-full max-w-md shadow-lg border border-red-700"
+            style={{ minWidth: 0 }}
+          >
+            <div className="flex flex-col items-center text-center">
+              <span className="text-red-400 text-2xl mb-3">⚠️</span>
+              <span className="text-red-400 text-lg font-bold mb-3">
+                Atenção
+              </span>
+              <p className="text-white text-sm leading-relaxed mb-3">
+                Você está prestes a excluir permanentemente o registro ID{" "}
+                <span className="font-bold text-red-300">{registroId}</span> da
+                tabela <span className="font-bold text-red-300">{tabela}</span>.
+              </p>
+              <p className="text-red-300 text-sm font-semibold mb-5">
+                Esta ação NÃO PODE SER DESFEITA!
+              </p>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-2 w-full">
+              <Buttons.BotaoPrimario onClick={handleOpenSenhaModal}>
+                Continuar
+              </Buttons.BotaoPrimario>
+              <Buttons.BotaoCancelar
+                onClick={() => setShowConfirmModal(false)}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modal de senha */}
       {showSenhaModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 px-2">

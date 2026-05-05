@@ -1,5 +1,4 @@
 ﻿import { useEffect, useMemo, useRef, useState } from "react";
-import { jsPDF } from "jspdf";
 import api from "../../services/api";
 import useToast from "../../hooks/useToast";
 import MessageToast from "../miscellaneous/MessageToast";
@@ -339,7 +338,8 @@ function RegistrarPresenca() {
   ];
   const diasSemana = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"];
 
-  const gerarPDF = () => {
+  const gerarPDF = async () => {
+    const { jsPDF } = await import("jspdf");
     const nomeMes = nomesMeses[mesSelecionadoIndex];
     const filename = `Grade-${nomeMes}-${anoSelecionado}.pdf`;
 

@@ -41,10 +41,17 @@ function Login() {
       console.error("Erro ao fazer login:", error);
       // Se for erro 401, o interceptor global já trata
       if (error.response?.status !== 401) {
+        const apiMessage =
+          error.response?.data?.Mensagem || error.response?.data?.message;
+        const networkMessage = !error.response
+          ? "Nao foi possivel conectar a API. Verifique se a API esta rodando."
+          : null;
+
         setMessage({
           type: "error",
           text:
-            error.response?.data?.message ||
+            apiMessage ||
+            networkMessage ||
             "Erro ao fazer login. Verifique suas credenciais.",
         });
         setTimeout(() => {

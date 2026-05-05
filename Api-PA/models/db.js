@@ -1,30 +1,62 @@
-const Sequelize = require("sequelize"); // criando uma variavel constante para importar o Sequelize.
+const path = require("path");
+require("dotenv").config({ path: path.resolve(__dirname, "..", ".env") });
 
-// Criando a conexão com o banco de dados usando Sequelize.
-const sequelizeconnection = new Sequelize( //criando a constante sequelizeconnection para a conexão com o banco de dados.
-  "goutechc_controle_pa2", // Nome do banco de dados
-  "goutechc_controle_pa2", // Usuário do banco de dados
-  "Lello@dmin1010", // Senha do banco de dados
-  {
-    host: process.env.DB_HOST || "localhost", // Host do banco de dados. Usa localhost no servidor, IP externo para desenvolvimento local
-    dialect: "mysql", // Dialeto do banco de dados
-    logging: false, // Desabilita logs SQL no console (melhora performance)
+const Sequelize = require("sequelize");
+
+const database = process.env.DB_NAME || "goutechc_controle_pa2";
+const username = process.env.DB_USER || "goutechc_controle_pa2";
+const password = process.env.DB_PASSWORD || "Lello@dmin1010";
+const host = process.env.DB_HOST || "localhost";
+const port = Number(process.env.DB_PORT || 3306);
+
+const sequelizeconnection = new Sequelize(database, username, password, {
+  host,
+  port,
+  dialect: "mysql",
+  dialectOptions: {
+    connectTimeout: Number(process.env.DB_CONNECT_TIMEOUT || 10000),
+  },
+  logging: false,
+});
+
+async function testConnection() {
+  await sequelizeconnection.authenticate();
+  console.log(
+    `Conexao com o banco de dados realizada com sucesso! (${host}:${port}/${database})`,
+  );
+}
+
+function logConnectionError(error) {
+  console.error("Erro ao conectar ao banco de dados.");
+  console.error(`Destino configurado: ${host}:${port}/${database}`);
+
+  if (error?.name === "SequelizeConnectionRefusedError") {
+    console.error(
+      "A conexao foi recusada. Verifique se o MySQL/MariaDB esta iniciado e se DB_HOST/DB_PORT estao corretos no arquivo Api-PA/.env.",
+    );
+    return;
   }
-);
 
-sequelizeconnection // Testando a conexão com o banco de dados.
-  .authenticate() // Verifica se a conexão foi bem-sucedida Autenticando
-  .then(function () {
-    // Se a conexão for bem-sucedida
-    console.log("✅ Conexão com o banco de dados realizada com sucesso!"); // Mensagem de sucesso na conexão
-  })
-  .catch(function (error) {
-    // Se houver erro na conexão
-    console.log("❌ Erro ao conectar ao banco de dados:" + error); // Mensagem de erro na conexão
-  });
+  if (error?.name === "SequelizeAccessDeniedError") {
+    console.error(
+      "Acesso negado. Verifique DB_USER e DB_PASSWORD no arquivo Api-PA/.env.",
+    );
+    return;
+  }
 
-// Exportando o objeto Sequelize e a conexão com o banco de dados.
+  if (error?.name === "SequelizeConnectionError") {
+    console.error(
+      "Nao foi possivel abrir conexao. Verifique host, porta, rede e credenciais do banco.",
+    );
+    return;
+  }
+
+  console.error(error);
+}
+
 module.exports = {
-  Sequelize: Sequelize, // Exportando o objeto Sequelize
-  sequelizeconnection: sequelizeconnection, // Exportando a conexão com o banco de dados
+  Sequelize,
+  sequelizeconnection,
+  testConnection,
+  logConnectionError,
 };

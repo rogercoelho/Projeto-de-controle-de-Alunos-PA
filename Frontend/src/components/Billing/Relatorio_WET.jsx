@@ -141,6 +141,17 @@ function Relatorio_WET() {
     return { parcela, totalParcelas };
   };
 
+  const montarMotivo = (pag) => {
+    const motivos = [
+      pag.Faturamento_Desconto_Motivo,
+      pag.Faturamento_Cancelado_Motivo,
+      pag.Faturamento_Reajuste_Motivo,
+    ]
+      .map((motivo) => String(motivo || "").trim())
+      .filter(Boolean);
+    return motivos.length > 0 ? motivos.join("\n") : "";
+  };
+
   // Processar dados do relatório
   const processarDados = () => {
     if (
@@ -192,6 +203,7 @@ function Relatorio_WET() {
             : valorComDesconto,
         valorWET: typeof valorWET === "number" ? -valorWET : valorWET,
         valorPA: typeof valorPA === "number" ? -valorPA : valorPA,
+        motivo: montarMotivo(pag),
         isCancelamento: true,
       });
     };
@@ -221,22 +233,21 @@ function Relatorio_WET() {
       valorWETBase,
       valorPABase,
     ) => {
-      const delta = valorReajuste - valorMensalBase;
       const desc = parseFloat(percentualDesconto) || 0;
-      const deltaComDesconto =
+      const valorComDescontoReajuste =
         typeof valorComDescontoBase === "number"
-          ? delta * (1 - desc / 100)
+          ? valorReajuste * (1 - desc / 100)
           : "-";
-      const deltaWET =
+      const valorWETReajuste =
         typeof valorWETBase === "number"
-          ? typeof deltaComDesconto === "number"
-            ? deltaComDesconto / 2
+          ? typeof valorComDescontoReajuste === "number"
+            ? valorComDescontoReajuste / 2
             : 0
           : "-";
-      const deltaPA =
+      const valorPAReajuste =
         typeof valorPABase === "number"
-          ? typeof deltaComDesconto === "number"
-            ? deltaComDesconto / 2
+          ? typeof valorComDescontoReajuste === "number"
+            ? valorComDescontoReajuste / 2
             : 0
           : "-";
       resultado.push({
@@ -248,10 +259,11 @@ function Relatorio_WET() {
         planoTipo: plano.Plano_Pagamento || "-",
         dataPagamento: null,
         parcela: parcelaStr,
-        valorMensal: delta,
-        valorComDesconto: deltaComDesconto,
-        valorWET: deltaWET,
-        valorPA: deltaPA,
+        valorMensal: valorReajuste,
+        valorComDesconto: valorComDescontoReajuste,
+        valorWET: valorWETReajuste,
+        valorPA: valorPAReajuste,
+        motivo: montarMotivo(pag),
         isReajuste: true,
       });
     };
@@ -306,6 +318,7 @@ function Relatorio_WET() {
             valorComDesconto: "-",
             valorWET: repasse,
             valorPA: 0,
+            motivo: montarMotivo(pag),
           });
           if (
             isMesCancelado(
@@ -373,6 +386,7 @@ function Relatorio_WET() {
           valorComDesconto,
           valorWET,
           valorPA,
+          motivo: montarMotivo(pag),
         });
         if (
           isMesCancelado(
@@ -494,12 +508,12 @@ function Relatorio_WET() {
         codigo: marginLeft + 2,
         aluno: marginLeft + 16,
         plano: marginLeft + 62,
-        parcela: marginLeft + 100,
-        dataPag: marginLeft + 125,
-        valorMensal: marginLeft + 155,
-        valorDesc: marginLeft + 190,
-        valorWET: marginLeft + 225,
-        valorPA: marginLeft + 255,
+        parcela: marginLeft + 92,
+        dataPag: marginLeft + 112,
+        valorMensal: marginLeft + 136,
+        valorDesc: marginLeft + 163,
+        valorWET: marginLeft + 190,
+        motivo: marginLeft + 219,
       };
 
       doc.text("Cód", colX.codigo, y + 5.5);
@@ -510,13 +524,18 @@ function Relatorio_WET() {
       doc.text("Valor Mensal", colX.valorMensal, y + 5.5);
       doc.text(`Valor c/ Desc`, colX.valorDesc, y + 5.5);
       doc.text("Repasse WET ( 50% )", colX.valorWET, y + 5.5);
+      doc.text("Motivo", colX.motivo, y + 5.5);
 
       y += 12;
 
       // Linhas de dados
       const textPurple = [192, 132, 252];
       for (const item of dados) {
-        if (y > 185) {
+        const motivoLinhas = item.motivo
+          ? doc.splitTextToSize(item.motivo, 26)
+          : [];
+        const rowHeight = Math.max(6, motivoLinhas.length * 4);
+        if (y > 185 - rowHeight) {
           doc.addPage();
           doc.setFillColor(...bgDark);
           doc.rect(0, 0, 297, 210, "F");
@@ -546,9 +565,15 @@ function Relatorio_WET() {
             : "-";
         doc.text(valorComDescText, colX.valorDesc, y);
         doc.setTextColor(...textWhite);
-        doc.text(`R$ ${item.valorWET.toFixed(2)}`, colX.valorWET, y);
+        const valorWETText =
+          typeof item.valorWET === "number" ? `R$ ${item.valorWET.toFixed(2)}` : "-";
+        doc.text(valorWETText, colX.valorWET, y);
+        doc.setTextColor(...textGray);
+        if (motivoLinhas.length > 0) {
+          doc.text(motivoLinhas, colX.motivo, y);
+        }
 
-        y += 6;
+        y += rowHeight;
       }
 
       // Linha de total
@@ -570,6 +595,8 @@ function Relatorio_WET() {
       );
       doc.setTextColor(...textWhite);
       doc.text(`R$ ${totais.valorWET.toFixed(2)}`, colX.valorWET, y + 4);
+      doc.setTextColor(...textGray);
+      doc.text("", colX.motivo, y + 4);
 
       // Rodapé
       doc.setFontSize(8);
@@ -635,11 +662,10 @@ function Relatorio_WET() {
       } else if (sortBy === "dataPagamento") {
         va = va ? new Date(va).getTime() : 0;
         vb = vb ? new Date(vb).getTime() : 0;
-      } else if (
-        ["valorMensal", "valorComDesconto", "valorWET", "valorPA"].includes(
-          sortBy,
-        )
-      ) {
+      } else if (sortBy === "motivo") {
+        va = (va || "").toString();
+        vb = (vb || "").toString();
+      } else if (["valorMensal", "valorComDesconto", "valorWET", "valorPA"].includes(sortBy)) {
         va = Number(va) || 0;
         vb = Number(vb) || 0;
       }
@@ -921,6 +947,17 @@ function Relatorio_WET() {
                               : "▲"
                             : ""}
                         </th>
+                        <th
+                          className="px-3 py-3 cursor-pointer"
+                          onClick={() => handleHeaderClick("motivo")}
+                        >
+                          Motivo{" "}
+                          {sortBy === "motivo"
+                            ? sortDir === "desc"
+                              ? "▼"
+                              : "▲"
+                            : ""}
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
@@ -929,12 +966,12 @@ function Relatorio_WET() {
                           key={item.id}
                           className={`border-b border-gray-700 ${
                             item.isCancelamento
-                              ? "bg-red-950/30"
+                              ? "bg-red-950/30 hover:bg-red-900/40"
                               : item.isReajuste
-                                ? "bg-blue-950/30"
+                                ? "bg-blue-950/30 hover:bg-blue-900/40"
                                 : idx % 2 === 0
-                                  ? "bg-gray-800"
-                                  : "bg-gray-750"
+                                  ? "bg-gray-800 hover:bg-gray-700"
+                                  : "bg-gray-750 hover:bg-gray-700"
                           }`}
                         >
                           <td className="px-3 py-2 text-gray-400">
@@ -1000,6 +1037,9 @@ function Relatorio_WET() {
                               ? `${item.isReajuste && item.valorWET > 0 ? "+" : ""}R$ ${item.valorWET.toFixed(2)}`
                               : item.valorWET}
                           </td>
+                          <td className="px-3 py-2 text-gray-300 whitespace-pre-line align-top">
+                            {item.motivo || ""}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -1019,6 +1059,7 @@ function Relatorio_WET() {
                           <td className="px-3 py-3 text-blue-400 text-right rounded-br-lg">
                             R$ {totais.valorWET.toFixed(2)}
                           </td>
+                          <td className="px-3 py-3 text-gray-400"></td>
                         </tr>
                       </tfoot>
                     )}

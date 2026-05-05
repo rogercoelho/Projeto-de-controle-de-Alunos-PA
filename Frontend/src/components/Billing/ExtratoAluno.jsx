@@ -80,9 +80,9 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
   const [messageToast, showToast] = useToast();
   const [comprovanteModal, setComprovanteModal] = useState(null);
   const [cancelando, setCancelando] = useState(null);
-  const [confirmCancelModal, setConfirmCancelModal] = useState(null); // fatId pendente de confirmação
+  const [confirmCancelModal, setConfirmCancelModal] = useState(null); // { fatId, motivo }
   const [reajusteModal, setReajusteModal] = useState(null);
-  // reajusteModal = { fatId, mesFuturos: [{value, label}], mesAPartirDe, novoValor }
+  // reajusteModal = { fatId, mesFuturos: [{value, label}], mesAPartirDe, novoValor, motivo }
   const [aplicandoReajuste, setAplicandoReajuste] = useState(false);
 
   // Buscar todos os alunos ao montar
@@ -112,15 +112,22 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
   }, [initialAlunoCodigo]);
 
   const handleCancelarPlano = (fatId) => {
-    setConfirmCancelModal(fatId);
+    setConfirmCancelModal({ fatId, motivo: "" });
   };
 
   const handleConfirmarCancelamento = async () => {
-    const fatId = confirmCancelModal;
-    setConfirmCancelModal(null);
+    const fatId = confirmCancelModal?.fatId;
+    const motivo = String(confirmCancelModal?.motivo || "").trim();
+    if (!fatId) return;
+    if (!motivo) {
+      showToast({ type: "error", text: "Informe o motivo do cancelamento." });
+      return;
+    }
+
     setCancelando(fatId);
+    setConfirmCancelModal(null);
     try {
-      await api.patch(`/faturamento/cancelar-plano/${fatId}`);
+      await api.patch(`/faturamento/cancelar-plano/${fatId}`, { motivo });
       showToast({ type: "success", text: "Plano cancelado com sucesso!" });
       // Recarregar extrato
       const res = await api.get(`/faturamento/extrato/${codigoAluno}/all`);
@@ -143,7 +150,7 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
     const mesFuturos = fatMesesSorted
       .filter(([, m]) => {
         const [mAno, mMes] = m.mesAno.split("-").map(Number);
-        return mAno * 12 + (mMes - 1) > mesAtualNum;
+        return mAno * 12 + (mMes - 1) >= mesAtualNum;
       })
       .map(([, m]) => ({
         value: m.mesAno,
@@ -154,19 +161,32 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
       mesFuturos,
       mesAPartirDe: mesFuturos[0]?.value || "",
       novoValor: "",
+      motivo: "",
+      comprovante: null,
     });
   };
 
   const handleSalvarReajuste = async () => {
-    if (!reajusteModal.mesAPartirDe || !reajusteModal.novoValor) {
+    if (
+      !reajusteModal.mesAPartirDe ||
+      !reajusteModal.novoValor ||
+      !reajusteModal.motivo.trim() ||
+      !reajusteModal.comprovante
+    ) {
       showToast({ type: "error", text: "Preencha todos os campos." });
       return;
     }
     setAplicandoReajuste(true);
     try {
-      await api.patch(`/faturamento/reajuste-plano/${reajusteModal.fatId}`, {
-        novoValor: reajusteModal.novoValor,
-        apartirDe: reajusteModal.mesAPartirDe + "-01",
+      const data = new FormData();
+      data.append("novoValor", reajusteModal.novoValor);
+      data.append("apartirDe", reajusteModal.mesAPartirDe + "-01");
+      data.append("motivo", reajusteModal.motivo.trim());
+      data.append("comprovante", reajusteModal.comprovante);
+      data.append("alunoCodigo", String(codigoAluno || ""));
+
+      await api.patch(`/faturamento/reajuste-plano/${reajusteModal.fatId}`, data, {
+        headers: { "Content-Type": "multipart/form-data" },
       });
       showToast({ type: "success", text: "Reajuste aplicado com sucesso!" });
       setReajusteModal(null);
@@ -552,8 +572,11 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
           desconto: descontoPorMes,
           pago: !!fat.Faturamento_Data_Pagamento,
           dataPagamento: fat.Faturamento_Data_Pagamento,
-          motivo: fat.Faturamento_Motivo || null,
-          comprovante: fat.Faturamento_Comprovante || null,
+          motivoDesconto: fat.Faturamento_Desconto_Motivo || null,
+          motivoCancelamento: fat.Faturamento_Cancelado_Motivo || null,
+          motivoReajuste: fat.Faturamento_Reajuste_Motivo || null,
+          comprovantePagamento: fat.Faturamento_Comprovante || null,
+          comprovanteReajuste: fat.Faturamento_Reajuste_Comprovante || null,
           faturamentoId: fat.id || fat.Faturamento_ID || null,
           faturamentos: [fat],
           parcela: m.parcela,
@@ -585,6 +608,11 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
     ];
     return `${nomes[parseInt(mesNum, 10) - 1]}/${anoNum}`;
   };
+
+  const montarLinhasMotivo = (...motivos) =>
+    motivos
+      .map((motivo) => String(motivo || "").trim())
+      .filter(Boolean);
 
   const computeStats = () => {
     if (!extrato) return null;
@@ -827,17 +855,6 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
                                 🚫 Cancelado
                               </span>
                             )}
-                            {temReajuste && (
-                              <span className="inline-flex items-center gap-1 bg-blue-900/50 text-blue-300 border border-blue-700/50 rounded-full px-2 py-0.5 text-xs font-semibold">
-                                🔧 Reajuste a partir de{" "}
-                                {nomeMes(
-                                  fat.Faturamento_Reajuste_Partir_De.slice(
-                                    0,
-                                    7,
-                                  ),
-                                )}
-                              </span>
-                            )}
                             <div>
                               <h4 className="text-white font-bold text-base leading-none">
                                 {plano.Plano_Nome}
@@ -962,6 +979,12 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
                                 const reajusteDelta = ehMesReajustado
                                   ? reajusteValor - m.valor
                                   : 0;
+                                const reajusteDeltaExibido = ehMesCancelado
+                                  ? 0
+                                  : reajusteDelta;
+                                const reajusteValorExibido = ehMesCancelado
+                                  ? 0
+                                  : reajusteValor;
 
                                 return (
                                   <>
@@ -1026,13 +1049,13 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
                                           </span>
                                         )}
                                       </td>
-                                      <td className="px-3 py-2 text-gray-400 text-xs max-w-[140px]">
-                                        {m.motivo ? (
+                                      <td className="px-3 py-2 text-gray-400 text-xs max-w-[180px]">
+                                        {m.motivoDesconto ? (
                                           <span
-                                            className="line-clamp-2"
-                                            title={m.motivo}
+                                            className="whitespace-pre-line break-words"
+                                            title={m.motivoDesconto}
                                           >
-                                            {m.motivo}
+                                            {m.motivoDesconto}
                                           </span>
                                         ) : (
                                           <span className="text-gray-600">
@@ -1041,10 +1064,12 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
                                         )}
                                       </td>
                                       <td className="px-3 py-2 text-center">
-                                        {m.comprovante ? (
+                                        {m.comprovantePagamento ? (
                                           <Buttons.BotaoComprovante
                                             onClick={() =>
-                                              setComprovanteModal(m.comprovante)
+                                              setComprovanteModal(
+                                                m.comprovantePagamento,
+                                              )
                                             }
                                           />
                                         ) : (
@@ -1054,7 +1079,7 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
                                         )}
                                       </td>
                                     </tr>
-                                    {ehMesCancelado && (
+                                    {ehMesCancelado && !ehMesReajustado && (
                                       <tr
                                         key={`${key}-cancel`}
                                         className="border-b border-red-900/40 bg-red-950/20"
@@ -1081,12 +1106,36 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
                                             R$ 0,00
                                           </span>
                                         </td>
-                                        <td
-                                          className="px-3 py-2 text-center whitespace-nowrap"
-                                          colSpan={4}
-                                        >
+                                        <td className="px-3 py-2 text-center whitespace-nowrap">
                                           <span className="inline-flex items-center gap-1 bg-red-900/50 text-red-300 border border-red-700/50 rounded-full px-2 py-0.5 text-xs font-semibold">
-                                            🚫 Cancelamento
+                                            🚫 Cancelado
+                                          </span>
+                                        </td>
+                                        <td className="px-3 py-2 text-left whitespace-nowrap">
+                                          <span className="text-gray-600">
+                                            —
+                                          </span>
+                                        </td>
+                                        <td className="px-3 py-2 text-red-200 text-xs max-w-[180px]">
+                                          {montarLinhasMotivo(
+                                            m.motivoDesconto,
+                                            m.motivoCancelamento,
+                                          ).length > 0 ? (
+                                            <span className="whitespace-pre-line break-words">
+                                              {montarLinhasMotivo(
+                                                m.motivoDesconto,
+                                                m.motivoCancelamento,
+                                              ).join("\n")}
+                                            </span>
+                                          ) : (
+                                            <span className="text-gray-600">
+                                              —
+                                            </span>
+                                          )}
+                                        </td>
+                                        <td className="px-3 py-2 text-center">
+                                          <span className="text-gray-600 text-xs">
+                                            —
                                           </span>
                                         </td>
                                       </tr>
@@ -1094,19 +1143,29 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
                                     {ehMesReajustado && (
                                       <tr
                                         key={`${key}-reajuste`}
-                                        className="border-b border-blue-900/40 bg-blue-950/20"
+                                        className={
+                                          ehMesCancelado
+                                            ? "border-b border-red-900/40 bg-red-950/20"
+                                            : "border-b border-blue-900/40 bg-blue-950/20"
+                                        }
                                       >
                                         <td className="px-3 py-2 whitespace-nowrap">
-                                          <span className="text-blue-400 font-semibold">
+                                          <span
+                                            className={`font-semibold ${ehMesCancelado ? "text-red-400" : "text-blue-400"}`}
+                                          >
                                             {m.parcela}/{m.totalParcelas}
                                           </span>
                                         </td>
-                                        <td className="px-3 py-2 text-blue-300 font-medium whitespace-nowrap">
+                                        <td
+                                          className={`px-3 py-2 font-medium whitespace-nowrap ${ehMesCancelado ? "text-red-300" : "text-blue-300"}`}
+                                        >
                                           {nomeMes(m.mesAno)}
                                         </td>
-                                        <td className="px-3 py-2 text-blue-400 text-right font-mono whitespace-nowrap">
-                                          {reajusteDelta >= 0 ? "+" : ""}R${" "}
-                                          {reajusteDelta.toFixed(2)}
+                                        <td
+                                          className={`px-3 py-2 text-right font-mono whitespace-nowrap ${ehMesCancelado ? "text-red-400" : "text-blue-400"}`}
+                                        >
+                                          {reajusteDeltaExibido >= 0 ? "+" : ""}R${" "}
+                                          {reajusteDeltaExibido.toFixed(2)}
                                         </td>
                                         <td className="px-3 py-2 text-right whitespace-nowrap">
                                           <span className="text-gray-600">
@@ -1114,17 +1173,75 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
                                           </span>
                                         </td>
                                         <td className="px-3 py-2 text-right whitespace-nowrap">
-                                          <span className="text-blue-300 font-mono font-semibold">
-                                            R$ {reajusteValor.toFixed(2)}
+                                          <span
+                                            className={`font-mono font-semibold ${ehMesCancelado ? "text-red-300" : "text-blue-300"}`}
+                                          >
+                                            R$ {reajusteValorExibido.toFixed(2)}
+                                          </span>
+                                        </td>
+                                        <td className="px-3 py-2 text-center whitespace-nowrap">
+                                          <span
+                                            className={`inline-flex items-center gap-1 border rounded-full px-2 py-0.5 text-xs font-semibold ${
+                                              ehMesCancelado
+                                                ? "bg-red-900/50 text-red-300 border-red-700/50"
+                                                : "bg-blue-900/50 text-blue-300 border-blue-700/50"
+                                            }`}
+                                          >
+                                            {ehMesCancelado
+                                              ? "🚫 Cancelado"
+                                              : "🔧 Ajustado"}
+                                          </span>
+                                        </td>
+                                        <td className="px-3 py-2 text-left whitespace-nowrap">
+                                          <span className="text-gray-600">
+                                            —
                                           </span>
                                         </td>
                                         <td
-                                          className="px-3 py-2 text-center whitespace-nowrap"
-                                          colSpan={4}
+                                          className={`px-3 py-2 text-xs max-w-[180px] ${ehMesCancelado ? "text-red-200" : "text-blue-200"}`}
                                         >
-                                          <span className="inline-flex items-center gap-1 bg-blue-900/50 text-blue-300 border border-blue-700/50 rounded-full px-2 py-0.5 text-xs font-semibold">
-                                            🔧 Reajuste
-                                          </span>
+                                          {montarLinhasMotivo(
+                                            m.motivoReajuste,
+                                            ehMesCancelado
+                                              ? m.motivoCancelamento
+                                              : null,
+                                          ).length > 0 ? (
+                                            <span
+                                              className="whitespace-pre-line break-words"
+                                              title={montarLinhasMotivo(
+                                                m.motivoReajuste,
+                                                ehMesCancelado
+                                                  ? m.motivoCancelamento
+                                                  : null,
+                                              ).join("\n")}
+                                            >
+                                              {montarLinhasMotivo(
+                                                m.motivoReajuste,
+                                                ehMesCancelado
+                                                  ? m.motivoCancelamento
+                                                  : null,
+                                              ).join("\n")}
+                                            </span>
+                                          ) : (
+                                            <span className="text-gray-600">
+                                              —
+                                            </span>
+                                          )}
+                                        </td>
+                                        <td className="px-3 py-2 text-center">
+                                          {m.comprovanteReajuste ? (
+                                            <Buttons.BotaoComprovante
+                                              onClick={() =>
+                                                setComprovanteModal(
+                                                  m.comprovanteReajuste,
+                                                )
+                                              }
+                                            />
+                                          ) : (
+                                            <span className="text-gray-600 text-xs">
+                                              —
+                                            </span>
+                                          )}
                                         </td>
                                       </tr>
                                     )}
@@ -1356,6 +1473,65 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
                   className="bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-gray-300 text-sm font-medium">
+                  Descrição do motivo
+                </label>
+                <textarea
+                  rows="3"
+                  placeholder="Descreva o motivo do reajuste"
+                  value={reajusteModal.motivo}
+                  onChange={(e) =>
+                    setReajusteModal((prev) => ({
+                      ...prev,
+                      motivo: e.target.value,
+                    }))
+                  }
+                  className="bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-gray-300 text-sm font-medium">
+                  Comprovante
+                  <span className="text-red-500"> *</span>
+                </label>
+                <input
+                  key={
+                    reajusteModal.comprovante
+                      ? `${reajusteModal.comprovante.name}-${reajusteModal.comprovante.size}`
+                      : "sem-comprovante"
+                  }
+                  type="file"
+                  accept=".pdf,image/*"
+                  onChange={(e) =>
+                    setReajusteModal((prev) => ({
+                      ...prev,
+                      comprovante: e.target.files?.[0] || null,
+                    }))
+                  }
+                  className="block w-full text-sm text-gray-300 file:mr-3 file:rounded-md file:border-0 file:bg-blue-700 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-blue-600"
+                />
+                {reajusteModal.comprovante && (
+                  <div className="text-xs text-green-400 flex items-center justify-between gap-2 bg-gray-900/60 rounded-md px-3 py-2 border border-gray-700">
+                    <span className="truncate">
+                      📄 {reajusteModal.comprovante.name} (
+                      {(reajusteModal.comprovante.size / 1024).toFixed(1)} KB)
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setReajusteModal((prev) => ({
+                          ...prev,
+                          comprovante: null,
+                        }))
+                      }
+                      className="text-red-400 hover:text-red-300 font-semibold"
+                    >
+                      Remover
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
             <div className="flex gap-3">
               <button
@@ -1395,6 +1571,24 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
                 meses seguintes ao atual serão marcadas como canceladas.
               </p>
             </div>
+            <div className="mb-5">
+              <label className="text-gray-300 text-sm font-medium block mb-1">
+                Motivo do cancelamento
+                <span className="text-red-500"> *</span>
+              </label>
+              <textarea
+                rows="3"
+                placeholder="Descreva o motivo do cancelamento"
+                value={confirmCancelModal?.motivo || ""}
+                onChange={(e) =>
+                  setConfirmCancelModal((prev) => ({
+                    ...prev,
+                    motivo: e.target.value,
+                  }))
+                }
+                className="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-red-500"
+              />
+            </div>
             <div className="flex gap-3">
               <button
                 type="button"
@@ -1427,7 +1621,7 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
           >
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-white font-bold text-lg flex items-center gap-2">
-                <span>🧾</span> Comprovante de Pagamento
+                <span>🧾</span> Comprovante
               </h3>
               <button
                 type="button"

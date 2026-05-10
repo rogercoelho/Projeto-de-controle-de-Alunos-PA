@@ -28,11 +28,11 @@ const Horarios_Aulas = db.sequelizeconnection.define(
     Horario_Dia_Semana: {
       type: db.Sequelize.ENUM(
         "Segunda",
-        "TerÃ§a",
+        "Terça",
         "Quarta",
         "Quinta",
         "Sexta",
-        "SÃ¡bado",
+        "Sábado",
         "Domingo",
       ),
       allowNull: false,
@@ -48,4 +48,3 @@ const Horarios_Aulas = db.sequelizeconnection.define(
 );
 
 module.exports = Horarios_Aulas;
-

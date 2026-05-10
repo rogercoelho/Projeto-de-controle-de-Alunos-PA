@@ -3,7 +3,7 @@ import api from "../../services/api";
 import MessageToast from "../miscellaneous/MessageToast";
 import CustomSelect from "../miscellaneous/CustomSelect";
 import useToast from "../../hooks/useToast";
-import { formatarDataBR, toISODate } from "../../utils/Utils";
+import { formatarDataBR, toISODate, parseLocalDate } from "../../utils/Utils";
 
 function Faturamento() {
   const [formData, setFormData] = useState({
@@ -127,14 +127,18 @@ function Faturamento() {
 
       if (!planoInfo) throw new Error("Plano não encontrado");
       // Calcula a data de início e fim conforme o tipo do plano
-      const inicio = new Date(formData.dataVencimento);
+      // Parse seguro da data no timezone local para evitar problemas com fuso horário
+      const inicio = parseLocalDate(formData.dataVencimento);
+      if (!inicio) throw new Error("Data inválida");
       let meses = 1;
       if (planoInfo.Plano_Pagamento === "Trimestral") meses = 3;
       else if (planoInfo.Plano_Pagamento === "Semestral") meses = 6;
       else if (planoInfo.Plano_Pagamento === "Anual") meses = 12;
       // Mensal é 1 mês
+      // Para pré-pago, o mês inicial já conta como primeira parcela
+      // Logo, o fim deve ser calculado como: início + (meses - 1)
       const fim = new Date(inicio);
-      fim.setMonth(fim.getMonth() + meses);
+      fim.setMonth(fim.getMonth() + (meses - 1));
 
       // Calcula o valor total do faturamento
       let multiplicador = 1;

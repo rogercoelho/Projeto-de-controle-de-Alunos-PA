@@ -162,6 +162,21 @@ export function formatarHora(dataInput) {
   return `${hh}:${mm}:${ss}`;
 }
 
+export function parseLocalDate(dateString) {
+  // Parse seguro de data em formato YYYY-MM-DD como data local (não UTC)
+  // Evita problemas com fuso horário no Brasil
+  if (!dateString) return null;
+  const parts = dateString.split("-");
+  if (parts.length !== 3) return null;
+  const year = parseInt(parts[0], 10);
+  const month = parseInt(parts[1], 10);
+  const day = parseInt(parts[2], 10);
+  if (isNaN(year) || isNaN(month) || isNaN(day)) return null;
+  // Cria data no timezone local
+  const d = new Date(year, month - 1, day);
+  return d;
+}
+
 export function toISODate(dataInput) {
   if (!dataInput) return "";
   let d;

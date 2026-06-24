@@ -11,6 +11,7 @@ const STATUS_ORDEM = [
   "Dobradinha",
   "",
 ];
+const MESES_FUTUROS_PERMITIDOS = 3;
 
 function pad2(n) {
   return String(n).padStart(2, "0");
@@ -570,9 +571,10 @@ function RegistrarPresenca() {
     doc.save(filename);
   };
 
-  const podeAvancarCompetencia =
-    anoSelecionado < anoAtual ||
-    (anoSelecionado === anoAtual && mesSelecionadoIndex < mesAtualIndex);
+  const competenciaAtual = anoAtual * 12 + mesAtualIndex;
+  const competenciaSelecionada = anoSelecionado * 12 + mesSelecionadoIndex;
+  const competenciaLimite = competenciaAtual + MESES_FUTUROS_PERMITIDOS;
+  const podeAvancarCompetencia = competenciaSelecionada < competenciaLimite;
 
   const irParaMesAnterior = () => {
     if (mesSelecionadoIndex === 0) {

@@ -1,9 +1,59 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import api from "../../services/api";
 import MessageToast from "../miscellaneous/MessageToast";
 import useToast from "../../hooks/useToast";
 import CustomSelect from "../miscellaneous/CustomSelect";
 import Buttons from "../miscellaneous/Buttons";
+
+const DIAS_SEMANA = [
+  "Segunda",
+  "Terça",
+  "Quarta",
+  "Quinta",
+  "Sexta",
+  "Sábado",
+  "Domingo",
+];
+
+const ORDEM_DIAS = DIAS_SEMANA.reduce((acc, dia, index) => {
+  acc[dia] = index;
+  return acc;
+}, {});
+
+const ORDEM_DIAS_NORMALIZADA = DIAS_SEMANA.reduce((acc, dia, index) => {
+  acc[
+    dia
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+  ] = index;
+  return acc;
+}, {});
+
+const obterOrdemDiaSemana = (dia) => {
+  const diaNormalizado = String(dia || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+  return ORDEM_DIAS[dia] ?? ORDEM_DIAS_NORMALIZADA[diaNormalizado] ?? 99;
+};
+
+const compararHorariosPorHorarioEDia = (a, b) => {
+  const inicio = String(a.Horario_Inicio || "").localeCompare(
+    String(b.Horario_Inicio || ""),
+  );
+  if (inicio !== 0) return inicio;
+
+  const fim = String(a.Horario_Fim || "").localeCompare(
+    String(b.Horario_Fim || ""),
+  );
+  if (fim !== 0) return fim;
+
+  return (
+    obterOrdemDiaSemana(a.Horario_Dia_Semana) -
+    obterOrdemDiaSemana(b.Horario_Dia_Semana)
+  );
+};
 
 function AgendamentoAulas() {
   const [loading, setLoading] = useState(false);
@@ -11,6 +61,9 @@ function AgendamentoAulas() {
   const [horarios, setHorarios] = useState([]);
   const [horarioSelecionado, setHorarioSelecionado] = useState(null);
   const [agendamentos, setAgendamentos] = useState([]);
+  const [visaoGeralSelecionada, setVisaoGeralSelecionada] = useState(false);
+  const [agendamentosVisaoGeral, setAgendamentosVisaoGeral] = useState([]);
+  const [loadingVisaoGeral, setLoadingVisaoGeral] = useState(false);
   const [todosAlunos, setTodosAlunos] = useState([]);
   const [alunoSelecionado, setAlunoSelecionado] = useState("");
   const [confirmCancelarId, setConfirmCancelarId] = useState(null);
@@ -58,6 +111,25 @@ function AgendamentoAulas() {
     [showToast],
   );
 
+  const carregarVisaoGeral = useCallback(async () => {
+    try {
+      setLoadingVisaoGeral(true);
+      const response = await api.get("/agendamentos");
+      setAgendamentosVisaoGeral(response.data.Agendamentos || []);
+    } catch (error) {
+      if (error.response?.status !== 401) {
+        showToast({
+          type: "error",
+          text:
+            error.response?.data?.Erro ||
+            "Erro ao carregar visão geral dos agendamentos.",
+        });
+      }
+    } finally {
+      setLoadingVisaoGeral(false);
+    }
+  }, [showToast]);
+
   const carregarAlunos = useCallback(async () => {
     try {
       const response = await api.get("/alunos");
@@ -72,7 +144,16 @@ function AgendamentoAulas() {
     }
   }, [showToast]);
 
+  const handleSelecionarVisaoGeral = () => {
+    setVisaoGeralSelecionada(true);
+    setHorarioSelecionado(null);
+    setAgendamentos([]);
+    setAlunoSelecionado("");
+    carregarVisaoGeral();
+  };
+
   const handleSelecionarHorario = (horario) => {
+    setVisaoGeralSelecionada(false);
     setHorarioSelecionado(horario);
     carregarAgendamentos(horario.Horario_Id);
     carregarAlunos();
@@ -159,6 +240,63 @@ function AgendamentoAulas() {
     return api.defaults.baseURL?.replace("/api", "") || "";
   };
 
+  const horariosOrdenados = useMemo(
+    () => [...horarios].sort(compararHorariosPorHorarioEDia),
+    [horarios],
+  );
+
+  const agendamentosPorHorario = useMemo(() => {
+    const mapa = new Map();
+
+    for (const agendamento of agendamentosVisaoGeral) {
+      const horarioId = String(
+        agendamento.Horario_Id ?? agendamento.Horario?.Horario_Id ?? "",
+      );
+      if (!horarioId) continue;
+
+      if (!mapa.has(horarioId)) mapa.set(horarioId, []);
+      mapa.get(horarioId).push(agendamento);
+    }
+
+    for (const lista of mapa.values()) {
+      lista.sort((a, b) =>
+        String(a.Aluno?.Alunos_Nome || "").localeCompare(
+          String(b.Aluno?.Alunos_Nome || ""),
+          "pt-BR",
+        ),
+      );
+    }
+
+    return mapa;
+  }, [agendamentosVisaoGeral]);
+
+  const linhasVisaoGeral = useMemo(() => {
+    const linhas = new Map();
+
+    for (const horario of horariosOrdenados) {
+      const chave = `${horario.Horario_Inicio || ""}|${horario.Horario_Fim || ""}`;
+      if (!linhas.has(chave)) {
+        linhas.set(chave, {
+          chave,
+          inicio: horario.Horario_Inicio,
+          fim: horario.Horario_Fim,
+          dias: {},
+        });
+      }
+
+      const diaIndex = obterOrdemDiaSemana(horario.Horario_Dia_Semana);
+      if (diaIndex < DIAS_SEMANA.length) {
+        linhas.get(chave).dias[diaIndex] = {
+          horario,
+          agendamentos:
+            agendamentosPorHorario.get(String(horario.Horario_Id)) || [],
+        };
+      }
+    }
+
+    return Array.from(linhas.values());
+  }, [agendamentosPorHorario, horariosOrdenados]);
+
   return (
     <div className="w-full h-auto">
       <h2 className="text-xl font-bold text-white mb-4">
@@ -180,11 +318,26 @@ function AgendamentoAulas() {
             <p className="text-gray-400">Nenhum horário cadastrado.</p>
           ) : (
             <div className="space-y-2 max-h-[60vh] overflow-y-auto">
-              {horarios.map((horario) => (
+              <button
+                type="button"
+                onClick={handleSelecionarVisaoGeral}
+                className={`w-full p-3 rounded-lg text-left transition-colors ${
+                  visaoGeralSelecionada
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-700 text-white hover:bg-gray-600"
+                }`}
+              >
+                <div className="font-medium">Visao Geral</div>
+                <div className="text-sm opacity-80">
+                  Semana por horário e alunos
+                </div>
+              </button>
+              {horariosOrdenados.map((horario) => (
                 <button
                   key={horario.Horario_Id}
                   onClick={() => handleSelecionarHorario(horario)}
                   className={`w-full p-3 rounded-lg text-left transition-colors ${
+                    !visaoGeralSelecionada &&
                     horarioSelecionado?.Horario_Id === horario.Horario_Id
                       ? "bg-blue-600 text-white"
                       : "bg-gray-700 text-white hover:bg-gray-600"
@@ -219,7 +372,82 @@ function AgendamentoAulas() {
 
         {/* Painel de Agendamento */}
         <div className="lg:col-span-2 bg-gray-800 rounded-xl p-4">
-          {!horarioSelecionado ? (
+          {visaoGeralSelecionada ? (
+            <>
+              <div className="mb-4">
+                <h3 className="text-lg font-semibold text-white">
+                  Visao Geral
+                </h3>
+                <p className="text-gray-300 text-sm">
+                  {horarios.length} horários cadastrados
+                </p>
+              </div>
+
+              {loadingVisaoGeral ? (
+                <p className="text-gray-400">Carregando...</p>
+              ) : linhasVisaoGeral.length === 0 ? (
+                <p className="text-gray-400">Nenhum horário cadastrado.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-[900px] w-full border-collapse text-sm">
+                    <thead className="bg-gray-900 text-gray-300 uppercase text-xs">
+                      <tr>
+                        <th className="py-3 px-3 text-left border border-gray-700">
+                          Horário
+                        </th>
+                        {DIAS_SEMANA.map((dia) => (
+                          <th
+                            key={`header-${dia}`}
+                            className="py-3 px-3 text-left border border-gray-700 min-w-[120px]"
+                          >
+                            {dia}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {linhasVisaoGeral.map((linha) => (
+                        <tr
+                          key={linha.chave}
+                          className="border-b border-gray-700"
+                        >
+                          <td className="py-3 px-3 border border-gray-700 bg-gray-900 text-white font-semibold whitespace-nowrap align-top">
+                            {formatarHora(linha.inicio)} -{" "}
+                            {formatarHora(linha.fim)}
+                          </td>
+                          {DIAS_SEMANA.map((dia, diaIndex) => {
+                            const celula = linha.dias[diaIndex];
+                            const lista = celula?.agendamentos || [];
+
+                            return (
+                              <td
+                                key={`${linha.chave}-${dia}`}
+                                className="py-3 px-3 border border-gray-700 text-gray-200 align-top"
+                              >
+                                {lista.length > 0 && (
+                                  <ul className="space-y-1">
+                                    {lista.map((agendamento) => (
+                                      <li
+                                        key={agendamento.Agendamento_Id}
+                                        className="leading-tight"
+                                      >
+                                        {agendamento.Aluno?.Alunos_Nome ||
+                                          "N/A"}
+                                      </li>
+                                    ))}
+                                  </ul>
+                                )}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </>
+          ) : !horarioSelecionado ? (
             <div className="flex items-center justify-center h-64 text-gray-400">
               <p>Selecione um horário para gerenciar os agendamentos</p>
             </div>

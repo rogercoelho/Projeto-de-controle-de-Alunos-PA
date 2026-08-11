@@ -1,48 +1,78 @@
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 function useBuscarCEP(cep) {
-  const [loadingCep, setLoadingCep] = useState(false);
-  const [dadosCep, setDadosCep] = useState(null);
-  const [erroCep, setErroCep] = useState("");
+  const cepLimpo = useMemo(() => (cep ? cep.replace(/\D/g, "") : ""), [cep]);
+  const [resultado, setResultado] = useState({
+    cep: "",
+    loadingCep: false,
+    dadosCep: null,
+    erroCep: "",
+  });
 
   useEffect(() => {
-    const cepLimpo = cep ? cep.replace(/\D/g, "") : "";
-    if (cepLimpo.length !== 8) {
-      setDadosCep(null);
-      setErroCep("");
-      setLoadingCep(false);
-      return;
-    }
+    if (cepLimpo.length !== 8) return undefined;
 
     const controller = new AbortController();
-    setLoadingCep(true);
-    setErroCep("");
+    let ativo = true;
 
-    fetch(`https://viacep.com.br/ws/${cepLimpo}/json/`, {
-      signal: controller.signal,
-    })
-      .then((res) => res.json())
+    Promise.resolve()
+      .then(() => {
+        if (!ativo) return null;
+        setResultado({
+          cep: cepLimpo,
+          loadingCep: true,
+          dadosCep: null,
+          erroCep: "",
+        });
+        return fetch(`https://viacep.com.br/ws/${cepLimpo}/json/`, {
+          signal: controller.signal,
+        });
+      })
+      .then((res) => res?.json())
       .then((data) => {
+        if (!ativo || !data) return;
         if (data.erro) {
-          setDadosCep(null);
-          setErroCep("CEP não encontrado.");
-        } else {
-          setDadosCep(data);
+          setResultado({
+            cep: cepLimpo,
+            loadingCep: false,
+            dadosCep: null,
+            erroCep: "CEP nao encontrado.",
+          });
+          return;
         }
+
+        setResultado({
+          cep: cepLimpo,
+          loadingCep: false,
+          dadosCep: data,
+          erroCep: "",
+        });
       })
       .catch((error) => {
-        if (error.name !== "AbortError") {
-          setDadosCep(null);
-          setErroCep("Erro ao buscar CEP. " + error.message);
-        }
-      })
-      .finally(() => setLoadingCep(false));
+        if (!ativo || error.name === "AbortError") return;
+        setResultado({
+          cep: cepLimpo,
+          loadingCep: false,
+          dadosCep: null,
+          erroCep: `Erro ao buscar CEP. ${error.message}`,
+        });
+      });
 
-    // Cleanup para abortar requisições antigas
-    return () => controller.abort();
-  }, [cep]);
+    return () => {
+      ativo = false;
+      controller.abort();
+    };
+  }, [cepLimpo]);
 
-  return { loadingCep, dadosCep, erroCep };
+  if (cepLimpo.length !== 8 || resultado.cep !== cepLimpo) {
+    return { loadingCep: false, dadosCep: null, erroCep: "" };
+  }
+
+  return {
+    loadingCep: resultado.loadingCep,
+    dadosCep: resultado.dadosCep,
+    erroCep: resultado.erroCep,
+  };
 }
 
 export default useBuscarCEP;

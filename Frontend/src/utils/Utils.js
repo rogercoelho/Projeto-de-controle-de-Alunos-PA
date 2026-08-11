@@ -30,11 +30,54 @@ export function corCampoEditavel(isEditable) {
   return isEditable ? "bg-gray-500" : "bg-gray-700";
 }
 
+export function normalizarDataISO(dataInput) {
+  if (!dataInput) return "";
+  const valor = String(dataInput).trim();
+  if (!valor || ["null", "undefined", "0000-00-00"].includes(valor.toLowerCase())) {
+    return "";
+  }
+
+  let ano;
+  let mes;
+  let dia;
+
+  if (/^\d{4}-\d{2}-\d{2}/.test(valor)) {
+    [ano, mes, dia] = valor.slice(0, 10).split("-").map(Number);
+  } else if (/^\d{2}\/\d{2}\/\d{4}$/.test(valor)) {
+    [dia, mes, ano] = valor.split("/").map(Number);
+  } else {
+    return "";
+  }
+
+  const data = new Date(ano, mes - 1, dia);
+  const dataValida =
+    data.getFullYear() === ano &&
+    data.getMonth() === mes - 1 &&
+    data.getDate() === dia;
+
+  if (!dataValida) return "";
+  return `${String(ano).padStart(4, "0")}-${String(mes).padStart(2, "0")}-${String(dia).padStart(2, "0")}`;
+}
+
+export function formatarDataDigitada(valor) {
+  const apenasNumeros = String(valor || "").replace(/\D/g, "").slice(0, 8);
+  if (apenasNumeros.length <= 2) return apenasNumeros;
+  if (apenasNumeros.length <= 4) {
+    return `${apenasNumeros.slice(0, 2)}/${apenasNumeros.slice(2)}`;
+  }
+  return `${apenasNumeros.slice(0, 2)}/${apenasNumeros.slice(2, 4)}/${apenasNumeros.slice(4)}`;
+}
+
+export function dataFormularioValida(valor) {
+  if (!valor) return false;
+  return !!normalizarDataISO(valor);
+}
+
 export function calcularIdade(dataNascimento) {
-  if (!dataNascimento) return 0;
+  const dataISO = normalizarDataISO(dataNascimento);
+  if (!dataISO) return 0;
   const hoje = new Date();
-  const partes = dataNascimento.split("-");
-  if (partes.length !== 3) return 0;
+  const partes = dataISO.split("-");
   const nascimento = new Date(partes[0], partes[1] - 1, partes[2]);
   let idade = hoje.getFullYear() - nascimento.getFullYear();
   const m = hoje.getMonth() - nascimento.getMonth();
@@ -95,17 +138,16 @@ export function validarEmail(email) {
 }
 
 export function converterData(dataBR) {
-  // de 'DD/MM/AAAA' para 'AAAA-MM-DD'
+  // Aceita 'DD/MM/AAAA', 'AAAA-MM-DD' ou ISO com hora e retorna 'AAAA-MM-DD'.
   if (!dataBR) return "";
-  const [dia, mes, ano] = dataBR.split("/");
-  if (!dia || !mes || !ano) return dataBR;
-  return `${ano}-${mes.padStart(2, "0")}-${dia.padStart(2, "0")}`;
+  return normalizarDataISO(dataBR) || dataBR;
 }
 
 export function formatarDataBR(dataISO) {
   // de 'AAAA-MM-DD' para 'DD/MM/AAAA'
-  if (!dataISO) return "";
-  const [ano, mes, dia] = dataISO.split("-");
+  const dataNormalizada = normalizarDataISO(dataISO);
+  if (!dataNormalizada) return dataISO || "";
+  const [ano, mes, dia] = dataNormalizada.split("-");
   if (!dia || !mes || !ano) return dataISO;
   return `${dia.padStart(2, "0")}/${mes.padStart(2, "0")}/${ano}`;
 }
@@ -151,7 +193,7 @@ export function formatarHora(dataInput) {
   else {
     try {
       d = new Date(dataInput);
-    } catch (e) {
+    } catch {
       return "";
     }
   }

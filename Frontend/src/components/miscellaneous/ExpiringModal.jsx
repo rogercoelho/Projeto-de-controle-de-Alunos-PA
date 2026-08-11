@@ -1,4 +1,4 @@
-import React from "react";
+import PropTypes from "prop-types";
 import Buttons from "./Buttons";
 import { formatarData } from "../../utils/Utils";
 
@@ -16,6 +16,7 @@ function adicionarUmMes(dataInput) {
 
 function ItemList({ items, border, badge, badgeColor }) {
   if (!items || items.length === 0) return null;
+
   return (
     <ul className="space-y-2">
       {items.map((it, idx) => (
@@ -26,13 +27,13 @@ function ItemList({ items, border, badge, badgeColor }) {
                 {it.Alunos_Nome || it.Alunos_Codigo}
               </div>
               <div className="text-xs text-gray-400">
-                Código: {it.Alunos_Codigo} • CPF: {it.Alunos_CPF || "-"}
+                Codigo: {it.Alunos_Codigo} - CPF: {it.Alunos_CPF || "-"}
               </div>
               <div className="text-xs text-gray-400">
-                Plano: {it.Plano_Codigo} • Parcela:{" "}
+                Plano: {it.Plano_Codigo} - Parcela:{" "}
                 {formatarData(it.Faturamento_Fim)}
                 {it.tipo === "renovacao" && (
-                  <> • Renova: {adicionarUmMes(it.Faturamento_Fim)}</>
+                  <> - Renova: {adicionarUmMes(it.Faturamento_Fim)}</>
                 )}
               </div>
             </div>
@@ -57,14 +58,14 @@ function ExpiringModal({ open, onClose, items }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 px-4">
       <div className="bg-gray-800 text-white rounded-xl p-6 max-w-2xl w-full border border-gray-700">
-        <h3 className="text-xl font-bold mb-4">Atenção: Planos e Pagamentos</h3>
+        <h3 className="text-xl font-bold mb-4">Atencao: Planos e Pagamentos</h3>
 
         {items && items.length > 0 ? (
           <div className="max-h-80 overflow-y-auto mb-4 space-y-4">
             {renovacao.length > 0 && (
               <div>
                 <p className="text-xs font-semibold text-yellow-400 uppercase tracking-wide mb-1">
-                  Planos vencendo este mês ({renovacao.length})
+                  Planos vencendo este mes ({renovacao.length})
                 </p>
                 <ItemList
                   items={renovacao}
@@ -99,5 +100,27 @@ function ExpiringModal({ open, onClose, items }) {
     </div>
   );
 }
+
+const itemShape = PropTypes.shape({
+  Alunos_Nome: PropTypes.string,
+  Alunos_Codigo: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  Alunos_CPF: PropTypes.string,
+  Plano_Codigo: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  Faturamento_Fim: PropTypes.string,
+  tipo: PropTypes.string,
+});
+
+ItemList.propTypes = {
+  items: PropTypes.arrayOf(itemShape),
+  border: PropTypes.string.isRequired,
+  badge: PropTypes.string.isRequired,
+  badgeColor: PropTypes.string.isRequired,
+};
+
+ExpiringModal.propTypes = {
+  open: PropTypes.bool,
+  onClose: PropTypes.func.isRequired,
+  items: PropTypes.arrayOf(itemShape),
+};
 
 export default ExpiringModal;

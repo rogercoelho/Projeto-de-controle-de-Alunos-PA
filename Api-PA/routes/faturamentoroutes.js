@@ -6,6 +6,7 @@ const fs = require("fs");
 const Planos_Cadastro = require("../models/Planos_Cadastro");
 const Alunos_Cadastros = require("../models/Alunos_Cadastro");
 const Alunos_Faturamento = require("../models/Alunos_Faturamento");
+const Alunos_Faturamento_Reajustes = require("../models/Alunos_Faturamento_Reajustes");
 const { registrarLog, getUsuarioFromReq } = require("../utils/logger");
 
 // Configuração do multer para upload de comprovantes
@@ -194,6 +195,47 @@ router.get("/extrato/:Aluno_Codigo/:ano", async (req, res) => {
       order: [["Faturamento_Inicio", "ASC"]],
       raw: true,
     });
+
+    const faturamentoIds = faturamentos.map((fat) => fat.id).filter(Boolean);
+    const reajustesPorFaturamento = {};
+    if (faturamentoIds.length > 0) {
+      const reajustes = await Alunos_Faturamento_Reajustes.findAll({
+        where: { Faturamento_ID: faturamentoIds },
+        order: [
+          ["Faturamento_Reajuste_Partir_De", "ASC"],
+          ["id", "ASC"],
+        ],
+        raw: true,
+      });
+
+      for (const reajuste of reajustes) {
+        const fatId = reajuste.Faturamento_ID;
+        if (!reajustesPorFaturamento[fatId]) {
+          reajustesPorFaturamento[fatId] = [];
+        }
+        reajustesPorFaturamento[fatId].push(reajuste);
+      }
+    }
+
+    for (const fat of faturamentos) {
+      fat.reajustes = reajustesPorFaturamento[fat.id] || [];
+      if (
+        fat.reajustes.length === 0 &&
+        fat.Faturamento_Reajuste &&
+        fat.Faturamento_Reajuste_Partir_De
+      ) {
+        fat.reajustes = [
+          {
+            Faturamento_ID: fat.id,
+            Faturamento_Reajuste: fat.Faturamento_Reajuste,
+            Faturamento_Reajuste_Partir_De: fat.Faturamento_Reajuste_Partir_De,
+            Faturamento_Reajuste_Motivo: fat.Faturamento_Reajuste_Motivo,
+            Faturamento_Reajuste_Comprovante:
+              fat.Faturamento_Reajuste_Comprovante,
+          },
+        ];
+      }
+    }
 
     // Agrupa faturamentos por plano
     const planosMap = {};
@@ -780,14 +822,33 @@ router.patch(
       return res.status(404).json({ Erro: "Faturamento não encontrado." });
     }
 
-    const dadosAntigos = {
-      Faturamento_Reajuste: faturamento.Faturamento_Reajuste,
-      Faturamento_Reajuste_Partir_De:
-        faturamento.Faturamento_Reajuste_Partir_De,
-      Faturamento_Reajuste_Motivo: faturamento.Faturamento_Reajuste_Motivo,
-      Faturamento_Reajuste_Comprovante:
-        faturamento.Faturamento_Reajuste_Comprovante,
-    };
+    const possuiReajusteAnterior =
+      faturamento.Faturamento_Reajuste &&
+      faturamento.Faturamento_Reajuste_Partir_De;
+    const reajustesExistentes = await Alunos_Faturamento_Reajustes.count({
+      where: { Faturamento_ID: id },
+    });
+
+    if (possuiReajusteAnterior && reajustesExistentes === 0) {
+      await Alunos_Faturamento_Reajustes.create({
+        Faturamento_ID: id,
+        Faturamento_Reajuste: faturamento.Faturamento_Reajuste,
+        Faturamento_Reajuste_Partir_De:
+          faturamento.Faturamento_Reajuste_Partir_De,
+        Faturamento_Reajuste_Motivo:
+          faturamento.Faturamento_Reajuste_Motivo || "Reajuste anterior",
+        Faturamento_Reajuste_Comprovante:
+          faturamento.Faturamento_Reajuste_Comprovante || req.file.filename,
+      });
+    }
+
+    const novoReajuste = await Alunos_Faturamento_Reajustes.create({
+      Faturamento_ID: id,
+      Faturamento_Reajuste: valorParsed,
+      Faturamento_Reajuste_Partir_De: apartirDe,
+      Faturamento_Reajuste_Motivo: motivoAjustado,
+      Faturamento_Reajuste_Comprovante: req.file.filename,
+    });
 
     await Alunos_Faturamento.update(
       {
@@ -803,11 +864,12 @@ router.patch(
     await registrarLog(
       usuarioLog,
       "UPDATE",
-      "Alunos_Faturamento",
-      id,
+      "Alunos_Faturamento_Reajustes",
+      novoReajuste.id,
       `Reajuste de plano aplicado para faturamento ${id} do aluno ${faturamento.Aluno_Codigo} a partir de ${apartirDe}. Motivo: ${motivoAjustado}`,
-      dadosAntigos,
+      null,
       {
+        Faturamento_ID: id,
         Faturamento_Reajuste: valorParsed,
         Faturamento_Reajuste_Partir_De: apartirDe,
         Faturamento_Reajuste_Motivo: motivoAjustado,

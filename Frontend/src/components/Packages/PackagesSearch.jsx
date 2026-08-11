@@ -213,7 +213,7 @@ function PackagesSearch() {
       const novoStatus =
         selectedPlano.Plano_Ativo === "Ativo" ? "Inativo" : "Ativo";
       showToast({ type: "", text: "" });
-      const response = await api.patch(
+      await api.patch(
         `/planos/update/${selectedPlano.Plano_Codigo}`,
         { ativo: novoStatus }
       );

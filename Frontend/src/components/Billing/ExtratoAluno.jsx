@@ -1,5 +1,6 @@
 ﻿import { useState, useEffect } from "react";
 import api from "../../services/api";
+import PropTypes from "prop-types";
 import { formatarDataBR } from "../../utils/Utils";
 import MessageToast from "../miscellaneous/MessageToast";
 import CustomSelect from "../miscellaneous/CustomSelect";
@@ -247,7 +248,6 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
       const textYellow = [250, 204, 21]; // #facc15
       const bgGreen = [22, 163, 74]; // #16a34a
       const bgRed = [220, 38, 38]; // #dc2626
-      const bgYellow = [202, 138, 4]; // #ca8a04
       const borderGray = [55, 65, 81]; // #374151
 
       let y = 10;
@@ -526,6 +526,41 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
 
   // Gera os meses baseado no tipo de plano e mês de início
   // Cada lançamento aparece como linha separada (não agrupa por mês)
+  const getReajustesDoFaturamento = (fat) => {
+    const reajustes = Array.isArray(fat.reajustes) ? fat.reajustes : [];
+    const lista = reajustes.length
+      ? reajustes
+      : fat.Faturamento_Reajuste && fat.Faturamento_Reajuste_Partir_De
+        ? [fat]
+        : [];
+
+    return lista
+      .map((reajuste) => ({
+        valor: parseFloat(reajuste.Faturamento_Reajuste) || 0,
+        apartirDe: reajuste.Faturamento_Reajuste_Partir_De,
+        motivo: reajuste.Faturamento_Reajuste_Motivo || null,
+        comprovante: reajuste.Faturamento_Reajuste_Comprovante || null,
+      }))
+      .filter((reajuste) => reajuste.valor && reajuste.apartirDe)
+      .sort((a, b) => String(a.apartirDe).localeCompare(String(b.apartirDe)));
+  };
+
+  const getReajustesAplicaveis = (reajustes, ano, mes, valorBase) => {
+    let valorAnterior = valorBase;
+    return reajustes
+      .filter((reajuste) => {
+        const partes = String(reajuste.apartirDe).split("T")[0].split("-");
+        const anoReajuste = parseInt(partes[0], 10);
+        const mesReajuste = parseInt(partes[1], 10);
+        return ano > anoReajuste || (ano === anoReajuste && mes >= mesReajuste);
+      })
+      .map((reajuste) => {
+        const delta = reajuste.valor - valorAnterior;
+        valorAnterior = reajuste.valor;
+        return { ...reajuste, delta };
+      });
+  };
+
   const gerarMesesFaturamento = (faturamentos, tipoPagamento) => {
     const lancamentos = {};
     const qtdMesesPlano = getMesesPorTipoPlano(tipoPagamento);
@@ -543,8 +578,6 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
 
       const valorTotal = parseFloat(fat.Faturamento_Valor_Total) || 0;
       const desconto = parseFloat(fat.Faturamento_Desconto) || 0;
-      const pago = fat.Faturamento_Data_Pagamento ? true : false;
-
       const mesesDoPlano = [];
       for (let i = 0; i < qtdMesesPlano; i++) {
         const mesData = new Date(
@@ -574,6 +607,7 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
           dataPagamento: fat.Faturamento_Data_Pagamento,
           motivoDesconto: fat.Faturamento_Desconto_Motivo || null,
           motivoCancelamento: fat.Faturamento_Cancelado_Motivo || null,
+          reajustes: getReajustesDoFaturamento(fat),
           motivoReajuste: fat.Faturamento_Reajuste_Motivo || null,
           comprovantePagamento: fat.Faturamento_Comprovante || null,
           comprovanteReajuste: fat.Faturamento_Reajuste_Comprovante || null,
@@ -785,23 +819,8 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
                   const fatId = fat.id || fat.Faturamento_ID;
                   const isPago = !!fat.Faturamento_Data_Pagamento;
                   const isCancelado = !!fat.Faturamento_Cancelado;
-                  const temReajuste =
-                    !!fat.Faturamento_Reajuste &&
-                    !!fat.Faturamento_Reajuste_Partir_De;
-                  const reajustePartes = fat.Faturamento_Reajuste_Partir_De
-                    ? String(fat.Faturamento_Reajuste_Partir_De)
-                        .split("T")[0]
-                        .split("-")
-                    : null;
-                  const reajusteAno = reajustePartes
-                    ? parseInt(reajustePartes[0], 10)
-                    : null;
-                  const reajusteMes = reajustePartes
-                    ? parseInt(reajustePartes[1], 10)
-                    : null;
-                  const reajusteValor = fat.Faturamento_Reajuste
-                    ? parseFloat(fat.Faturamento_Reajuste)
-                    : 0;
+                  const reajustes = getReajustesDoFaturamento(fat);
+                  const temReajuste = reajustes.length > 0;
                   const fatMeses = gerarMesesFaturamento(
                     [fat],
                     plano.Plano_Pagamento,
@@ -969,22 +988,14 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
                                     (mAno === canceladoAno &&
                                       mMes > canceladoMes));
 
+                                const reajustesAplicaveis = getReajustesAplicaveis(
+                                  m.reajustes || reajustes,
+                                  mAno,
+                                  mMes,
+                                  m.valor,
+                                );
                                 const ehMesReajustado =
-                                  temReajuste &&
-                                  reajusteAno !== null &&
-                                  reajusteMes !== null &&
-                                  (mAno > reajusteAno ||
-                                    (mAno === reajusteAno &&
-                                      mMes >= reajusteMes));
-                                const reajusteDelta = ehMesReajustado
-                                  ? reajusteValor - m.valor
-                                  : 0;
-                                const reajusteDeltaExibido = ehMesCancelado
-                                  ? 0
-                                  : reajusteDelta;
-                                const reajusteValorExibido = ehMesCancelado
-                                  ? 0
-                                  : reajusteValor;
+                                  temReajuste && reajustesAplicaveis.length > 0;
 
                                 return (
                                   <>
@@ -1140,111 +1151,126 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
                                         </td>
                                       </tr>
                                     )}
-                                    {ehMesReajustado && (
-                                      <tr
-                                        key={`${key}-reajuste`}
-                                        className={
-                                          ehMesCancelado
-                                            ? "border-b border-red-900/40 bg-red-950/20"
-                                            : "border-b border-blue-900/40 bg-blue-950/20"
-                                        }
-                                      >
-                                        <td className="px-3 py-2 whitespace-nowrap">
-                                          <span
-                                            className={`font-semibold ${ehMesCancelado ? "text-red-400" : "text-blue-400"}`}
-                                          >
-                                            {m.parcela}/{m.totalParcelas}
-                                          </span>
-                                        </td>
-                                        <td
-                                          className={`px-3 py-2 font-medium whitespace-nowrap ${ehMesCancelado ? "text-red-300" : "text-blue-300"}`}
-                                        >
-                                          {nomeMes(m.mesAno)}
-                                        </td>
-                                        <td
-                                          className={`px-3 py-2 text-right font-mono whitespace-nowrap ${ehMesCancelado ? "text-red-400" : "text-blue-400"}`}
-                                        >
-                                          {reajusteDeltaExibido >= 0 ? "+" : ""}R${" "}
-                                          {reajusteDeltaExibido.toFixed(2)}
-                                        </td>
-                                        <td className="px-3 py-2 text-right whitespace-nowrap">
-                                          <span className="text-gray-600">
-                                            —
-                                          </span>
-                                        </td>
-                                        <td className="px-3 py-2 text-right whitespace-nowrap">
-                                          <span
-                                            className={`font-mono font-semibold ${ehMesCancelado ? "text-red-300" : "text-blue-300"}`}
-                                          >
-                                            R$ {reajusteValorExibido.toFixed(2)}
-                                          </span>
-                                        </td>
-                                        <td className="px-3 py-2 text-center whitespace-nowrap">
-                                          <span
-                                            className={`inline-flex items-center gap-1 border rounded-full px-2 py-0.5 text-xs font-semibold ${
-                                              ehMesCancelado
-                                                ? "bg-red-900/50 text-red-300 border-red-700/50"
-                                                : "bg-blue-900/50 text-blue-300 border-blue-700/50"
-                                            }`}
-                                          >
-                                            {ehMesCancelado
-                                              ? "🚫 Cancelado"
-                                              : "🔧 Ajustado"}
-                                          </span>
-                                        </td>
-                                        <td className="px-3 py-2 text-left whitespace-nowrap">
-                                          <span className="text-gray-600">
-                                            —
-                                          </span>
-                                        </td>
-                                        <td
-                                          className={`px-3 py-2 text-xs max-w-[180px] ${ehMesCancelado ? "text-red-200" : "text-blue-200"}`}
-                                        >
-                                          {montarLinhasMotivo(
-                                            m.motivoReajuste,
-                                            ehMesCancelado
-                                              ? m.motivoCancelamento
-                                              : null,
-                                          ).length > 0 ? (
-                                            <span
-                                              className="whitespace-pre-line break-words"
-                                              title={montarLinhasMotivo(
-                                                m.motivoReajuste,
+                                    {ehMesReajustado &&
+                                      reajustesAplicaveis.map(
+                                        (reajuste, reajusteIdx) => {
+                                          const reajusteDeltaExibido =
+                                            ehMesCancelado ? 0 : reajuste.delta;
+                                          const reajusteValorExibido =
+                                            ehMesCancelado ? 0 : reajuste.valor;
+                                          const motivoReajuste =
+                                            reajuste.motivo || m.motivoReajuste;
+                                          const comprovanteReajuste =
+                                            reajuste.comprovante ||
+                                            m.comprovanteReajuste;
+
+                                          return (
+                                            <tr
+                                              key={`${key}-reajuste-${reajusteIdx}`}
+                                              className={
                                                 ehMesCancelado
-                                                  ? m.motivoCancelamento
-                                                  : null,
-                                              ).join("\n")}
-                                            >
-                                              {montarLinhasMotivo(
-                                                m.motivoReajuste,
-                                                ehMesCancelado
-                                                  ? m.motivoCancelamento
-                                                  : null,
-                                              ).join("\n")}
-                                            </span>
-                                          ) : (
-                                            <span className="text-gray-600">
-                                              —
-                                            </span>
-                                          )}
-                                        </td>
-                                        <td className="px-3 py-2 text-center">
-                                          {m.comprovanteReajuste ? (
-                                            <Buttons.BotaoComprovante
-                                              onClick={() =>
-                                                setComprovanteModal(
-                                                  m.comprovanteReajuste,
-                                                )
+                                                  ? "border-b border-red-900/40 bg-red-950/20"
+                                                  : "border-b border-blue-900/40 bg-blue-950/20"
                                               }
-                                            />
-                                          ) : (
-                                            <span className="text-gray-600 text-xs">
-                                              —
-                                            </span>
-                                          )}
-                                        </td>
-                                      </tr>
-                                    )}
+                                            >
+                                              <td className="px-3 py-2 whitespace-nowrap">
+                                                <span
+                                                  className={`font-semibold ${ehMesCancelado ? "text-red-400" : "text-blue-400"}`}
+                                                >
+                                                  {m.parcela}/{m.totalParcelas}
+                                                </span>
+                                              </td>
+                                              <td
+                                                className={`px-3 py-2 font-medium whitespace-nowrap ${ehMesCancelado ? "text-red-300" : "text-blue-300"}`}
+                                              >
+                                                {nomeMes(m.mesAno)}
+                                              </td>
+                                              <td
+                                                className={`px-3 py-2 text-right font-mono whitespace-nowrap ${ehMesCancelado ? "text-red-400" : "text-blue-400"}`}
+                                              >
+                                                {reajusteDeltaExibido >= 0 ? "+" : ""}R${" "}
+                                                {reajusteDeltaExibido.toFixed(2)}
+                                              </td>
+                                              <td className="px-3 py-2 text-right whitespace-nowrap">
+                                                <span className="text-gray-600">
+                                                  ?
+                                                </span>
+                                              </td>
+                                              <td className="px-3 py-2 text-right whitespace-nowrap">
+                                                <span
+                                                  className={`font-mono font-semibold ${ehMesCancelado ? "text-red-300" : "text-blue-300"}`}
+                                                >
+                                                  R$ {reajusteValorExibido.toFixed(2)}
+                                                </span>
+                                              </td>
+                                              <td className="px-3 py-2 text-center whitespace-nowrap">
+                                                <span
+                                                  className={`inline-flex items-center gap-1 border rounded-full px-2 py-0.5 text-xs font-semibold ${
+                                                    ehMesCancelado
+                                                      ? "bg-red-900/50 text-red-300 border-red-700/50"
+                                                      : "bg-blue-900/50 text-blue-300 border-blue-700/50"
+                                                  }`}
+                                                >
+                                                  {ehMesCancelado
+                                                    ? "?? Cancelado"
+                                                    : "?? Ajustado"}
+                                                </span>
+                                              </td>
+                                              <td className="px-3 py-2 text-left whitespace-nowrap">
+                                                <span className="text-gray-600">
+                                                  ?
+                                                </span>
+                                              </td>
+                                              <td
+                                                className={`px-3 py-2 text-xs max-w-[180px] ${ehMesCancelado ? "text-red-200" : "text-blue-200"}`}
+                                              >
+                                                {montarLinhasMotivo(
+                                                  motivoReajuste,
+                                                  ehMesCancelado
+                                                    ? m.motivoCancelamento
+                                                    : null,
+                                                ).length > 0 ? (
+                                                  <span
+                                                    className="whitespace-pre-line break-words"
+                                                    title={montarLinhasMotivo(
+                                                      motivoReajuste,
+                                                      ehMesCancelado
+                                                        ? m.motivoCancelamento
+                                                        : null,
+                                                    ).join("\n")}
+                                                  >
+                                                    {montarLinhasMotivo(
+                                                      motivoReajuste,
+                                                      ehMesCancelado
+                                                        ? m.motivoCancelamento
+                                                        : null,
+                                                    ).join("\n")}
+                                                  </span>
+                                                ) : (
+                                                  <span className="text-gray-600">
+                                                    ?
+                                                  </span>
+                                                )}
+                                              </td>
+                                              <td className="px-3 py-2 text-center">
+                                                {comprovanteReajuste ? (
+                                                  <Buttons.BotaoComprovante
+                                                    onClick={() =>
+                                                      setComprovanteModal(
+                                                        comprovanteReajuste,
+                                                      )
+                                                    }
+                                                  />
+                                                ) : (
+                                                  <span className="text-gray-600 text-xs">
+                                                    ?
+                                                  </span>
+                                                )}
+                                              </td>
+                                            </tr>
+                                          );
+                                        },
+                                      )}
                                   </>
                                 );
                               })}
@@ -1661,4 +1687,26 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
   );
 }
 
+StatusBadge.propTypes = {
+  status: PropTypes.string,
+};
+
+InfoField.propTypes = {
+  icon: PropTypes.node,
+  label: PropTypes.string.isRequired,
+  value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+};
+
+StatCard.propTypes = {
+  icon: PropTypes.node,
+  label: PropTypes.string.isRequired,
+  value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+  colorClass: PropTypes.string.isRequired,
+};
+
+ExtratoAluno.propTypes = {
+  initialAlunoCodigo: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+};
+
 export default ExtratoAluno;
+

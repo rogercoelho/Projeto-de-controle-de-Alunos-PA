@@ -1,8 +1,20 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import api from "../../services/api";
 import Buttons from "../miscellaneous/Buttons";
 import MessageToast from "../miscellaneous/MessageToast";
 import useToast from "../../hooks/useToast";
+
+const ORDEM_DIAS = {
+  Segunda: 1,
+  "Terça": 2,
+  Terca: 2,
+  Quarta: 3,
+  Quinta: 4,
+  Sexta: 5,
+  "Sábado": 6,
+  Sabado: 6,
+  Domingo: 7,
+};
 
 function ControleHorarios() {
   const [loading, setLoading] = useState(false);
@@ -30,11 +42,7 @@ function ControleHorarios() {
   ];
 
   // Carrega os horários ao montar o componente
-  useEffect(() => {
-    carregarHorarios();
-  }, []);
-
-  const carregarHorarios = async () => {
+  const carregarHorarios = useCallback(async () => {
     try {
       setLoading(true);
       const response = await api.get("/horarios/com-vagas");
@@ -49,7 +57,11 @@ function ControleHorarios() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [showToast]);
+
+  useEffect(() => {
+    carregarHorarios();
+  }, [carregarHorarios]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -157,16 +169,6 @@ function ControleHorarios() {
   };
 
   // Ordem dos dias da semana para ordenação
-  const ordemDias = {
-    Segunda: 1,
-    Terça: 2,
-    Quarta: 3,
-    Quinta: 4,
-    Sexta: 5,
-    Sábado: 6,
-    Domingo: 7,
-  };
-
   // Horários ordenados
   const horariosOrdenados = useMemo(() => {
     if (!sortBy) return horarios;
@@ -174,8 +176,8 @@ function ControleHorarios() {
     lista.sort((a, b) => {
       let result = 0;
       if (sortBy === "dia") {
-        const diaA = ordemDias[a.Horario_Dia_Semana] || 99;
-        const diaB = ordemDias[b.Horario_Dia_Semana] || 99;
+        const diaA = ORDEM_DIAS[a.Horario_Dia_Semana] || 99;
+        const diaB = ORDEM_DIAS[b.Horario_Dia_Semana] || 99;
         result =
           diaA !== diaB
             ? diaA - diaB

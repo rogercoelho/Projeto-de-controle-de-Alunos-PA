@@ -694,6 +694,7 @@ router.patch(
 
       // Guarda dados antigos para o log
       const dadosAntigos = atualizaaluno.toJSON();
+      const codigoArquivo = dadosAtualizacao.Alunos_Codigo || codigo;
 
       // Se novos arquivos foram enviados, atualiza os caminhos com nomes únicos
       if (req.files?.foto) {
@@ -707,7 +708,7 @@ router.patch(
         const now = new Date();
         const data = now.toISOString().slice(0, 10).replace(/-/g, ""); // AAAAMMDD
         const ms = now.getMilliseconds().toString().padStart(3, "0");
-        const novoNomeFoto = `foto_id_${codigo}_${data}_${ms}${ext}`;
+        const novoNomeFoto = `foto_id_${codigoArquivo}_${data}_${ms}${ext}`;
         const novoCaminhoFoto = path.join(pastaFotos, novoNomeFoto);
         // Renomeia o arquivo salvo pelo multer para o novo nome único
         fs.renameSync(req.files.foto[0].path, novoCaminhoFoto);
@@ -716,7 +717,9 @@ router.patch(
         const fotoAntiga = arquivosFotos.find(
           (arquivo) =>
             (arquivo.startsWith(`foto_id_${codigo}_`) ||
-              arquivo.startsWith(`${codigo}_foto`)) &&
+              arquivo.startsWith(`foto_id_${codigoArquivo}_`) ||
+              arquivo.startsWith(`${codigo}_foto`) ||
+              arquivo.startsWith(`${codigoArquivo}_foto`)) &&
             arquivo !== novoNomeFoto
         );
         if (fotoAntiga) {
@@ -745,7 +748,7 @@ router.patch(
           .getMilliseconds()
           .toString()
           .padStart(3, "0");
-        const novoNomeContrato = `contrato_id_${codigo}_${dataContrato}_${msContrato}${ext}`;
+        const novoNomeContrato = `contrato_id_${codigoArquivo}_${dataContrato}_${msContrato}${ext}`;
         const novoCaminhoContrato = path.join(pastaContratos, novoNomeContrato);
         fs.renameSync(req.files.contrato[0].path, novoCaminhoContrato);
         // Remove contrato antigo se existir e for diferente do novo nome
@@ -753,7 +756,9 @@ router.patch(
         const contratoAntigo = arquivosContratos.find(
           (arquivo) =>
             (arquivo.startsWith(`contrato_id_${codigo}_`) ||
-              arquivo.startsWith(`${codigo}_contrato`)) &&
+              arquivo.startsWith(`contrato_id_${codigoArquivo}_`) ||
+              arquivo.startsWith(`${codigo}_contrato`) ||
+              arquivo.startsWith(`${codigoArquivo}_contrato`)) &&
             arquivo !== novoNomeContrato
         );
         if (contratoAntigo) {

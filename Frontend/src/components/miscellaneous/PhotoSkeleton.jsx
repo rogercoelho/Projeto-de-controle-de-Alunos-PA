@@ -4,32 +4,39 @@ import PropTypes from "prop-types";
 function PhotoSkeleton({ foto, nome }) {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
-  const [cacheBuster, setCacheBuster] = useState(() => Date.now());
+  const [imgSrc, setImgSrc] = useState("");
 
   // Detecta se é uma URL local (blob), absoluta (começa com / ou http), ou nome de arquivo
-  const isBlob = foto && foto.startsWith("blob:");
-  const isAbsolute = foto && (foto.startsWith("/") || foto.startsWith("http"));
-  const imgSrc = isBlob
-    ? foto
-    : isAbsolute
-    ? foto
-    : foto
-    ? `https://api2.plantandoalegria.com.br/uploads/fotos/${foto}?t=${cacheBuster}`
-    : "";
-
   React.useEffect(() => {
     setLoaded(false);
     setError(false);
-    setCacheBuster(Date.now());
-    if (!foto) return;
-    const img = new window.Image();
-    if (isBlob || isAbsolute) {
-      img.src = imgSrc;
-    } else {
-      img.src = `https://api2.plantandoalegria.com.br/uploads/fotos/${foto}?t=${Date.now()}`;
+    if (!foto) {
+      setImgSrc("");
+      return undefined;
     }
-    img.onload = () => setLoaded(true);
-    img.onerror = () => setError(true);
+
+    const isBlob = foto.startsWith("blob:");
+    const isAbsolute = foto.startsWith("/") || foto.startsWith("http");
+    const nextImgSrc =
+      isBlob || isAbsolute
+        ? foto
+        : `https://api2.plantandoalegria.com.br/uploads/fotos/${foto}?t=${Date.now()}`;
+
+    setImgSrc(nextImgSrc);
+
+    let ativo = true;
+    const img = new window.Image();
+    img.onload = () => {
+      if (ativo) setLoaded(true);
+    };
+    img.onerror = () => {
+      if (ativo) setError(true);
+    };
+    img.src = nextImgSrc;
+
+    return () => {
+      ativo = false;
+    };
   }, [foto]);
 
   // URL do logo placeholder

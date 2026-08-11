@@ -6,6 +6,7 @@
   formatarCEP,
   converterData,
   corCampoEditavel,
+  dataFormularioValida,
 } from "../../utils/Utils";
 import api from "../../services/api";
 import MessageToast from "../miscellaneous/MessageToast";
@@ -15,6 +16,7 @@ import React, { useRef } from "react";
 import PropTypes from "prop-types";
 import PhotoSkeleton from "../miscellaneous/PhotoSkeleton";
 import Buttons from "../miscellaneous/Buttons";
+import DateInput from "../miscellaneous/DateInput";
 
 function StudentEditForm({
   editFormData: initialFormData,
@@ -65,10 +67,7 @@ function StudentEditForm({
     String(fieldValue).trim().toLowerCase() === "undefined" ||
     String(fieldValue).trim() === "0000-00-00";
 
-  const fieldEditable = (fieldValue) => {
-    if (alunoAplicativo) return true;
-    return isCampoVazio(fieldValue);
-  };
+  const fieldEditable = () => true;
   // Ref para o input de foto
   const fotoInputRef = useRef(null);
   // Ref para o input de contrato
@@ -136,20 +135,12 @@ function StudentEditForm({
     }));
     showToast({ type: "", text: "" });
   };
-  // Lógica de controle de edição dos campos
   const idade = calcularIdade(editFormData.Alunos_Data_Nascimento);
 
-  // CPF do aluno: readonly se já estava preenchido ao abrir
-  // Tornar CPF editável no formulário de edição conforme solicitado
   const cpfAlunoReadOnly = false;
-  // CPF do aluno: obrigatório se maior de 18 anos
   const cpfAlunoObrigatorio = idade >= 18;
-  const dataNascimentoEditavel = fieldEditable(
-    editFormData.Alunos_Data_Nascimento
-  );
-  const dataMatriculaEditavel = fieldEditable(
-    editFormData.Alunos_Data_Matricula
-  );
+  const dataNascimentoEditavel = true;
+  const dataMatriculaEditavel = true;
 
   const focarCampo = (fieldName) => {
     const campo = formRef.current?.querySelector(`[name="${fieldName}"]`);
@@ -172,6 +163,26 @@ function StudentEditForm({
   };
 
   const validarCamposObrigatorios = () => {
+    if (
+      !isCampoVazio(editFormData.Alunos_Data_Nascimento) &&
+      !dataFormularioValida(editFormData.Alunos_Data_Nascimento)
+    ) {
+      return apontarCampoObrigatorio(
+        "Alunos_Data_Nascimento",
+        "Informe uma data de nascimento valida."
+      );
+    }
+
+    if (
+      !isCampoVazio(editFormData.Alunos_Data_Matricula) &&
+      !dataFormularioValida(editFormData.Alunos_Data_Matricula)
+    ) {
+      return apontarCampoObrigatorio(
+        "Alunos_Data_Matricula",
+        "Informe uma data de matricula valida."
+      );
+    }
+
     if (alunoAplicativo) return true;
 
     const camposObrigatorios = [
@@ -337,7 +348,9 @@ function StudentEditForm({
               Alunos_Data_Nascimento: converterData(
                 editFormData.Alunos_Data_Nascimento,
               ),
-              // Mantém campos de pai e mãe (não altera nomes aqui)
+              Alunos_Data_Matricula: converterData(
+                editFormData.Alunos_Data_Matricula,
+              ),
             };
             let response;
             if (arquivosEdit.foto || arquivosEdit.contrato) {
@@ -513,8 +526,9 @@ function StudentEditForm({
             type="number"
             name="Alunos_Codigo"
             value={editFormData.Alunos_Codigo || ""}
-            className="w-full px-4 py-2 bg-gray-700 text-white rounded-md"
-            readOnly
+            onChange={handleChange}
+            className={`w-full px-4 py-2 ${corCampoEditavel(true)} text-white rounded-md`}
+            required
           />
         </div>
 
@@ -557,8 +571,7 @@ function StudentEditForm({
           <label className="block text-sm font-medium text-gray-300 mb-2">
             Data de Nascimento{!alunoAplicativo ? " *" : ""}
           </label>
-          <input
-            type="date"
+          <DateInput
             name="Alunos_Data_Nascimento"
             value={editFormData.Alunos_Data_Nascimento || ""}
             onChange={handleChange}
@@ -566,7 +579,6 @@ function StudentEditForm({
               dataNascimentoEditavel,
             )} text-white rounded-md`}
             required={!alunoAplicativo}
-            disabled={!dataNascimentoEditavel}
           />
         </div>
 
@@ -899,8 +911,7 @@ function StudentEditForm({
           <label className="block text-sm font-medium text-gray-300 mb-2">
             Data de Matrícula{!alunoAplicativo ? " *" : ""}
           </label>
-          <input
-            type="date"
+          <DateInput
             name="Alunos_Data_Matricula"
             value={editFormData.Alunos_Data_Matricula || ""}
             onChange={handleChange}
@@ -908,7 +919,6 @@ function StudentEditForm({
               dataMatriculaEditavel,
             )} text-white rounded-md`}
             required={!alunoAplicativo}
-            disabled={!dataMatriculaEditavel}
           />
         </div>
 

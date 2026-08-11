@@ -29,7 +29,7 @@ function AdminDelete() {
       });
       return;
     }
-    const confirmar = true; /*
+    /*
       `⚠️ ATENÇÃO: Você está prestes a excluir permanentemente o registro ID ${registroId} da tabela ${tabela}.\n\nEsta ação NÃO PODE SER DESFEITA!\n\nDeseja continuar?`,
     ); */
     setShowConfirmModal(true);

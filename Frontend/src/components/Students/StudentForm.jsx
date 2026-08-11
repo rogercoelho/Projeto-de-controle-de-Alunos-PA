@@ -4,6 +4,7 @@ import React, { useState, useRef } from "react";
 import MessageToast from "../miscellaneous/MessageToast";
 /* Importa os botoes */
 import Buttons from "../miscellaneous/Buttons";
+import DateInput from "../miscellaneous/DateInput";
 /* Importa as configurações da API */
 import api from "../../services/api";
 /* Importa o hook para buscar o CEP */
@@ -19,6 +20,7 @@ import {
   calcularIdade,
   formatarCEP,
   converterData,
+  dataFormularioValida,
 } from "../../utils/Utils";
 /* Importa o hook UseToast para gerenciar e exibir mensagens toast */
 import useToast from "../../hooks/useToast";
@@ -180,7 +182,56 @@ function StudentForm({ aluno, onSaveSuccess }) {
     setLoading(true);
     showToast({ type: "", text: "" });
 
+    const dataNascimentoPreenchida = !!String(
+      formData.Alunos_Data_Nascimento || "",
+    ).trim();
+    const dataMatriculaPreenchida = !!String(
+      formData.Alunos_Data_Matricula || "",
+    ).trim();
+
+    if (
+      dataNascimentoPreenchida &&
+      !dataFormularioValida(formData.Alunos_Data_Nascimento)
+    ) {
+      showToast({
+        type: "error",
+        text: "Informe uma data de nascimento válida.",
+      });
+      setLoading(false);
+      return;
+    }
+
+    if (
+      dataMatriculaPreenchida &&
+      !dataFormularioValida(formData.Alunos_Data_Matricula)
+    ) {
+      showToast({
+        type: "error",
+        text: "Informe uma data de matrícula válida.",
+      });
+      setLoading(false);
+      return;
+    }
+
     if (!alunoAplicativo) {
+      if (!dataNascimentoPreenchida) {
+        showToast({
+          type: "error",
+          text: "Data de nascimento é obrigatória.",
+        });
+        setLoading(false);
+        return;
+      }
+
+      if (!dataMatriculaPreenchida) {
+        showToast({
+          type: "error",
+          text: "Data de matrícula é obrigatória.",
+        });
+        setLoading(false);
+        return;
+      }
+
       /* Usa a funcao utilitaria validarTelefone importado do utils
          para validar os telefones */
       if (
@@ -595,8 +646,7 @@ function StudentForm({ aluno, onSaveSuccess }) {
           <label className="block text-sm font-medium text-gray-300 mb-2">
             Data de Nascimento{!alunoAplicativo ? " *" : ""}
           </label>
-          <input
-            type="date"
+          <DateInput
             name="Alunos_Data_Nascimento"
             value={formData.Alunos_Data_Nascimento}
             onChange={handleChange}
@@ -960,8 +1010,7 @@ function StudentForm({ aluno, onSaveSuccess }) {
           <label className="block text-sm font-medium text-gray-300 mb-2">
             Data de Matrícula{!alunoAplicativo ? " *" : ""}
           </label>
-          <input
-            type="date"
+          <DateInput
             name="Alunos_Data_Matricula"
             value={formData.Alunos_Data_Matricula}
             onChange={handleChange}

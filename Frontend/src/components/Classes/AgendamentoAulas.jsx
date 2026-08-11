@@ -69,11 +69,7 @@ function AgendamentoAulas() {
   const [confirmCancelarId, setConfirmCancelarId] = useState(null);
 
   // Carrega os horários ao montar o componente
-  useEffect(() => {
-    carregarHorarios();
-  }, []);
-
-  const carregarHorarios = async () => {
+  const carregarHorarios = useCallback(async () => {
     try {
       setLoading(true);
       const response = await api.get("/horarios/com-vagas");
@@ -88,7 +84,11 @@ function AgendamentoAulas() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [showToast]);
+
+  useEffect(() => {
+    carregarHorarios();
+  }, [carregarHorarios]);
 
   const carregarAgendamentos = useCallback(
     async (horarioId) => {

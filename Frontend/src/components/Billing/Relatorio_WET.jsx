@@ -17,7 +17,6 @@ function Relatorio_WET() {
   const [relatorio, setRelatorio] = useState(null);
   const [messageToast, showToast] = useToast();
   const [excludedPlanCodigo, setExcludedPlanCodigo] = useState("");
-  const [excludedPlanNome, setExcludedPlanNome] = useState("");
   const [excludedPlanos, setExcludedPlanos] = useState([]);
   const [planosDisponiveis, setPlanosDisponiveis] = useState([]);
 

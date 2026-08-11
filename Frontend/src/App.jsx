@@ -59,6 +59,33 @@ const loadingFallback = (
   </div>
 );
 
+function decodeTokenExpiration(token) {
+  if (!token) return null;
+  try {
+    const payload = token.split(".")[1];
+    if (!payload) return null;
+    const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const json = JSON.parse(atob(base64));
+    return json.exp ? json.exp * 1000 : null;
+  } catch {
+    return null;
+  }
+}
+
+function getTokenExpiredDetail(detail) {
+  if (detail && typeof detail === "object") {
+    return {
+      message: detail.message || detail.Mensagem || "Sua sessao expirou.",
+      token: detail.token || null,
+    };
+  }
+
+  return {
+    message: detail || "Sua sessao expirou.",
+    token: null,
+  };
+}
+
 function App() {
   const [activeComponent, setActiveComponent] = useState(null);
   const [activeComponent2, setActiveComponent2] = useState(null);
@@ -78,6 +105,8 @@ function App() {
   const [renewingSession, setRenewingSession] = useState(false);
   const [sessionRemaining, setSessionRemaining] = useState(null);
   const sessionWarningFiredRef = useRef(false);
+  const sessionExpiredFiredRef = useRef(false);
+  const logoutTimerRef = useRef(null);
 
   const handleRenewSession = async () => {
     setRenewingSession(true);
@@ -86,9 +115,16 @@ function App() {
       const { token } = res.data;
       localStorage.setItem("token", token);
       sessionWarningFiredRef.current = false;
+      sessionExpiredFiredRef.current = false;
+      if (logoutTimerRef.current) {
+        clearTimeout(logoutTimerRef.current);
+        logoutTimerRef.current = null;
+      }
       setShowSessionWarning(false);
+      setSessionRemaining(
+        Math.max(0, Math.floor((decodeTokenExpiration(token) - Date.now()) / 1000)),
+      );
       showToast({ type: "success", text: "Sessão renovada por mais 1 hora!" });
-      // Força remontagem do TokenExpiry para ler o novo token
       window.dispatchEvent(new Event("session-renewed"));
     } catch {
       showToast({ type: "error", text: "Erro ao renovar sessão." });
@@ -97,23 +133,10 @@ function App() {
     }
   };
 
-  const decodeExp = (token) => {
-    if (!token) return null;
-    try {
-      const payload = token.split(".")[1];
-      if (!payload) return null;
-      const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
-      const json = JSON.parse(atob(base64));
-      return json.exp ? json.exp * 1000 : null;
-    } catch {
-      return null;
-    }
-  };
-
   useEffect(() => {
     const atualizarContadorSessao = () => {
       const token = getToken();
-      const expMs = decodeExp(token);
+      const expMs = decodeTokenExpiration(token);
 
       if (!expMs) {
         setSessionRemaining(null);
@@ -122,14 +145,20 @@ function App() {
       }
 
       sessionWarningFiredRef.current = false;
+      sessionExpiredFiredRef.current = false;
 
       const update = () => {
+        if (getToken() !== token) return;
+
         const diff = Math.max(0, Math.floor((expMs - Date.now()) / 1000));
         setSessionRemaining(diff);
 
-        if (diff <= 0) {
+        if (diff <= 0 && !sessionExpiredFiredRef.current) {
+          sessionExpiredFiredRef.current = true;
           window.dispatchEvent(
-            new CustomEvent("token-expired", { detail: "Sua sessão expirou." }),
+            new CustomEvent("token-expired", {
+              detail: { message: "Sua sessao expirou.", token },
+            }),
           );
         } else if (diff <= 180 && !sessionWarningFiredRef.current) {
           sessionWarningFiredRef.current = true;
@@ -152,8 +181,13 @@ function App() {
       if (intervalId) clearInterval(intervalId);
       intervalId = null;
       sessionWarningFiredRef.current = false;
+      sessionExpiredFiredRef.current = false;
       setShowSessionWarning(false);
       setSessionRemaining(null);
+      if (logoutTimerRef.current) {
+        clearTimeout(logoutTimerRef.current);
+        logoutTimerRef.current = null;
+      }
     };
 
     window.addEventListener("login", reiniciarContadorSessao);
@@ -223,25 +257,42 @@ function App() {
     updateUserState();
 
     const handleTokenExpired = (e) => {
-      showToast({ type: "error", text: e.detail });
-      setTimeout(() => {
-        window.dispatchEvent(new Event("logout"));
+      const { message, token } = getTokenExpiredDetail(e.detail);
+      if (token && token !== getToken()) return;
+
+      showToast({ type: "error", text: message });
+      if (logoutTimerRef.current) {
+        clearTimeout(logoutTimerRef.current);
+      }
+      logoutTimerRef.current = setTimeout(() => {
+        if (!token || token === getToken()) {
+          window.dispatchEvent(new Event("logout"));
+        }
+        logoutTimerRef.current = null;
       }, 4000); // tempo da mensagem toast antes de redirecionar
     };
     window.addEventListener("token-expired", handleTokenExpired);
 
-    const handleLogout = () => {
+    const handleLogoutEvent = () => {
+      if (logoutTimerRef.current) {
+        clearTimeout(logoutTimerRef.current);
+        logoutTimerRef.current = null;
+      }
       logout(); // remove o token
       window.location.href = "/security/login"; // redireciona para login
     };
-    window.addEventListener("logout", handleLogout);
+    window.addEventListener("logout", handleLogoutEvent);
 
     return () => {
       window.removeEventListener("login", updateUserState);
       window.removeEventListener("logout", updateUserState);
       window.removeEventListener("token-expired", handleTokenExpired);
-      window.removeEventListener("logout", handleLogout);
+      window.removeEventListener("logout", handleLogoutEvent);
       window.removeEventListener("login", handleLoginFetchExpiring);
+      if (logoutTimerRef.current) {
+        clearTimeout(logoutTimerRef.current);
+        logoutTimerRef.current = null;
+      }
     };
   }, [showToast]);
 

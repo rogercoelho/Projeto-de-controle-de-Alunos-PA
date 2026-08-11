@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import PropTypes from "prop-types";
 import api from "../../services/api";
 import { formatarData } from "../../utils/Utils";
 
@@ -153,5 +154,9 @@ function RenovacoesPendentes({ onAbrirExtrato }) {
     </div>
   );
 }
+
+RenovacoesPendentes.propTypes = {
+  onAbrirExtrato: PropTypes.func,
+};
 
 export default RenovacoesPendentes;

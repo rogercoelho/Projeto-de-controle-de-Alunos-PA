@@ -34,7 +34,6 @@ function StudentSearch() {
   const [loading, setLoading] = useState(false);
   // const [message, setMessage] = useState({ type: "", text: "" });
   const [messageToast, showToast] = useToast();
-  <MessageToast messageToast={messageToast} />;
   const [selectedAluno, setSelectedAluno] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [sortBy, setSortBy] = useState("codigo");
@@ -52,9 +51,7 @@ function StudentSearch() {
      o conteudo de prev e atualizando o name e files na posicao [0] */
   const handleFileChange = (e) => {
     const { name, files } = e.target;
-    if (files && files.length > 0) {
-      setArquivosEdit((prev) => ({ ...prev, [name]: files[0] }));
-    }
+    setArquivosEdit((prev) => ({ ...prev, [name]: files?.[0] || null }));
   };
 
   /* Função para ordenar os resultados com base no critério selecionado

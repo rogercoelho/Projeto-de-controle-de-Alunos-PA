@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import PropTypes from "prop-types";
 
 function CustomSelect({
   name,
@@ -96,5 +97,21 @@ function CustomSelect({
     </div>
   );
 }
+
+CustomSelect.propTypes = {
+  name: PropTypes.string,
+  value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  onChange: PropTypes.func.isRequired,
+  options: PropTypes.arrayOf(
+    PropTypes.shape({
+      value: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
+        .isRequired,
+      label: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
+        .isRequired,
+    }),
+  ).isRequired,
+  placeholder: PropTypes.string,
+  required: PropTypes.bool,
+};
 
 export default CustomSelect;

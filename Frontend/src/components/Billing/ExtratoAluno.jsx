@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import api from "../../services/api";
 import PropTypes from "prop-types";
 import { formatarDataBR } from "../../utils/Utils";
@@ -115,7 +115,7 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
   }, [initialAlunoCodigo]);
 
   const handleCancelarPlano = (fatId) => {
-    setConfirmCancelModal({ fatId, motivo: "" });
+    setConfirmCancelModal({ fatId, motivo: "", comprovanteEstorno: null });
   };
 
   const handleConfirmarCancelamento = async () => {
@@ -126,11 +126,21 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
       showToast({ type: "error", text: "Informe o motivo do cancelamento." });
       return;
     }
+    if (!confirmCancelModal?.comprovanteEstorno) {
+      showToast({ type: "error", text: "Informe o comprovante de estorno." });
+      return;
+    }
 
     setCancelando(fatId);
     setConfirmCancelModal(null);
     try {
-      await api.patch(`/faturamento/cancelar-plano/${fatId}`, { motivo });
+      const data = new FormData();
+      data.append("motivo", motivo);
+      data.append("alunoCodigo", String(codigoAluno || ""));
+      data.append("comprovanteEstorno", confirmCancelModal.comprovanteEstorno);
+      await api.patch(`/faturamento/cancelar-plano/${fatId}`, data, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
       showToast({ type: "success", text: "Plano cancelado com sucesso!" });
       // Recarregar extrato
       const res = await api.get(`/faturamento/extrato/${codigoAluno}/all`);
@@ -156,7 +166,8 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
   const handleAbrirReajuste = (fatId, fatMesesSorted) => {
     const hoje = new Date();
     const mesAtualNum = hoje.getFullYear() * 12 + hoje.getMonth();
-    const mesFuturos = fatMesesSorted
+    const mesesDisponiveis = fatMesesSorted.length ? fatMesesSorted : [];
+    const mesFuturos = mesesDisponiveis
       .filter(([, m]) => {
         const [mAno, mMes] = m.mesAno.split("-").map(Number);
         return mAno * 12 + (mMes - 1) >= mesAtualNum;
@@ -171,7 +182,7 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
     )?.[1];
     setReajusteModal({
       fatId,
-      mesFuturos,
+      mesFuturos: opcoesMeses,
       fatMesesSorted,
       mesAPartirDe: primeiroMes,
       tipo: "acrescimo",
@@ -1448,7 +1459,7 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           {/* Buttons */}
                           <div className="flex flex-wrap gap-2">
-                            {!isCancelado && temMesFuturo && (
+                            {!isCancelado && (
                               <button
                                 type="button"
                                 onClick={() => handleCancelarPlano(fatId)}
@@ -1460,7 +1471,7 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
                                   : "🚫 Cancelar Plano"}
                               </button>
                             )}
-                            {temMesFuturo && (
+                            {!isCancelado && (
                               <button
                                 type="button"
                                 onClick={() =>
@@ -1773,6 +1784,28 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
                 }
                 className="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-red-500"
               />
+            </div>
+            <div className="mb-5">
+              <label className="text-gray-300 text-sm font-medium block mb-1">
+                Comprovante de estorno
+                <span className="text-red-500"> *</span>
+              </label>
+              <input
+                type="file"
+                accept=".pdf,image/*"
+                onChange={(e) =>
+                  setConfirmCancelModal((prev) => ({
+                    ...prev,
+                    comprovanteEstorno: e.target.files?.[0] || null,
+                  }))
+                }
+                className="block w-full text-sm text-gray-300 file:mr-3 file:rounded-md file:border-0 file:bg-red-700 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-red-600"
+              />
+              {confirmCancelModal?.comprovanteEstorno && (
+                <p className="mt-2 truncate rounded-md border border-gray-700 bg-gray-900/60 px-3 py-2 text-xs text-green-400">
+                  {confirmCancelModal.comprovanteEstorno.name}
+                </p>
+              )}
             </div>
             <div className="flex gap-3">
               <button

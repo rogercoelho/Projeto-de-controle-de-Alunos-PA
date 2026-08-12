@@ -7,6 +7,7 @@ const Planos_Cadastro = require("../models/Planos_Cadastro");
 const Alunos_Cadastros = require("../models/Alunos_Cadastro");
 const Alunos_Faturamento = require("../models/Alunos_Faturamento");
 const Alunos_Faturamento_Reajustes = require("../models/Alunos_Faturamento_Reajustes");
+const Faturamentos_Cancelados = require("../models/Faturamentos_Cancelados");
 const { registrarLog, getUsuarioFromReq } = require("../utils/logger");
 
 // Configuração do multer para upload de comprovantes
@@ -742,9 +743,64 @@ router.get("/relatorio-mensal/:mes/:ano", async (req, res) => {
   }
 });
 
+
+// GET /faturamento/relatorio-cancelados/:mes/:ano
+router.get("/relatorio-cancelados/:mes/:ano", async (req, res) => {
+  try {
+    const { mes, ano } = req.params;
+    const { Op } = require("sequelize");
+    const mesNum = Number(mes);
+    const anoNum = Number(ano);
+
+    if (!mesNum || !anoNum || mesNum < 1 || mesNum > 12) {
+      return res.status(400).json({ Erro: "Mês ou ano inválido." });
+    }
+
+    const primeiroDia = new Date(anoNum, mesNum - 1, 1).toISOString().slice(0, 10);
+    const ultimoDia = new Date(anoNum, mesNum, 0).toISOString().slice(0, 10);
+
+    await Faturamentos_Cancelados.sync({ alter: true });
+    const cancelados = await Faturamentos_Cancelados.findAll({
+      where: {
+        Faturamento_Cancelado_Em: {
+          [Op.between]: [primeiroDia, ultimoDia],
+        },
+      },
+      order: [["Faturamento_Cancelado_Em", "DESC"], ["id", "DESC"]],
+      raw: true,
+    });
+
+    if (cancelados.length === 0) {
+      return res.json({ cancelados: [], alunos: [], planos: [], mesSelecionado: mesNum, anoSelecionado: anoNum });
+    }
+
+    const codigosAlunos = [...new Set(cancelados.map((f) => f.Aluno_Codigo))];
+    const alunos = await Alunos_Cadastros.findAll({
+      where: { Alunos_Codigo: codigosAlunos },
+      attributes: ["Alunos_Codigo", "Alunos_Nome", "Alunos_CPF"],
+      raw: true,
+    });
+
+    const codigosPlanos = [...new Set(cancelados.map((f) => f.Plano_Codigo))];
+    const planos = await Planos_Cadastro.findAll({
+      where: { Plano_Codigo: codigosPlanos },
+      attributes: ["Plano_Codigo", "Plano_Nome", "Plano_Pagamento", "Plano_Valor"],
+      raw: true,
+    });
+
+    res.json({ cancelados, alunos, planos, mesSelecionado: mesNum, anoSelecionado: anoNum });
+  } catch (error) {
+    console.error("Erro ao buscar relatório de faturamentos cancelados:", error);
+    res.status(500).json({
+      Erro: "Erro ao buscar relatório de faturamentos cancelados.",
+      Detalhes: error.message,
+    });
+  }
+});
+
 // PATCH /faturamento/cancelar-plano/:id
 // Exclui o plano contratado quando o cancelamento esta dentro do prazo permitido
-router.patch("/cancelar-plano/:id", async (req, res) => {
+router.patch("/cancelar-plano/:id", uploadComprovante.single("comprovanteEstorno"), async (req, res) => {
   try {
     const { id } = req.params;
     const motivoCancelamento = String(req.body?.motivo || "").trim();
@@ -752,7 +808,11 @@ router.patch("/cancelar-plano/:id", async (req, res) => {
     if (!motivoCancelamento) {
       return res
         .status(400)
-        .json({ Erro: "O motivo do cancelamento e obrigatorio." });
+        .json({ Erro: "O motivo do cancelamento é obrigatório." });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ Erro: "Informe o comprovante de estorno." });
     }
 
     const faturamento = await Alunos_Faturamento.findByPk(id);
@@ -776,7 +836,19 @@ router.patch("/cancelar-plano/:id", async (req, res) => {
       }
     }
 
+
     const dadosExcluidos = faturamento.toJSON();
+    const dataCancelamento = new Date().toISOString().slice(0, 10);
+    await Faturamentos_Cancelados.sync({ alter: true });
+    const faturamentoCancelado = await Faturamentos_Cancelados.create({
+      ...dadosExcluidos,
+      id: undefined,
+      Faturamento_Original_ID: dadosExcluidos.id,
+      Faturamento_Cancelado: true,
+      Faturamento_Cancelado_Em: dataCancelamento,
+      Faturamento_Cancelado_Motivo: motivoCancelamento,
+      Faturamento_Cancelado_Comprovante: req.file.filename,
+    });
     const reajustes = await Alunos_Faturamento_Reajustes.findAll({
       where: { Faturamento_ID: id },
     });
@@ -793,7 +865,7 @@ router.patch("/cancelar-plano/:id", async (req, res) => {
       "DELETE",
       "Alunos_Faturamento",
       id,
-      `Cancelamento com exclusao do plano contratado para faturamento ${id} do aluno ${faturamento.Aluno_Codigo}. Motivo: ${motivoCancelamento}`,
+      `Cancelamento com exclusão do plano contratado para faturamento ${id} do aluno ${faturamento.Aluno_Codigo}. Motivo: ${motivoCancelamento}. Histórico: ${faturamentoCancelado.id}`,
       dadosExcluidos,
       null,
     );
@@ -802,6 +874,8 @@ router.patch("/cancelar-plano/:id", async (req, res) => {
       Mensagem: "Plano cancelado com sucesso.",
       reajustesExcluidos: reajustes.length,
       motivo: motivoCancelamento,
+      comprovanteEstorno: req.file.filename,
+      canceladoId: faturamentoCancelado.id,
     });
   } catch (error) {
     console.error("Erro ao cancelar plano:", error);

@@ -5,6 +5,7 @@ const Alunos_Cadastros = require("../models/Alunos_Cadastro");
 const Usuarios = require("../models/Usuarios");
 const Alunos_Faturamento = require("../models/Alunos_Faturamento");
 const Alunos_Faturamento_Reajustes = require("../models/Alunos_Faturamento_Reajustes");
+const Faturamentos_Cancelados = require("../models/Faturamentos_Cancelados");
 const bcrypt = require("bcryptjs");
 const { registrarLog, getUsuarioFromReq } = require("../utils/logger");
 const router = express.Router();
@@ -140,6 +141,14 @@ router.delete("/delete/:tabela/:id", async (req, res) => {
           descricao = `Reajuste ${registro.id} do faturamento ${registro.Faturamento_ID} excluido via painel admin`;
         }
         break;
+      case "Faturamentos_Cancelados":
+        registro = await Faturamentos_Cancelados.findByPk(parseInt(id, 10));
+        nomeTabela = "Faturamentos_Cancelados";
+        if (registro) {
+          descricao = `Faturamento cancelado ${registro.id} (Faturamento original: ${registro.Faturamento_Original_ID || "-"}) excluído via painel admin`;
+        }
+        break;
+
       case "faturamento":
       case "Alunos_Faturamento":
         registro = await Alunos_Faturamento.findByPk(parseInt(id, 10));
@@ -216,6 +225,13 @@ router.delete("/delete/:tabela/:id", async (req, res) => {
     }
 
     // Se for reajuste, exclui o comprovante associado antes do registro.
+    if (tabela === "Faturamentos_Cancelados") {
+      excluirComprovante(
+        registro.Faturamento_Cancelado_Comprovante,
+        "Comprovante de estorno",
+      );
+    }
+
     if (
       tabela === "reajustes_faturamento" ||
       tabela === "Alunos_Faturamento_Reajustes"

@@ -36,6 +36,9 @@ const RegistrarPagamento = lazy(() =>
 const ExtratoAluno = lazy(() => import("./components/Billing/ExtratoAluno"));
 const Relatorio_PA = lazy(() => import("./components/Billing/Relatorio_PA"));
 const Relatorio_WET = lazy(() => import("./components/Billing/Relatorio_WET"));
+const Relatorio_Cancelados = lazy(() =>
+  import("./components/Billing/Relatorio_Cancelados"),
+);
 const RenovacoesPendentes = lazy(() =>
   import("./components/Billing/RenovacoesPendentes"),
 );
@@ -505,6 +508,10 @@ function App() {
                       {activeComponent === "Relatorios" &&
                         activeComponent2 === "RelatorioMensalWET" && (
                           <Relatorio_WET key="relatorio-mensal-wet" />
+                        )}
+                      {activeComponent === "Relatorios" &&
+                        activeComponent2 === "RelatorioCancelados" && (
+                          <Relatorio_Cancelados key="relatorio-cancelados" />
                         )}
                       {activeComponent === "Relatorios" &&
                         activeComponent2 === "RenovacoesPendentes" && (

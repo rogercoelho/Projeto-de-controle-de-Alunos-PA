@@ -2,6 +2,7 @@ const Alunos_Cadastros = require("./Alunos_Cadastro");
 const Planos_Cadastro = require("./Planos_Cadastro");
 const Alunos_Faturamento = require("./Alunos_Faturamento");
 const Alunos_Faturamento_Reajustes = require("./Alunos_Faturamento_Reajustes");
+const Faturamentos_Cancelados = require("./Faturamentos_Cancelados");
 const Alunos_Presenca = require("./Alunos_Presenca");
 const Log_Alteracoes = require("./Log_Alteracoes");
 const Horarios_Aulas = require("./Horarios_Aulas");
@@ -13,6 +14,7 @@ const modelsToSync = [
   { name: "Planos_Cadastro", model: Planos_Cadastro, options: { force: false } },
   { name: "Alunos_Faturamento", model: Alunos_Faturamento, options: { force: false } },
   { name: "Alunos_Faturamento_Reajustes", model: Alunos_Faturamento_Reajustes, options: { alter: true } },
+  { name: "Faturamentos_Cancelados", model: Faturamentos_Cancelados, options: { alter: true } },
   { name: "Alunos_Presenca", model: Alunos_Presenca, options: { alter: true } },
   { name: "Log_Alteracoes", model: Log_Alteracoes, options: { force: false } },
   { name: "Horarios_Aulas", model: Horarios_Aulas, options: { alter: true } },

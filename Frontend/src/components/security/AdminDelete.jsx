@@ -18,6 +18,7 @@ function AdminDelete() {
     { value: "usuarios", label: "Usuários" },
     { value: "faturamento", label: "Faturamento" },
     { value: "reajustes_faturamento", label: "Reajustes de Faturamento" },
+    { value: "Faturamentos_Cancelados", label: "Faturamentos Cancelados" },
   ];
 
   // Primeiro passo: abrir modal de senha ao tentar excluir

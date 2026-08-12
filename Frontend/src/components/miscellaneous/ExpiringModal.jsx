@@ -27,12 +27,12 @@ function ItemList({ items, border, badge, badgeColor }) {
                 {it.Alunos_Nome || it.Alunos_Codigo}
               </div>
               <div className="text-xs text-gray-400">
-                Codigo: {it.Alunos_Codigo} - CPF: {it.Alunos_CPF || "-"}
+                Código: {it.Alunos_Codigo} - CPF: {it.Alunos_CPF || "-"}
               </div>
               <div className="text-xs text-gray-400">
                 Plano: {it.Plano_Codigo} - Parcela:{" "}
                 {formatarData(it.Faturamento_Fim)}
-                {it.tipo === "renovacao" && (
+                {(it.tipo === "renovacao_mes_vigente" || it.tipo === "renovacao_proximo_mes") && (
                   <> - Renova: {adicionarUmMes(it.Faturamento_Fim)}</>
                 )}
               </div>
@@ -52,39 +52,39 @@ function ItemList({ items, border, badge, badgeColor }) {
 function ExpiringModal({ open, onClose, items }) {
   if (!open) return null;
 
-  const renovacao = (items || []).filter((i) => i.tipo === "renovacao");
-  const pendentes = (items || []).filter((i) => i.tipo === "pendente");
+  const renovacaoMesVigente = (items || []).filter((i) => i.tipo === "renovacao_mes_vigente");
+  const renovacaoProximoMes = (items || []).filter((i) => i.tipo === "renovacao_proximo_mes");
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 px-4">
       <div className="bg-gray-800 text-white rounded-xl p-6 max-w-2xl w-full border border-gray-700">
-        <h3 className="text-xl font-bold mb-4">Atencao: Planos e Pagamentos</h3>
+        <h3 className="text-xl font-bold mb-4">Atenção: Renovações</h3>
 
         {items && items.length > 0 ? (
           <div className="max-h-80 overflow-y-auto mb-4 space-y-4">
-            {renovacao.length > 0 && (
+            {renovacaoMesVigente.length > 0 && (
               <div>
                 <p className="text-xs font-semibold text-yellow-400 uppercase tracking-wide mb-1">
-                  Planos vencendo este mes ({renovacao.length})
+                  Renovações para o mês vigente ({renovacaoMesVigente.length})
                 </p>
                 <ItemList
-                  items={renovacao}
+                  items={renovacaoMesVigente}
                   border="border-yellow-600/50"
                   badge="Renovar"
                   badgeColor="bg-yellow-600/20 text-yellow-400"
                 />
               </div>
             )}
-            {pendentes.length > 0 && (
+            {renovacaoProximoMes.length > 0 && (
               <div>
-                <p className="text-xs font-semibold text-red-400 uppercase tracking-wide mb-1">
-                  Pagamentos pendentes ({pendentes.length})
+                <p className="text-xs font-semibold text-blue-400 uppercase tracking-wide mb-1">
+                  Renovações para o próximo mês ({renovacaoProximoMes.length})
                 </p>
                 <ItemList
-                  items={pendentes}
-                  border="border-red-600/50"
-                  badge="Pendente"
-                  badgeColor="bg-red-600/20 text-red-400"
+                  items={renovacaoProximoMes}
+                  border="border-blue-600/50"
+                  badge="Renovar"
+                  badgeColor="bg-blue-600/20 text-blue-400"
                 />
               </div>
             )}

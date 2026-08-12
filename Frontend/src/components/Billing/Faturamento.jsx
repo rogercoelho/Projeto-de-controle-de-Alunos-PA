@@ -1,11 +1,12 @@
 import { useState, useEffect, useMemo } from "react";
+import PropTypes from "prop-types";
 import api from "../../services/api";
 import MessageToast from "../miscellaneous/MessageToast";
 import CustomSelect from "../miscellaneous/CustomSelect";
 import useToast from "../../hooks/useToast";
 import { formatarDataBR, toISODate, parseLocalDate } from "../../utils/Utils";
 
-function Faturamento() {
+function Faturamento({ initialData }) {
   const [formData, setFormData] = useState({
     codigoAluno: "",
     codigoPlano: "",
@@ -19,6 +20,38 @@ function Faturamento() {
   const [fetchingAluno, setFetchingAluno] = useState(false);
   const [fetchingPlano, setFetchingPlano] = useState(false);
   const [messageToast, showToast] = useToast();
+  const [dataRenovacaoAluno, setDataRenovacaoAluno] = useState("");
+
+  const adicionarUmMesISO = (dataInput) => {
+    if (!dataInput) return "";
+    const partes = String(dataInput).split("T")[0].split("-").map(Number);
+    const [ano, mes, dia] = partes;
+    if (!ano || !mes || !dia) return "";
+
+    const anoAlvo = mes === 12 ? ano + 1 : ano;
+    const mesAlvo = mes === 12 ? 1 : mes + 1;
+    const ultimoDia = new Date(anoAlvo, mesAlvo, 0).getDate();
+    const diaAlvo = Math.min(dia, ultimoDia);
+
+    return [
+      anoAlvo,
+      String(mesAlvo).padStart(2, "0"),
+      String(diaAlvo).padStart(2, "0"),
+    ].join("-");
+  };
+
+  const getDataRenovacaoExibida = () =>
+    formData.dataVencimento || dataRenovacaoAluno || "";
+
+  useEffect(() => {
+    if (!initialData) return;
+
+    setFormData({
+      codigoAluno: initialData.codigoAluno ? String(initialData.codigoAluno) : "",
+      codigoPlano: initialData.codigoPlano ? String(initialData.codigoPlano) : "",
+      dataVencimento: initialData.dataVencimento || "",
+    });
+  }, [initialData]);
 
   // Calcula o valor total do faturamento conforme o tipo de pagamento
   const valorTotalFaturamento = useMemo(() => {
@@ -79,6 +112,41 @@ function Faturamento() {
       }
     };
     fetchAluno();
+  }, [formData.codigoAluno]);
+
+  useEffect(() => {
+    const fetchDataRenovacaoAluno = async () => {
+      if (!formData.codigoAluno) {
+        setDataRenovacaoAluno("");
+        return;
+      }
+
+      try {
+        const res = await api.get(`/faturamento/extrato/${formData.codigoAluno}/all`);
+        const faturamentos = (res.data?.planos || [])
+          .flatMap((plano) => plano.faturamentos || [])
+          .filter((fat) => fat.Faturamento_Fim);
+
+        if (!faturamentos.length) {
+          setDataRenovacaoAluno("");
+          return;
+        }
+
+        const ultimoFaturamento = [...faturamentos].sort(
+          (a, b) =>
+            new Date(b.Faturamento_Fim || 0) -
+            new Date(a.Faturamento_Fim || 0),
+        )[0];
+
+        setDataRenovacaoAluno(
+          adicionarUmMesISO(ultimoFaturamento.Faturamento_Fim),
+        );
+      } catch {
+        setDataRenovacaoAluno("");
+      }
+    };
+
+    fetchDataRenovacaoAluno();
   }, [formData.codigoAluno]);
 
   useEffect(() => {
@@ -301,6 +369,12 @@ function Faturamento() {
                   <b>Data Matrícula:</b>{" "}
                   {formatarDataBR(alunoInfo.Alunos_Data_Matricula) || "-"}
                 </li>
+                <li>
+                  <b>Data Renovação:</b>{" "}
+                  {getDataRenovacaoExibida()
+                    ? formatarDataBR(getDataRenovacaoExibida())
+                    : "-"}
+                </li>
               </ul>
             ) : (
               <div className="text-gray-400 text-center">
@@ -358,5 +432,13 @@ function Faturamento() {
     </div>
   );
 }
+
+Faturamento.propTypes = {
+  initialData: PropTypes.shape({
+    codigoAluno: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    codigoPlano: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    dataVencimento: PropTypes.string,
+  }),
+};
 
 export default Faturamento;

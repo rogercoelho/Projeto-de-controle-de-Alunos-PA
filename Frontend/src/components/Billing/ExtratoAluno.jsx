@@ -80,6 +80,8 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
   const [extrato, setExtrato] = useState(null);
   const [messageToast, showToast] = useToast();
   const [comprovanteModal, setComprovanteModal] = useState(null);
+  const [motivoModal, setMotivoModal] = useState(null);
+  const [prazoCancelamentoModal, setPrazoCancelamentoModal] = useState(null);
   const [cancelando, setCancelando] = useState(null);
   const [confirmCancelModal, setConfirmCancelModal] = useState(null); // { fatId, motivo }
   const [reajusteModal, setReajusteModal] = useState(null);
@@ -135,10 +137,16 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
       setExtrato(res.data);
     } catch (error) {
       if (error?.response?.status !== 401) {
-        showToast({
-          type: "error",
-          text: error?.response?.data?.Erro || "Erro ao cancelar plano.",
-        });
+        const mensagemErro =
+          error?.response?.data?.Erro || "Erro ao cancelar plano.";
+        if (mensagemErro.includes("Prazo de 7 dias")) {
+          setPrazoCancelamentoModal(mensagemErro);
+        } else {
+          showToast({
+            type: "error",
+            text: mensagemErro,
+          });
+        }
       }
     } finally {
       setCancelando(null);
@@ -157,11 +165,19 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
         value: m.mesAno,
         label: nomeMes(m.mesAno),
       }));
+    const primeiroMes = mesFuturos[0]?.value || "";
+    const primeiraParcela = fatMesesSorted.find(
+      ([, m]) => m.mesAno === primeiroMes,
+    )?.[1];
     setReajusteModal({
       fatId,
       mesFuturos,
-      mesAPartirDe: mesFuturos[0]?.value || "",
-      novoValor: "",
+      fatMesesSorted,
+      mesAPartirDe: primeiroMes,
+      tipo: "acrescimo",
+      valorAjuste: "",
+      valorBase: primeiraParcela?.valor || 0,
+      reajustes: primeiraParcela?.reajustes || [],
       motivo: "",
       comprovante: null,
     });
@@ -170,25 +186,70 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
   const handleSalvarReajuste = async () => {
     if (
       !reajusteModal.mesAPartirDe ||
-      !reajusteModal.novoValor ||
-      !reajusteModal.motivo.trim() ||
-      !reajusteModal.comprovante
+      !reajusteModal.valorAjuste ||
+      !reajusteModal.motivo.trim()
     ) {
       showToast({ type: "error", text: "Preencha todos os campos." });
       return;
     }
+
+    if (reajusteModal.tipo === "acrescimo" && !reajusteModal.comprovante) {
+      showToast({
+        type: "error",
+        text: "Informe o comprovante de pagamento para acréscimo.",
+      });
+      return;
+    }
     setAplicandoReajuste(true);
     try {
+      const valorAjuste = parseFloat(reajusteModal.valorAjuste);
+      if (isNaN(valorAjuste) || valorAjuste <= 0) {
+        showToast({ type: "error", text: "Informe um valor valido." });
+        return;
+      }
+
+      const parcelaSelecionada = reajusteModal.fatMesesSorted.find(
+        ([, m]) => m.mesAno === reajusteModal.mesAPartirDe,
+      )?.[1];
+      const valorBase =
+        parcelaSelecionada?.valor || reajusteModal.valorBase || 0;
+      const reajustesBase =
+        parcelaSelecionada?.reajustes || reajusteModal.reajustes || [];
+      const valorAtual = getValorVigenteAntesDoMes(
+        reajustesBase,
+        reajusteModal.mesAPartirDe,
+        valorBase,
+      );
+      const novoValor =
+        reajusteModal.tipo === "desconto"
+          ? valorAtual - valorAjuste
+          : valorAtual + valorAjuste;
+
+      if (novoValor < 0) {
+        showToast({
+          type: "error",
+          text: "O desconto nao pode deixar o valor mensal negativo.",
+        });
+        return;
+      }
+
       const data = new FormData();
-      data.append("novoValor", reajusteModal.novoValor);
+      data.append("novoValor", novoValor.toFixed(2));
+      data.append("tipoReajuste", reajusteModal.tipo);
       data.append("apartirDe", reajusteModal.mesAPartirDe + "-01");
       data.append("motivo", reajusteModal.motivo.trim());
-      data.append("comprovante", reajusteModal.comprovante);
+      if (reajusteModal.comprovante) {
+        data.append("comprovante", reajusteModal.comprovante);
+      }
       data.append("alunoCodigo", String(codigoAluno || ""));
 
-      await api.patch(`/faturamento/reajuste-plano/${reajusteModal.fatId}`, data, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      await api.patch(
+        `/faturamento/reajuste-plano/${reajusteModal.fatId}`,
+        data,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+        },
+      );
       showToast({ type: "success", text: "Reajuste aplicado com sucesso!" });
       setReajusteModal(null);
       const res = await api.get(`/faturamento/extrato/${codigoAluno}/all`);
@@ -536,10 +597,12 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
 
     return lista
       .map((reajuste) => ({
+        id: reajuste.id || reajuste.Faturamento_Reajuste_ID || null,
         valor: parseFloat(reajuste.Faturamento_Reajuste) || 0,
         apartirDe: reajuste.Faturamento_Reajuste_Partir_De,
         motivo: reajuste.Faturamento_Reajuste_Motivo || null,
         comprovante: reajuste.Faturamento_Reajuste_Comprovante || null,
+        dataLancamento: reajuste.createdAt || reajuste.updatedAt || null,
       }))
       .filter((reajuste) => reajuste.valor && reajuste.apartirDe)
       .sort((a, b) => String(a.apartirDe).localeCompare(String(b.apartirDe)));
@@ -559,6 +622,14 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
         valorAnterior = reajuste.valor;
         return { ...reajuste, delta };
       });
+  };
+
+  const getValorVigenteAntesDoMes = (reajustes, mesAno, valorBase) => {
+    const [ano, mes] = mesAno.split("-").map(Number);
+    const aplicaveis = getReajustesAplicaveis(reajustes, ano, mes, valorBase);
+    return aplicaveis.length
+      ? aplicaveis[aplicaveis.length - 1].valor
+      : valorBase;
   };
 
   const gerarMesesFaturamento = (faturamentos, tipoPagamento) => {
@@ -644,31 +715,119 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
   };
 
   const montarLinhasMotivo = (...motivos) =>
-    motivos
-      .map((motivo) => String(motivo || "").trim())
-      .filter(Boolean);
+    motivos.map((motivo) => String(motivo || "").trim()).filter(Boolean);
+
+  const renderMotivo = (motivos, colorClass = "text-gray-400") => {
+    const texto = montarLinhasMotivo(...motivos).join("\n");
+    if (!texto) {
+      return <span className="text-gray-600">&mdash;</span>;
+    }
+
+    const statusClass = colorClass.includes("red")
+      ? "bg-red-900/50 text-red-300 border-red-700/50 hover:bg-red-900/70"
+      : colorClass.includes("blue")
+        ? "bg-blue-900/50 text-blue-300 border-blue-700/50 hover:bg-blue-900/70"
+        : "bg-gray-800/70 text-gray-300 border-gray-600/60 hover:bg-gray-700";
+
+    return (
+      <button
+        type="button"
+        onClick={() => setMotivoModal(texto)}
+        className={
+          "inline-flex items-center gap-1 border rounded-full px-2 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 " +
+          statusClass
+        }
+        title="Ver motivo"
+      >
+        Motivo Adicionado
+      </button>
+    );
+  };
+
+  const calcularResumoFaturamento = (fat, plano) => {
+    const meses = Object.values(
+      gerarMesesFaturamento([fat], plano.Plano_Pagamento),
+    );
+    const reajustes = getReajustesDoFaturamento(fat);
+    const canceladoPartes = fat.Faturamento_Cancelado_Em
+      ? String(fat.Faturamento_Cancelado_Em).split("T")[0].split("-")
+      : null;
+    const canceladoAno = canceladoPartes ? parseInt(canceladoPartes[0], 10) : null;
+    const canceladoMes = canceladoPartes ? parseInt(canceladoPartes[1], 10) : null;
+
+    return meses.reduce(
+      (acc, mes) => {
+        const [ano, mesNum] = mes.mesAno.split("-").map(Number);
+        const mesCancelado =
+          !!fat.Faturamento_Cancelado &&
+          canceladoAno !== null &&
+          canceladoMes !== null &&
+          (ano > canceladoAno || (ano === canceladoAno && mesNum > canceladoMes));
+
+        if (mesCancelado) return acc;
+
+        const reajustesAplicaveis = getReajustesAplicaveis(
+          reajustes,
+          ano,
+          mesNum,
+          mes.valor,
+        );
+        const valorVigente = reajustesAplicaveis.length
+          ? reajustesAplicaveis[reajustesAplicaveis.length - 1].valor
+          : mes.valor;
+
+        acc.bruto += valorVigente;
+        acc.descontos += mes.desconto;
+        acc.liquido += Math.max(0, valorVigente - mes.desconto);
+        return acc;
+      },
+      { bruto: 0, descontos: 0, liquido: 0 },
+    );
+  };
 
   const computeStats = () => {
     if (!extrato) return null;
     let totalPago = 0;
     let totalPendente = 0;
     let totalDescontos = 0;
+
     for (const plano of extrato.planos || []) {
       for (const fat of plano.faturamentos || []) {
-        const valor = parseFloat(fat.Faturamento_Valor_Total) || 0;
-        const desc = parseFloat(fat.Faturamento_Desconto) || 0;
-        totalDescontos += desc;
+        const resumo = calcularResumoFaturamento(fat, plano);
+        totalDescontos += resumo.descontos;
+
         if (fat.Faturamento_Data_Pagamento) {
-          totalPago += valor - desc;
+          totalPago += resumo.liquido;
         } else {
-          totalPendente += valor - desc;
+          totalPendente += resumo.liquido;
         }
       }
     }
+
     return { totalPago, totalPendente, totalDescontos };
   };
 
+  const getDataRenovacaoAluno = () => {
+    if (!extrato) return undefined;
+
+    const faturamentos = (extrato.planos || [])
+      .flatMap((plano) => plano.faturamentos || [])
+      .filter((fat) => fat.Faturamento_Fim);
+
+    if (!faturamentos.length) return undefined;
+
+    const ultimoFaturamento = [...faturamentos].sort(
+      (a, b) =>
+        new Date(b.Faturamento_Fim || 0) - new Date(a.Faturamento_Fim || 0),
+    )[0];
+
+    return ultimoFaturamento?.Faturamento_Fim
+      ? formatarDataBR(proximaRenovacaoISO(ultimoFaturamento.Faturamento_Fim))
+      : undefined;
+  };
+
   const stats = extrato ? computeStats() : null;
+  const dataRenovacaoAluno = extrato ? getDataRenovacaoAluno() : undefined;
 
   return (
     <div className="w-full h-auto">
@@ -726,12 +885,12 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
                 {/* Info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex flex-wrap items-center gap-2 mb-3">
+                    <span className="text-gray-400 text-sm font-mono order-first">
+                      #{extrato.aluno?.Alunos_Codigo}
+                    </span>
                     <h3 className="text-white font-bold text-xl leading-none">
                       {extrato.aluno?.Alunos_Nome}
                     </h3>
-                    <span className="text-gray-500 text-sm font-mono">
-                      #{extrato.aluno?.Alunos_Codigo}
-                    </span>
                     <StatusBadge status={extrato.aluno?.Alunos_Situacao} />
                   </div>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-3">
@@ -750,15 +909,22 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
                       label="Telefone"
                       value={extrato.aluno?.Alunos_Telefone}
                     />
-                    <InfoField
-                      icon="📅"
-                      label="Matrícula"
-                      value={
-                        extrato.aluno?.Alunos_Data_Matricula
-                          ? formatarDataBR(extrato.aluno.Alunos_Data_Matricula)
-                          : undefined
-                      }
-                    />
+                    <div className="space-y-3">
+                      <InfoField
+                        icon="📅"
+                        label="Matrícula"
+                        value={
+                          extrato.aluno?.Alunos_Data_Matricula
+                            ? formatarDataBR(extrato.aluno.Alunos_Data_Matricula)
+                            : undefined
+                        }
+                      />
+                      <InfoField
+                        icon="🔄"
+                        label="Renovação"
+                        value={dataRenovacaoAluno}
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -828,10 +994,10 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
                   const fatMesesSorted = Object.entries(fatMeses).sort(
                     ([a], [b]) => a.localeCompare(b),
                   );
-                  const valorBruto =
-                    parseFloat(fat.Faturamento_Valor_Total) || 0;
-                  const desconto = parseFloat(fat.Faturamento_Desconto) || 0;
-                  const valorLiquido = valorBruto - desconto;
+                  const resumoFaturamento = calcularResumoFaturamento(fat, plano);
+                  const valorBruto = resumoFaturamento.bruto;
+                  const desconto = resumoFaturamento.descontos;
+                  const valorLiquido = resumoFaturamento.liquido;
 
                   // Calcula mês/ano do cancelamento para exibir linhas de cancelamento
                   const canceladoPartes = fat.Faturamento_Cancelado_Em
@@ -943,20 +1109,17 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
                       {/* Parcelas table */}
                       {fatMesesSorted.length > 0 ? (
                         <div className="overflow-x-auto">
-                          <table className="w-full text-sm min-w-[580px]">
+                          <table className="w-full table-auto text-sm min-w-[560px]">
                             <thead>
                               <tr className="bg-gray-800/80 border-b border-gray-700 text-gray-400 text-xs uppercase tracking-wide">
-                                <th className="px-3 py-2 text-left font-semibold">
+                                <th className="px-3 py-2 text-left font-semibold whitespace-nowrap">
                                   Parcela
                                 </th>
-                                <th className="px-3 py-2 text-left font-semibold">
+                                <th className="px-2 py-2 text-left font-semibold whitespace-nowrap">
                                   Mês
                                 </th>
                                 <th className="px-3 py-2 text-right font-semibold">
                                   Valor
-                                </th>
-                                <th className="px-3 py-2 text-right font-semibold">
-                                  Desconto
                                 </th>
                                 <th className="px-3 py-2 text-right font-semibold">
                                   Líquido
@@ -964,11 +1127,11 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
                                 <th className="px-3 py-2 text-center font-semibold">
                                   Status
                                 </th>
-                                <th className="px-3 py-2 text-left font-semibold">
+                                <th className="px-2 py-2 text-left font-semibold whitespace-nowrap">
                                   Pago em
                                 </th>
                                 <th className="px-3 py-2 text-left font-semibold">
-                                  Motivo
+                                  Motivo do Reajuste
                                 </th>
                                 <th className="px-3 py-2 text-center font-semibold">
                                   Comprov.
@@ -988,12 +1151,13 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
                                     (mAno === canceladoAno &&
                                       mMes > canceladoMes));
 
-                                const reajustesAplicaveis = getReajustesAplicaveis(
-                                  m.reajustes || reajustes,
-                                  mAno,
-                                  mMes,
-                                  m.valor,
-                                );
+                                const reajustesAplicaveis =
+                                  getReajustesAplicaveis(
+                                    m.reajustes || reajustes,
+                                    mAno,
+                                    mMes,
+                                    m.valor,
+                                  );
                                 const ehMesReajustado =
                                   temReajuste && reajustesAplicaveis.length > 0;
 
@@ -1016,22 +1180,11 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
                                           {m.parcela}/{m.totalParcelas}
                                         </span>
                                       </td>
-                                      <td className="px-3 py-2 text-white font-medium whitespace-nowrap">
+                                      <td className="px-2 py-2 text-white font-medium whitespace-nowrap">
                                         {nomeMes(m.mesAno)}
                                       </td>
                                       <td className="px-3 py-2 text-gray-300 text-right font-mono whitespace-nowrap">
                                         R$ {m.valor.toFixed(2)}
-                                      </td>
-                                      <td className="px-3 py-2 text-right whitespace-nowrap">
-                                        {m.desconto > 0 ? (
-                                          <span className="text-amber-400 font-mono text-xs">
-                                            −R$ {m.desconto.toFixed(2)}
-                                          </span>
-                                        ) : (
-                                          <span className="text-gray-600">
-                                            —
-                                          </span>
-                                        )}
                                       </td>
                                       <td className="px-3 py-2 text-right whitespace-nowrap">
                                         <span className="text-emerald-400 font-mono font-semibold">
@@ -1049,7 +1202,7 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
                                           </span>
                                         )}
                                       </td>
-                                      <td className="px-3 py-2 text-sm whitespace-nowrap">
+                                      <td className="px-2 py-2 text-xs whitespace-nowrap">
                                         {m.dataPagamento ? (
                                           <span className="text-gray-300">
                                             {formatarDataBR(m.dataPagamento)}
@@ -1060,18 +1213,10 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
                                           </span>
                                         )}
                                       </td>
-                                      <td className="px-3 py-2 text-gray-400 text-xs max-w-[180px]">
-                                        {m.motivoDesconto ? (
-                                          <span
-                                            className="whitespace-pre-line break-words"
-                                            title={m.motivoDesconto}
-                                          >
-                                            {m.motivoDesconto}
-                                          </span>
-                                        ) : (
-                                          <span className="text-gray-600">
-                                            —
-                                          </span>
+                                      <td className="px-3 py-2 text-gray-400 text-xs">
+                                        {renderMotivo(
+                                          [m.motivoDesconto],
+                                          "text-gray-400",
                                         )}
                                       </td>
                                       <td className="px-3 py-2 text-center">
@@ -1108,11 +1253,6 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
                                           {(m.valor - m.desconto).toFixed(2)}
                                         </td>
                                         <td className="px-3 py-2 text-right whitespace-nowrap">
-                                          <span className="text-gray-600">
-                                            —
-                                          </span>
-                                        </td>
-                                        <td className="px-3 py-2 text-right whitespace-nowrap">
                                           <span className="text-red-400 font-mono font-semibold">
                                             R$ 0,00
                                           </span>
@@ -1122,26 +1262,18 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
                                             🚫 Cancelado
                                           </span>
                                         </td>
-                                        <td className="px-3 py-2 text-left whitespace-nowrap">
+                                        <td className="px-2 py-2 text-left text-xs whitespace-nowrap">
                                           <span className="text-gray-600">
                                             —
                                           </span>
                                         </td>
-                                        <td className="px-3 py-2 text-red-200 text-xs max-w-[180px]">
-                                          {montarLinhasMotivo(
-                                            m.motivoDesconto,
-                                            m.motivoCancelamento,
-                                          ).length > 0 ? (
-                                            <span className="whitespace-pre-line break-words">
-                                              {montarLinhasMotivo(
-                                                m.motivoDesconto,
-                                                m.motivoCancelamento,
-                                              ).join("\n")}
-                                            </span>
-                                          ) : (
-                                            <span className="text-gray-600">
-                                              —
-                                            </span>
+                                        <td className="px-3 py-2 text-red-200 text-xs">
+                                          {renderMotivo(
+                                            [
+                                              m.motivoDesconto,
+                                              m.motivoCancelamento,
+                                            ],
+                                            "text-red-200",
                                           )}
                                         </td>
                                         <td className="px-3 py-2 text-center">
@@ -1175,9 +1307,16 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
                                             >
                                               <td className="px-3 py-2 whitespace-nowrap">
                                                 <span
-                                                  className={`font-semibold ${ehMesCancelado ? "text-red-400" : "text-blue-400"}`}
+                                                  className={`inline-flex items-center gap-1.5 font-semibold ${ehMesCancelado ? "text-red-400" : "text-blue-400"}`}
                                                 >
-                                                  {m.parcela}/{m.totalParcelas}
+                                                  {reajuste.id && (
+                                                    <span className="text-gray-500 font-mono text-[11px]">
+                                                      #{reajuste.id}
+                                                    </span>
+                                                  )}
+                                                  <span>
+                                                    {m.parcela}/{m.totalParcelas}
+                                                  </span>
                                                 </span>
                                               </td>
                                               <td
@@ -1188,19 +1327,22 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
                                               <td
                                                 className={`px-3 py-2 text-right font-mono whitespace-nowrap ${ehMesCancelado ? "text-red-400" : "text-blue-400"}`}
                                               >
-                                                {reajusteDeltaExibido >= 0 ? "+" : ""}R${" "}
-                                                {reajusteDeltaExibido.toFixed(2)}
-                                              </td>
-                                              <td className="px-3 py-2 text-right whitespace-nowrap">
-                                                <span className="text-gray-600">
-                                                  ?
-                                                </span>
+                                                {reajusteDeltaExibido >= 0
+                                                  ? "+"
+                                                  : ""}
+                                                R${" "}
+                                                {reajusteDeltaExibido.toFixed(
+                                                  2,
+                                                )}
                                               </td>
                                               <td className="px-3 py-2 text-right whitespace-nowrap">
                                                 <span
                                                   className={`font-mono font-semibold ${ehMesCancelado ? "text-red-300" : "text-blue-300"}`}
                                                 >
-                                                  R$ {reajusteValorExibido.toFixed(2)}
+                                                  R${" "}
+                                                  {reajusteValorExibido.toFixed(
+                                                    2,
+                                                  )}
                                                 </span>
                                               </td>
                                               <td className="px-3 py-2 text-center whitespace-nowrap">
@@ -1212,44 +1354,36 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
                                                   }`}
                                                 >
                                                   {ehMesCancelado
-                                                    ? "?? Cancelado"
-                                                    : "?? Ajustado"}
+                                                    ? "Cancelado"
+                                                    : "Ajustado"}
                                                 </span>
                                               </td>
-                                              <td className="px-3 py-2 text-left whitespace-nowrap">
-                                                <span className="text-gray-600">
-                                                  ?
-                                                </span>
-                                              </td>
-                                              <td
-                                                className={`px-3 py-2 text-xs max-w-[180px] ${ehMesCancelado ? "text-red-200" : "text-blue-200"}`}
-                                              >
-                                                {montarLinhasMotivo(
-                                                  motivoReajuste,
-                                                  ehMesCancelado
-                                                    ? m.motivoCancelamento
-                                                    : null,
-                                                ).length > 0 ? (
-                                                  <span
-                                                    className="whitespace-pre-line break-words"
-                                                    title={montarLinhasMotivo(
-                                                      motivoReajuste,
-                                                      ehMesCancelado
-                                                        ? m.motivoCancelamento
-                                                        : null,
-                                                    ).join("\n")}
-                                                  >
-                                                    {montarLinhasMotivo(
-                                                      motivoReajuste,
-                                                      ehMesCancelado
-                                                        ? m.motivoCancelamento
-                                                        : null,
-                                                    ).join("\n")}
+                                              <td className="px-2 py-2 text-left text-xs whitespace-nowrap">
+                                                {reajuste.dataLancamento ? (
+                                                  <span className="text-gray-300">
+                                                    {formatarDataBR(
+                                                      reajuste.dataLancamento,
+                                                    )}
                                                   </span>
                                                 ) : (
                                                   <span className="text-gray-600">
-                                                    ?
+                                                    &mdash;
                                                   </span>
+                                                )}
+                                              </td>
+                                              <td
+                                                className={`px-3 py-2 text-xs ${ehMesCancelado ? "text-red-200" : "text-blue-200"}`}
+                                              >
+                                                {renderMotivo(
+                                                  [
+                                                    motivoReajuste,
+                                                    ehMesCancelado
+                                                      ? m.motivoCancelamento
+                                                      : null,
+                                                  ],
+                                                  ehMesCancelado
+                                                    ? "text-red-200"
+                                                    : "text-blue-200",
                                                 )}
                                               </td>
                                               <td className="px-3 py-2 text-center">
@@ -1263,7 +1397,7 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
                                                   />
                                                 ) : (
                                                   <span className="text-gray-600 text-xs">
-                                                    ?
+                                                    &mdash;
                                                   </span>
                                                 )}
                                               </td>
@@ -1482,18 +1616,36 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
               </div>
               <div className="flex flex-col gap-1">
                 <label className="text-gray-300 text-sm font-medium">
-                  Valor do reajuste (R$)
+                  Tipo de ajuste
+                </label>
+                <select
+                  value={reajusteModal.tipo}
+                  onChange={(e) =>
+                    setReajusteModal((prev) => ({
+                      ...prev,
+                      tipo: e.target.value,
+                    }))
+                  }
+                  className="bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="acrescimo">Acrescimo</option>
+                  <option value="desconto">Desconto</option>
+                </select>
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-gray-300 text-sm font-medium">
+                  Valor do ajuste (R$)
                 </label>
                 <input
                   type="number"
                   min="0"
                   step="0.01"
                   placeholder="Ex: 50,00"
-                  value={reajusteModal.novoValor}
+                  value={reajusteModal.valorAjuste}
                   onChange={(e) =>
                     setReajusteModal((prev) => ({
                       ...prev,
-                      novoValor: e.target.value,
+                      valorAjuste: e.target.value,
                     }))
                   }
                   className="bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -1519,7 +1671,9 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
               <div className="flex flex-col gap-1">
                 <label className="text-gray-300 text-sm font-medium">
                   Comprovante
-                  <span className="text-red-500"> *</span>
+                  {reajusteModal.tipo === "acrescimo" && (
+                    <span className="text-red-500"> *</span>
+                  )}
                 </label>
                 <input
                   key={
@@ -1537,6 +1691,11 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
                   }
                   className="block w-full text-sm text-gray-300 file:mr-3 file:rounded-md file:border-0 file:bg-blue-700 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-blue-600"
                 />
+                {reajusteModal.tipo === "desconto" && !reajusteModal.comprovante && (
+                  <p className="text-xs text-gray-400">
+                    Comprovante opcional para desconto.
+                  </p>
+                )}
                 {reajusteModal.comprovante && (
                   <div className="text-xs text-green-400 flex items-center justify-between gap-2 bg-gray-900/60 rounded-md px-3 py-2 border border-gray-700">
                     <span className="truncate">
@@ -1636,6 +1795,55 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
       )}
 
       {/* ── Comprovante Modal ── */}
+      {prazoCancelamentoModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 border-2 border-amber-500/70 rounded-2xl p-6 max-w-sm w-full shadow-2xl">
+            <div className="flex flex-col items-center text-center gap-3">
+              <div className="w-14 h-14 rounded-full bg-amber-500/20 border-2 border-amber-500/60 flex items-center justify-center text-2xl font-bold text-amber-300">
+                !
+              </div>
+              <h2 className="text-white font-bold text-lg">
+                Cancelamento nao permitido
+              </h2>
+              <p className="text-gray-200 text-sm leading-relaxed">
+                {prazoCancelamentoModal}
+              </p>
+              <button
+                type="button"
+                onClick={() => setPrazoCancelamentoModal(null)}
+                className="mt-2 w-full bg-amber-600 hover:bg-amber-500 text-white font-semibold py-2.5 rounded-lg transition-colors"
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {motivoModal && (
+        <div
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          onClick={() => setMotivoModal(null)}
+        >
+          <div
+            className="bg-gray-800 border border-gray-600 rounded-2xl p-5 max-w-sm w-full shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-white font-bold text-base mb-3">Motivo</h2>
+            <p className="text-gray-200 text-sm whitespace-pre-line break-words leading-relaxed">
+              {motivoModal}
+            </p>
+            <button
+              type="button"
+              onClick={() => setMotivoModal(null)}
+              className="mt-4 w-full bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2.5 rounded-lg transition-colors"
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      )}
+
       {comprovanteModal && (
         <div
           className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4"
@@ -1709,4 +1917,3 @@ ExtratoAluno.propTypes = {
 };
 
 export default ExtratoAluno;
-

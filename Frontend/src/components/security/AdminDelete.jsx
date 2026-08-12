@@ -17,6 +17,7 @@ function AdminDelete() {
     { value: "Alunos_Cadastros", label: "Alunos" },
     { value: "usuarios", label: "Usuários" },
     { value: "faturamento", label: "Faturamento" },
+    { value: "reajustes_faturamento", label: "Reajustes de Faturamento" },
   ];
 
   // Primeiro passo: abrir modal de senha ao tentar excluir
@@ -215,7 +216,10 @@ function AdminDelete() {
           </label>
           <select
             value={tabela}
-            onChange={(e) => setTabela(e.target.value)}
+            onChange={(e) => {
+              setTabela(e.target.value);
+              setRegistroId("");
+            }}
             className="w-full p-3 rounded-md bg-gray-700 text-white border-2 border-gray-600 focus:border-red-500 focus:outline-none"
             required
           >
@@ -253,11 +257,11 @@ function AdminDelete() {
         </div>
 
         {/* Botões */}
-        <div className="flex gap-4 justify-center">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
           <button
             type="submit"
             disabled={loading}
-            className="bg-red-600 text-white px-8 py-3 rounded-md hover:bg-red-700 disabled:bg-gray-500 disabled:cursor-not-allowed font-semibold transition-colors"
+            className="w-full sm:w-auto bg-red-600 text-white px-8 py-3 rounded-md hover:bg-red-700 disabled:bg-gray-500 disabled:cursor-not-allowed font-semibold transition-colors"
           >
             {loading ? "Excluindo..." : "🗑️ Excluir Registro"}
           </button>
@@ -265,7 +269,7 @@ function AdminDelete() {
             type="button"
             onClick={handleReset}
             disabled={loading}
-            className="bg-gray-600 text-white px-8 py-3 rounded-md hover:bg-gray-700 disabled:bg-gray-500 disabled:cursor-not-allowed font-semibold transition-colors"
+            className="w-full sm:w-auto bg-gray-600 text-white px-8 py-3 rounded-md hover:bg-gray-700 disabled:bg-gray-500 disabled:cursor-not-allowed font-semibold transition-colors"
           >
             Limpar
           </button>

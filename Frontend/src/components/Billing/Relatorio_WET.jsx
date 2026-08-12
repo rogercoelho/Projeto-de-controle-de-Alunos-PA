@@ -16,6 +16,7 @@ function Relatorio_WET() {
   const [loadingPdf, setLoadingPdf] = useState(false);
   const [relatorio, setRelatorio] = useState(null);
   const [messageToast, showToast] = useToast();
+  const [motivoModal, setMotivoModal] = useState(null);
   const [excludedPlanCodigo, setExcludedPlanCodigo] = useState("");
   const [excludedPlanos, setExcludedPlanos] = useState([]);
   const [planosDisponiveis, setPlanosDisponiveis] = useState([]);
@@ -149,6 +150,30 @@ function Relatorio_WET() {
       .map((motivo) => String(motivo || "").trim())
       .filter(Boolean);
     return motivos.length > 0 ? motivos.join("\n") : "";
+  };
+
+  const renderMotivoStatus = (item) => {
+    if (!item.motivo) return "";
+
+    const statusClass = item.isCancelamento
+      ? "bg-red-900/50 text-red-300 border-red-700/50 hover:bg-red-900/70"
+      : item.isReajuste
+        ? "bg-blue-900/50 text-blue-300 border-blue-700/50 hover:bg-blue-900/70"
+        : "bg-gray-800/70 text-gray-300 border-gray-600/60 hover:bg-gray-700";
+
+    return (
+      <button
+        type="button"
+        onClick={() => setMotivoModal(item.motivo)}
+        className={
+          "inline-flex items-center gap-1 border rounded-full px-2 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 " +
+          statusClass
+        }
+        title="Ver motivo"
+      >
+        Motivo Adicionado
+      </button>
+    );
   };
 
   // Processar dados do relatório
@@ -530,8 +555,9 @@ function Relatorio_WET() {
       // Linhas de dados
       const textPurple = [192, 132, 252];
       for (const item of dados) {
+        const larguraMotivo = doc.internal.pageSize.getWidth() - colX.motivo - marginLeft;
         const motivoLinhas = item.motivo
-          ? doc.splitTextToSize(item.motivo, 26)
+          ? doc.splitTextToSize(item.motivo, larguraMotivo)
           : [];
         const rowHeight = Math.max(6, motivoLinhas.length * 4);
         if (y > 185 - rowHeight) {
@@ -1036,8 +1062,8 @@ function Relatorio_WET() {
                               ? `${item.isReajuste && item.valorWET > 0 ? "+" : ""}R$ ${item.valorWET.toFixed(2)}`
                               : item.valorWET}
                           </td>
-                          <td className="px-3 py-2 text-gray-300 whitespace-pre-line align-top">
-                            {item.motivo || ""}
+                          <td className="px-3 py-2 text-gray-300 align-top">
+                            {renderMotivoStatus(item)}
                           </td>
                         </tr>
                       ))}
@@ -1083,6 +1109,29 @@ function Relatorio_WET() {
           </div>
         )}
       </div>
+      {motivoModal && (
+        <div
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          onClick={() => setMotivoModal(null)}
+        >
+          <div
+            className="bg-gray-800 border border-gray-600 rounded-2xl p-5 max-w-sm w-full shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-white font-bold text-base mb-3">Motivo</h2>
+            <p className="text-gray-200 text-sm whitespace-pre-line break-words leading-relaxed">
+              {motivoModal}
+            </p>
+            <button
+              type="button"
+              onClick={() => setMotivoModal(null)}
+              className="mt-4 w-full bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2.5 rounded-lg transition-colors"
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

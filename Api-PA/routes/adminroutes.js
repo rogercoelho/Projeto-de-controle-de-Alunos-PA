@@ -4,9 +4,37 @@ const fs = require("fs");
 const Alunos_Cadastros = require("../models/Alunos_Cadastro");
 const Usuarios = require("../models/Usuarios");
 const Alunos_Faturamento = require("../models/Alunos_Faturamento");
+const Alunos_Faturamento_Reajustes = require("../models/Alunos_Faturamento_Reajustes");
 const bcrypt = require("bcryptjs");
 const { registrarLog, getUsuarioFromReq } = require("../utils/logger");
 const router = express.Router();
+const getUploadsBaseDir = () =>
+  process.env.NODE_ENV === "production"
+    ? "/home2/goutechc/wwwplantandoalegria_API/uploads"
+    : path.join(__dirname, "../uploads");
+
+const excluirComprovante = (nome, descricao) => {
+  if (!nome) return;
+
+  try {
+    const comprovantePath = path.join(
+      getUploadsBaseDir(),
+      "comprovantes",
+      nome,
+    );
+
+    if (fs.existsSync(comprovantePath)) {
+      fs.unlinkSync(comprovantePath);
+      console.log(`${descricao} excluido: ${nome}`);
+    } else {
+      console.log(`${descricao} nao encontrado no disco: ${nome}`);
+    }
+  } catch (fileError) {
+    console.error(
+      `Erro ao excluir ${descricao.toLowerCase()}: ${fileError.message}`,
+    );
+  }
+};
 
 // Rota genérica para exclusão administrativa com log
 router.delete("/delete/:tabela/:id", async (req, res) => {
@@ -90,6 +118,28 @@ router.delete("/delete/:tabela/:id", async (req, res) => {
         }
         break;
 
+      case "reajustes_faturamento":
+      case "Alunos_Faturamento_Reajustes":
+        registro = await Alunos_Faturamento_Reajustes.findByPk(
+          parseInt(id, 10),
+        );
+        console.log(
+          `Registro encontrado (Reajuste de faturamento):`,
+          registro ? "SIM" : "NAO",
+        );
+        if (registro) {
+          console.log(`Dados do reajuste:`, {
+            id: registro.id,
+            faturamento: registro.Faturamento_ID,
+            valor: registro.Faturamento_Reajuste,
+            apartirDe: registro.Faturamento_Reajuste_Partir_De,
+          });
+        }
+        nomeTabela = "Alunos_Faturamento_Reajustes";
+        if (registro) {
+          descricao = `Reajuste ${registro.id} do faturamento ${registro.Faturamento_ID} excluido via painel admin`;
+        }
+        break;
       case "faturamento":
       case "Alunos_Faturamento":
         registro = await Alunos_Faturamento.findByPk(parseInt(id, 10));
@@ -136,10 +186,7 @@ router.delete("/delete/:tabela/:id", async (req, res) => {
 
     // Se for aluno, exclui foto e contrato associados (se existirem)
     if (tabela === "Alunos_Cadastros") {
-      const baseDir =
-        process.env.NODE_ENV === "production"
-          ? "/home2/goutechc/wwwplantandoalegria_API/uploads"
-          : path.join(__dirname, "../uploads");
+      const baseDir = getUploadsBaseDir();
 
       const arquivos = [
         { campo: registro.Alunos_Foto, subdir: "fotos" },
@@ -168,51 +215,44 @@ router.delete("/delete/:tabela/:id", async (req, res) => {
       }
     }
 
-    // Se for faturamento, exclui os comprovantes associados (se existirem)
-    if (tabela === "faturamento" || tabela === "Alunos_Faturamento") {
-      const baseDir =
-        process.env.NODE_ENV === "production"
-          ? "/home2/goutechc/wwwplantandoalegria_API/uploads"
-          : path.join(__dirname, "../uploads");
-
-      const comprovantes = [
-        {
-          nome: registro.Faturamento_Comprovante,
-          descricao: "Comprovante de pagamento",
-        },
-        {
-          nome: registro.Faturamento_Reajuste_Comprovante,
-          descricao: "Comprovante de reajuste",
-        },
-      ].filter((item) => item.nome);
-
-      for (const comprovante of comprovantes) {
-        try {
-          const comprovantePath = path.join(
-            baseDir,
-            "comprovantes",
-            comprovante.nome,
-          );
-
-          if (fs.existsSync(comprovantePath)) {
-            fs.unlinkSync(comprovantePath);
-            console.log(
-              `🗑️ ${comprovante.descricao} excluído: ${comprovante.nome}`,
-            );
-          } else {
-            console.log(
-              `⚠️ ${comprovante.descricao} não encontrado no disco: ${comprovante.nome}`,
-            );
-          }
-        } catch (fileError) {
-          console.error(
-            `❌ Erro ao excluir ${comprovante.descricao.toLowerCase()}: ${fileError.message}`,
-          );
-          // Continua com a exclusão do registro mesmo se falhar ao excluir o arquivo
-        }
-      }
+    // Se for reajuste, exclui o comprovante associado antes do registro.
+    if (
+      tabela === "reajustes_faturamento" ||
+      tabela === "Alunos_Faturamento_Reajustes"
+    ) {
+      excluirComprovante(
+        registro.Faturamento_Reajuste_Comprovante,
+        "Comprovante de reajuste",
+      );
     }
 
+    // Se for faturamento, exclui comprovantes e reajustes vinculados antes do registro pai.
+    if (tabela === "faturamento" || tabela === "Alunos_Faturamento") {
+      excluirComprovante(
+        registro.Faturamento_Comprovante,
+        "Comprovante de pagamento",
+      );
+      excluirComprovante(
+        registro.Faturamento_Reajuste_Comprovante,
+        "Comprovante de reajuste",
+      );
+
+      const reajustes = await Alunos_Faturamento_Reajustes.findAll({
+        where: { Faturamento_ID: parseInt(id, 10) },
+      });
+
+      for (const reajuste of reajustes) {
+        excluirComprovante(
+          reajuste.Faturamento_Reajuste_Comprovante,
+          "Comprovante de reajuste",
+        );
+        await reajuste.destroy();
+      }
+
+      console.log(
+        `${reajustes.length} reajuste(s) vinculado(s) ao faturamento ${id} excluido(s)`,
+      );
+    }
     // Exclui o registro
     await registro.destroy();
     console.log(`🗑️ Registro excluído com sucesso do banco de dados`);

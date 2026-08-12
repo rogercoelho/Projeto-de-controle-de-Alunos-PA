@@ -94,6 +94,7 @@ function App() {
   const [studentSearchKey, setStudentSearchKey] = useState(0);
   const [packagesSearchKey, setPackagesSearchKey] = useState(0);
   const [registrarPagamentoKey, setRegistrarPagamentoKey] = useState(0);
+  const [faturamentoKey, setFaturamentoKey] = useState(0);
   const [registrarPresencaKey, setRegistrarPresencaKey] = useState(0);
   const [usuario, setUsuario] = useState(() => getUsuario());
   const [ehAdmin, setEhAdmin] = useState(() => isAdmin());
@@ -101,6 +102,7 @@ function App() {
   const [expiringList, setExpiringList] = useState([]);
   const [showExpiring, setShowExpiring] = useState(false);
   const [extratoAlunoInicial, setExtratoAlunoInicial] = useState(null);
+  const [faturamentoInicial, setFaturamentoInicial] = useState(null);
   const [showSessionWarning, setShowSessionWarning] = useState(false);
   const [renewingSession, setRenewingSession] = useState(false);
   const [sessionRemaining, setSessionRemaining] = useState(null);
@@ -226,19 +228,8 @@ function App() {
     // Ao logar, buscar alunos com planos vencendo no mes e pagamentos pendentes
     const handleLoginFetchExpiring = async () => {
       try {
-        const [resExp, resPend] = await Promise.all([
-          api.get("/faturamento/expirando"),
-          api.get("/faturamento/pendentes"),
-        ]);
-        const renovacao = (resExp.data?.alunos || []).map((i) => ({
-          ...i,
-          tipo: "renovacao",
-        }));
-        const pendentes = (resPend.data?.alunos || []).map((i) => ({
-          ...i,
-          tipo: "pendente",
-        }));
-        const combined = [...renovacao, ...pendentes];
+        const resExp = await api.get("/faturamento/expirando");
+        const combined = resExp.data?.alunos || [];
         if (combined.length > 0) {
           setExpiringList(combined);
           setShowExpiring(true);
@@ -296,9 +287,13 @@ function App() {
     };
   }, [showToast]);
 
-  const handleNavigate = (component, subComponent) => {
+  const handleNavigate = (component, subComponent, options = {}) => {
     setActiveComponent(component);
     setActiveComponent2(subComponent);
+
+    if (!options.preservarFaturamentoInicial) {
+      setFaturamentoInicial(null);
+    }
     // Incrementa a key quando UserList e selecionado para forcar remontagem
     if (subComponent === "UserList") {
       setUserListKey((prev) => prev + 1);
@@ -310,6 +305,9 @@ function App() {
     // Incrementa a key quando PackagesSearck e selecionado para forcar remontagem
     if (subComponent === "PackagesSearch") {
       setPackagesSearchKey((prev) => prev + 1);
+    }
+    if (component === "Financeiro" && subComponent === "Faturamento") {
+      setFaturamentoKey((prev) => prev + 1);
     }
     // Incrementa a key quando RegistrarPagamento e selecionado para forcar remontagem
     if (component === "Financeiro" && subComponent === "RegistrarPagamento") {
@@ -468,7 +466,10 @@ function App() {
                       )}
                       {activeComponent === "Financeiro" &&
                         activeComponent2 === "Faturamento" && (
-                          <Faturamento key="faturamento" />
+                          <Faturamento
+                            key={`faturamento-${faturamentoKey}-${JSON.stringify(faturamentoInicial)}`}
+                            initialData={faturamentoInicial}
+                          />
                         )}
                       {activeComponent === "Financeiro" &&
                         activeComponent2 === "RegistrarPagamento" && (
@@ -512,6 +513,12 @@ function App() {
                             onAbrirExtrato={(codigo) => {
                               setExtratoAlunoInicial(codigo);
                               handleNavigate("Relatorios", "ExtratoAluno");
+                            }}
+                            onRenovar={(dados) => {
+                              setFaturamentoInicial(dados);
+                              handleNavigate("Financeiro", "Faturamento", {
+                                preservarFaturamentoInicial: true,
+                              });
                             }}
                           />
                         )}

@@ -92,7 +92,7 @@ router.get("/pendentes", async (req, res) => {
   try {
     const pendentes = await Alunos_Faturamento.findAll({
       where: { Faturamento_Data_Pagamento: null },
-      attributes: ["Aluno_Codigo", "Plano_Codigo", "Faturamento_Fim"],
+      attributes: ["id", "Aluno_Codigo", "Plano_Codigo", "Faturamento_Fim"],
       raw: true,
     });
 
@@ -106,8 +106,29 @@ router.get("/pendentes", async (req, res) => {
     }
     const unicos = Object.values(deduped);
 
+    const codigosPendentes = [...new Set(unicos.map((p) => p.Aluno_Codigo))];
+    const todosFaturamentosPendentes = codigosPendentes.length
+      ? await Alunos_Faturamento.findAll({
+          where: { Aluno_Codigo: codigosPendentes },
+          attributes: ["id", "Aluno_Codigo", "Faturamento_Fim"],
+          raw: true,
+        })
+      : [];
+
+    const pendentesAtuais = unicos.filter((fat) => {
+      const fatId = fat.id || fat.Faturamento_ID;
+      return !todosFaturamentosPendentes.some((outro) => {
+        const outroId = outro.id || outro.Faturamento_ID;
+        return (
+          outro.Aluno_Codigo === fat.Aluno_Codigo &&
+          outroId !== fatId &&
+          String(outro.Faturamento_Fim || "") > String(fat.Faturamento_Fim || "")
+        );
+      });
+    });
+
     // Busca apenas alunos Ativos
-    const codigos = [...new Set(unicos.map((p) => p.Aluno_Codigo))];
+    const codigos = [...new Set(pendentesAtuais.map((p) => p.Aluno_Codigo))];
     let alunosInfo = [];
     if (codigos.length > 0) {
       alunosInfo = await Alunos_Cadastros.findAll({
@@ -124,7 +145,7 @@ router.get("/pendentes", async (req, res) => {
 
     // Filtra apenas os registros cujo aluno é Ativo
     const alunosAtivos = new Set(alunosInfo.map((a) => a.Alunos_Codigo));
-    const resultado = unicos
+    const resultado = pendentesAtuais
       .filter((fat) => alunosAtivos.has(fat.Aluno_Codigo))
       .map((fat) => {
         const aluno = alunosInfo.find(
@@ -722,7 +743,7 @@ router.get("/relatorio-mensal/:mes/:ano", async (req, res) => {
 });
 
 // PATCH /faturamento/cancelar-plano/:id
-// Marca o faturamento como cancelado a partir do mês atual
+// Exclui o plano contratado quando o cancelamento esta dentro do prazo permitido
 router.patch("/cancelar-plano/:id", async (req, res) => {
   try {
     const { id } = req.params;
@@ -731,53 +752,55 @@ router.patch("/cancelar-plano/:id", async (req, res) => {
     if (!motivoCancelamento) {
       return res
         .status(400)
-        .json({ Erro: "O motivo do cancelamento é obrigatório." });
+        .json({ Erro: "O motivo do cancelamento e obrigatorio." });
     }
 
     const faturamento = await Alunos_Faturamento.findByPk(id);
     if (!faturamento) {
-      return res.status(404).json({ Erro: "Faturamento não encontrado." });
+      return res.status(404).json({ Erro: "Faturamento nao encontrado." });
     }
 
-    if (faturamento.Faturamento_Cancelado) {
-      return res
-        .status(400)
-        .json({ Erro: "Este faturamento já está cancelado." });
+    if (faturamento.Faturamento_Data_Pagamento) {
+      const dataPagamento = new Date(faturamento.Faturamento_Data_Pagamento);
+      const hoje = new Date();
+      dataPagamento.setHours(0, 0, 0, 0);
+      hoje.setHours(0, 0, 0, 0);
+      const diasAposPagamento = Math.floor(
+        (hoje.getTime() - dataPagamento.getTime()) / (1000 * 60 * 60 * 24),
+      );
+
+      if (diasAposPagamento > 7) {
+        return res.status(400).json({
+          Erro: "Cancelamento não permitido. Prazo de 7 dias após o pagamento expirado. Efetue o lançamento do reajuste",
+        });
+      }
     }
 
-    const hoje = new Date();
-    const dataCancelamento = hoje.toISOString().split("T")[0];
+    const dadosExcluidos = faturamento.toJSON();
+    const reajustes = await Alunos_Faturamento_Reajustes.findAll({
+      where: { Faturamento_ID: id },
+    });
 
-    await Alunos_Faturamento.update(
-      {
-        Faturamento_Cancelado: true,
-        Faturamento_Cancelado_Em: dataCancelamento,
-        Faturamento_Cancelado_Motivo: motivoCancelamento,
-      },
-      { where: { id } },
-    );
+    for (const reajuste of reajustes) {
+      await reajuste.destroy();
+    }
+
+    await faturamento.destroy();
 
     const usuarioLog = getUsuarioFromReq(req);
     await registrarLog(
       usuarioLog,
-      "UPDATE",
+      "DELETE",
       "Alunos_Faturamento",
       id,
-      `Cancelamento de plano para faturamento ${id} do aluno ${faturamento.Aluno_Codigo}. Motivo: ${motivoCancelamento}`,
-      {
-        Faturamento_Cancelado: false,
-        Faturamento_Cancelado_Motivo: faturamento.Faturamento_Cancelado_Motivo,
-      },
-      {
-        Faturamento_Cancelado: true,
-        Faturamento_Cancelado_Em: dataCancelamento,
-        Faturamento_Cancelado_Motivo: motivoCancelamento,
-      },
+      `Cancelamento com exclusao do plano contratado para faturamento ${id} do aluno ${faturamento.Aluno_Codigo}. Motivo: ${motivoCancelamento}`,
+      dadosExcluidos,
+      null,
     );
 
     res.json({
       Mensagem: "Plano cancelado com sucesso.",
-      dataCancelamento,
+      reajustesExcluidos: reajustes.length,
       motivo: motivoCancelamento,
     });
   } catch (error) {
@@ -787,210 +810,175 @@ router.patch("/cancelar-plano/:id", async (req, res) => {
       .json({ Erro: "Erro ao cancelar plano.", Detalhes: error.message });
   }
 });
-
 // PATCH /faturamento/reajuste-plano/:id
 // Aplica um reajuste de valor mensal a partir de um determinado mês
 router.patch(
   "/reajuste-plano/:id",
   uploadComprovante.single("comprovante"),
   async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { novoValor, apartirDe, motivo } = req.body;
+    try {
+      const { id } = req.params;
+      const { novoValor, apartirDe, motivo } = req.body;
 
-    if (
-      !novoValor ||
-      !apartirDe ||
-      !String(motivo || "").trim() ||
-      !req.file
-    ) {
-      return res.status(400).json({
-        Erro:
-          "Os campos novoValor, apartirDe, motivo e comprovante são obrigatórios.",
+      if (
+        !novoValor ||
+        !apartirDe ||
+        !String(motivo || "").trim() ||
+        !req.file
+      ) {
+        return res.status(400).json({
+          Erro: "Os campos novoValor, apartirDe, motivo e comprovante são obrigatórios.",
+        });
+      }
+
+      const valorParsed = parseFloat(novoValor);
+      if (isNaN(valorParsed) || valorParsed < 0) {
+        return res.status(400).json({ Erro: "Valor de reajuste inválido." });
+      }
+
+      const motivoAjustado = String(motivo).trim();
+
+      const faturamento = await Alunos_Faturamento.findByPk(id);
+      if (!faturamento) {
+        return res.status(404).json({ Erro: "Faturamento não encontrado." });
+      }
+
+      const possuiReajusteAnterior =
+        faturamento.Faturamento_Reajuste &&
+        faturamento.Faturamento_Reajuste_Partir_De;
+      const reajustesExistentes = await Alunos_Faturamento_Reajustes.count({
+        where: { Faturamento_ID: id },
       });
-    }
 
-    const valorParsed = parseFloat(novoValor);
-    if (isNaN(valorParsed) || valorParsed < 0) {
-      return res.status(400).json({ Erro: "Valor de reajuste inválido." });
-    }
+      if (possuiReajusteAnterior && reajustesExistentes === 0) {
+        await Alunos_Faturamento_Reajustes.create({
+          Faturamento_ID: id,
+          Faturamento_Reajuste: faturamento.Faturamento_Reajuste,
+          Faturamento_Reajuste_Partir_De:
+            faturamento.Faturamento_Reajuste_Partir_De,
+          Faturamento_Reajuste_Motivo:
+            faturamento.Faturamento_Reajuste_Motivo || "Reajuste anterior",
+          Faturamento_Reajuste_Comprovante:
+            faturamento.Faturamento_Reajuste_Comprovante || req.file.filename,
+        });
+      }
 
-    const motivoAjustado = String(motivo).trim();
-
-    const faturamento = await Alunos_Faturamento.findByPk(id);
-    if (!faturamento) {
-      return res.status(404).json({ Erro: "Faturamento não encontrado." });
-    }
-
-    const possuiReajusteAnterior =
-      faturamento.Faturamento_Reajuste &&
-      faturamento.Faturamento_Reajuste_Partir_De;
-    const reajustesExistentes = await Alunos_Faturamento_Reajustes.count({
-      where: { Faturamento_ID: id },
-    });
-
-    if (possuiReajusteAnterior && reajustesExistentes === 0) {
-      await Alunos_Faturamento_Reajustes.create({
-        Faturamento_ID: id,
-        Faturamento_Reajuste: faturamento.Faturamento_Reajuste,
-        Faturamento_Reajuste_Partir_De:
-          faturamento.Faturamento_Reajuste_Partir_De,
-        Faturamento_Reajuste_Motivo:
-          faturamento.Faturamento_Reajuste_Motivo || "Reajuste anterior",
-        Faturamento_Reajuste_Comprovante:
-          faturamento.Faturamento_Reajuste_Comprovante || req.file.filename,
-      });
-    }
-
-    const novoReajuste = await Alunos_Faturamento_Reajustes.create({
-      Faturamento_ID: id,
-      Faturamento_Reajuste: valorParsed,
-      Faturamento_Reajuste_Partir_De: apartirDe,
-      Faturamento_Reajuste_Motivo: motivoAjustado,
-      Faturamento_Reajuste_Comprovante: req.file.filename,
-    });
-
-    await Alunos_Faturamento.update(
-      {
-        Faturamento_Reajuste: valorParsed,
-        Faturamento_Reajuste_Partir_De: apartirDe,
-        Faturamento_Reajuste_Motivo: motivoAjustado,
-        Faturamento_Reajuste_Comprovante: req.file.filename,
-      },
-      { where: { id } },
-    );
-
-    const usuarioLog = getUsuarioFromReq(req);
-    await registrarLog(
-      usuarioLog,
-      "UPDATE",
-      "Alunos_Faturamento_Reajustes",
-      novoReajuste.id,
-      `Reajuste de plano aplicado para faturamento ${id} do aluno ${faturamento.Aluno_Codigo} a partir de ${apartirDe}. Motivo: ${motivoAjustado}`,
-      null,
-      {
+      const novoReajuste = await Alunos_Faturamento_Reajustes.create({
         Faturamento_ID: id,
         Faturamento_Reajuste: valorParsed,
         Faturamento_Reajuste_Partir_De: apartirDe,
         Faturamento_Reajuste_Motivo: motivoAjustado,
         Faturamento_Reajuste_Comprovante: req.file.filename,
-      },
-    );
+      });
 
-    res.json({
-      Mensagem: "Reajuste aplicado com sucesso.",
-      apartirDe,
-      novoValor: valorParsed,
-      motivo: motivoAjustado,
-      comprovante: req.file.filename,
-    });
-  } catch (error) {
-    console.error("Erro ao aplicar reajuste:", error);
-    res
-      .status(500)
-      .json({ Erro: "Erro ao aplicar reajuste.", Detalhes: error.message });
-  }
-});
+      await Alunos_Faturamento.update(
+        {
+          Faturamento_Reajuste: valorParsed,
+          Faturamento_Reajuste_Partir_De: apartirDe,
+          Faturamento_Reajuste_Motivo: motivoAjustado,
+          Faturamento_Reajuste_Comprovante: req.file.filename,
+        },
+        { where: { id } },
+      );
+
+      const usuarioLog = getUsuarioFromReq(req);
+      await registrarLog(
+        usuarioLog,
+        "UPDATE",
+        "Alunos_Faturamento_Reajustes",
+        novoReajuste.id,
+        `Reajuste de plano aplicado para faturamento ${id} do aluno ${faturamento.Aluno_Codigo} a partir de ${apartirDe}. Motivo: ${motivoAjustado}`,
+        null,
+        {
+          Faturamento_ID: id,
+          Faturamento_Reajuste: valorParsed,
+          Faturamento_Reajuste_Partir_De: apartirDe,
+          Faturamento_Reajuste_Motivo: motivoAjustado,
+          Faturamento_Reajuste_Comprovante: req.file.filename,
+        },
+      );
+
+      res.json({
+        Mensagem: "Reajuste aplicado com sucesso.",
+        apartirDe,
+        novoValor: valorParsed,
+        motivo: motivoAjustado,
+        comprovante: req.file.filename,
+      });
+    } catch (error) {
+      console.error("Erro ao aplicar reajuste:", error);
+      res
+        .status(500)
+        .json({ Erro: "Erro ao aplicar reajuste.", Detalhes: error.message });
+    }
+  },
+);
 
 module.exports = router;
 
-// Rota para buscar alunos com renovação pendente
-// Lógica: planos cujo Faturamento_Fim já passou (até fim do mês atual) e não foram renovados
+// Rota para buscar alunos com renovação no mês vigente e no próximo mês.
 router.get("/expirando", async (req, res) => {
   try {
     const { Op } = require("sequelize");
     const hoje = new Date();
     const ano = hoje.getFullYear();
-    const mes = hoje.getMonth() + 1;
+    const mesAtual = hoje.getMonth();
 
-    // Fim do mês atual
-    const ultimoDiaDate = new Date(ano, mes, 0);
-    const fimMesAtual = `${ano}-${String(mes).padStart(2, "0")}-${String(ultimoDiaDate.getDate()).padStart(2, "0")}`;
+    const montarPeriodoMes = (offsetMes) => {
+      const inicio = new Date(ano, mesAtual + offsetMes, 1);
+      const fim = new Date(ano, mesAtual + offsetMes + 1, 0);
 
-    // Lookback de 6 meses para não trazer registros muito antigos
-    const lookbackDate = new Date(ano, mes - 1 - 6, 1);
-    const lookbackISO = `${lookbackDate.getFullYear()}-${String(lookbackDate.getMonth() + 1).padStart(2, "0")}-01`;
+      return {
+        inicio: `${inicio.getFullYear()}-${String(inicio.getMonth() + 1).padStart(2, "0")}-01`,
+        fim: `${fim.getFullYear()}-${String(fim.getMonth() + 1).padStart(2, "0")}-${String(fim.getDate()).padStart(2, "0")}`,
+      };
+    };
 
-    // Busca todos os faturamentos dentro da janela de lookback até fim do mês atual
+    const mesVigente = montarPeriodoMes(0);
+    const proximoMes = montarPeriodoMes(1);
+
     const faturamentos = await Alunos_Faturamento.findAll({
       where: {
         Faturamento_Fim: {
-          [Op.between]: [lookbackISO, fimMesAtual],
+          [Op.between]: [mesVigente.inicio, proximoMes.fim],
         },
+        Faturamento_Data_Pagamento: { [Op.ne]: null },
+        [Op.or]: [
+          { Faturamento_Cancelado: null },
+          { Faturamento_Cancelado: false },
+        ],
       },
       raw: true,
     });
 
     if (faturamentos.length === 0) {
-      return res.json({ alunos: [] });
+      return res.json({ alunos: [], mesVigente: [], proximoMes: [] });
     }
 
-    // Agrupa por Aluno_Codigo + Plano_Codigo, mantendo o Faturamento_Fim mais recente
-    const mapLatest = {};
-    for (const f of faturamentos) {
-      const key = `${f.Aluno_Codigo}|${f.Plano_Codigo}`;
-      if (
-        !mapLatest[key] ||
-        f.Faturamento_Fim > mapLatest[key].Faturamento_Fim
-      ) {
-        mapLatest[key] = f;
-      }
-    }
-    const candidates = Object.values(mapLatest);
-
-    // Para cada candidato, verifica se existe registro mais novo (Faturamento_Inicio > Faturamento_Fim)
-    // indicando que o plano já foi renovado
-    const alunosCodigos = [...new Set(candidates.map((c) => c.Aluno_Codigo))];
+    const alunosCodigos = [...new Set(faturamentos.map((f) => f.Aluno_Codigo))];
     const todosFaturamentos = await Alunos_Faturamento.findAll({
       where: { Aluno_Codigo: alunosCodigos },
-      attributes: [
-        "Aluno_Codigo",
-        "Plano_Codigo",
-        "Faturamento_Inicio",
-        "Faturamento_Fim",
-      ],
+      attributes: ["id", "Aluno_Codigo", "Faturamento_Fim"],
       raw: true,
     });
 
-    const semRenovacao = candidates.filter((fat) => {
-      // Se o aluno tem QUALQUER plano (mesmo código diferente) com início igual ou após
-      // o fim deste plano, considera que renovou
-      return !todosFaturamentos.some(
-        (f) =>
-          f.Aluno_Codigo === fat.Aluno_Codigo &&
-          f.Faturamento_Inicio >= fat.Faturamento_Fim,
-      );
+    const ultimoPlanoVigente = faturamentos.filter((fat) => {
+      const fatId = fat.id || fat.Faturamento_ID;
+      return !todosFaturamentos.some((outro) => {
+        const outroId = outro.id || outro.Faturamento_ID;
+        return (
+          outro.Aluno_Codigo === fat.Aluno_Codigo &&
+          outroId !== fatId &&
+          String(outro.Faturamento_Fim || "") > String(fat.Faturamento_Fim || "")
+        );
+      });
     });
 
-    if (semRenovacao.length === 0) {
-      return res.json({ alunos: [] });
+    if (ultimoPlanoVigente.length === 0) {
+      return res.json({ alunos: [], mesVigente: [], proximoMes: [] });
     }
 
-    // Exclui alunos que já possuem pagamento pendente (eles aparecem apenas na seção "pendentes")
-    const codigosComPendencia = new Set(
-      (
-        await Alunos_Faturamento.findAll({
-          where: {
-            Aluno_Codigo: [...new Set(semRenovacao.map((f) => f.Aluno_Codigo))],
-            Faturamento_Data_Pagamento: null,
-          },
-          attributes: ["Aluno_Codigo"],
-          raw: true,
-        })
-      ).map((f) => f.Aluno_Codigo),
-    );
-    const semRenovacaoSemPendencia = semRenovacao.filter(
-      (fat) => !codigosComPendencia.has(fat.Aluno_Codigo),
-    );
-
-    if (semRenovacaoSemPendencia.length === 0) {
-      return res.json({ alunos: [] });
-    }
-
-    // Busca apenas alunos Ativos
-    const codigosFinais = [
-      ...new Set(semRenovacaoSemPendencia.map((f) => f.Aluno_Codigo)),
-    ];
+    const codigosFinais = [...new Set(ultimoPlanoVigente.map((f) => f.Aluno_Codigo))];
     const alunos = await Alunos_Cadastros.findAll({
       where: { Alunos_Codigo: codigosFinais, Alunos_Situacao: "Ativo" },
       attributes: [
@@ -1002,24 +990,44 @@ router.get("/expirando", async (req, res) => {
       raw: true,
     });
 
-    // Filtra apenas os registros cujo aluno é Ativo
     const alunosAtivos = new Set(alunos.map((a) => a.Alunos_Codigo));
-    const resultado = semRenovacaoSemPendencia
-      .filter((fat) => alunosAtivos.has(fat.Aluno_Codigo))
-      .map((fat) => {
-        const aluno = alunos.find((a) => a.Alunos_Codigo === fat.Aluno_Codigo);
-        return {
-          Alunos_Codigo: fat.Aluno_Codigo,
-          Alunos_Nome: aluno.Alunos_Nome || null,
-          Alunos_CPF: aluno.Alunos_CPF || null,
-          Alunos_Telefone: aluno.Alunos_Telefone || null,
-          Plano_Codigo: fat.Plano_Codigo,
-          Faturamento_Fim: fat.Faturamento_Fim,
-          Faturamento_ID: fat.id || fat.Faturamento_ID,
-        };
-      });
+    const montarResultado = (fat, tipo) => {
+      const aluno = alunos.find((a) => a.Alunos_Codigo === fat.Aluno_Codigo);
+      return {
+        Alunos_Codigo: fat.Aluno_Codigo,
+        Alunos_Nome: aluno.Alunos_Nome || null,
+        Alunos_CPF: aluno.Alunos_CPF || null,
+        Alunos_Telefone: aluno.Alunos_Telefone || null,
+        Plano_Codigo: fat.Plano_Codigo,
+        Faturamento_Fim: fat.Faturamento_Fim,
+        Faturamento_ID: fat.id || fat.Faturamento_ID,
+        tipo,
+      };
+    };
 
-    res.json({ alunos: resultado });
+    const mesVigenteResultado = ultimoPlanoVigente
+      .filter(
+        (fat) =>
+          alunosAtivos.has(fat.Aluno_Codigo) &&
+          String(fat.Faturamento_Fim || "") >= mesVigente.inicio &&
+          String(fat.Faturamento_Fim || "") <= mesVigente.fim,
+      )
+      .map((fat) => montarResultado(fat, "renovacao_mes_vigente"));
+
+    const proximoMesResultado = ultimoPlanoVigente
+      .filter(
+        (fat) =>
+          alunosAtivos.has(fat.Aluno_Codigo) &&
+          String(fat.Faturamento_Fim || "") >= proximoMes.inicio &&
+          String(fat.Faturamento_Fim || "") <= proximoMes.fim,
+      )
+      .map((fat) => montarResultado(fat, "renovacao_proximo_mes"));
+
+    res.json({
+      alunos: [...mesVigenteResultado, ...proximoMesResultado],
+      mesVigente: mesVigenteResultado,
+      proximoMes: proximoMesResultado,
+    });
   } catch (error) {
     console.error("Erro ao buscar faturamentos expirando:", error);
     res.status(500).json({ Erro: "Erro ao buscar faturamentos expirando." });

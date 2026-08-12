@@ -40,15 +40,18 @@ function getPastaAlunoRelativa(codigo, nome) {
   return path.posix.join("alunos", codigoSeguro + "-" + nomeSeguro);
 }
 
-function resolverArquivoUpload(arquivo, subdirLegado) {
+function resolverArquivoUpload(arquivo) {
   const normalizado = normalizarArquivoUpload(arquivo);
-  if (!normalizado || normalizado.includes("..")) return null;
+  if (
+    !normalizado ||
+    normalizado.includes("..") ||
+    !normalizado.startsWith("alunos/")
+  ) {
+    return null;
+  }
 
   const baseDir = getUploadsBaseDir();
-  const relativo = normalizado.includes("/")
-    ? normalizado
-    : [subdirLegado, normalizado].filter(Boolean).join("/");
-  const finalPath = path.resolve(baseDir, relativo);
+  const finalPath = path.resolve(baseDir, normalizado);
   const basePath = path.resolve(baseDir);
 
   if (finalPath !== basePath && !finalPath.startsWith(basePath + path.sep)) {
@@ -65,8 +68,8 @@ function getArquivoRelativoSalvo(file) {
   );
 }
 
-function removerArquivoUpload(arquivo, subdirLegado) {
-  const arquivoPath = resolverArquivoUpload(arquivo, subdirLegado);
+function removerArquivoUpload(arquivo) {
+  const arquivoPath = resolverArquivoUpload(arquivo);
   if (arquivoPath && fs.existsSync(arquivoPath)) {
     fs.unlinkSync(arquivoPath);
   }

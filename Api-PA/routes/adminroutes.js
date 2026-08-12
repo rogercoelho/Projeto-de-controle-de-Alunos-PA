@@ -13,7 +13,7 @@ const excluirComprovante = (nome, descricao) => {
   if (!nome) return;
 
   try {
-    const comprovantePath = resolverArquivoUpload(nome, "comprovantes");
+    const comprovantePath = resolverArquivoUpload(nome);
 
     if (comprovantePath && fs.existsSync(comprovantePath)) {
       fs.unlinkSync(comprovantePath);

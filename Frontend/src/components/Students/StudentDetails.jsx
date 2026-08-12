@@ -13,7 +13,7 @@ function StudentDetails({ aluno, onEdit, onToggleSituacao, onBack }) {
   const [erroContratoPreview, setErroContratoPreview] = useState("");
   const contratoArquivo = String(aluno?.Alunos_Contrato || "");
   const contratoUrl = useMemo(
-    () => getUploadUrl(contratoArquivo, "contratos"),
+    () => getUploadUrl(contratoArquivo),
     [contratoArquivo]
   );
   const contratoExt = useMemo(() => {

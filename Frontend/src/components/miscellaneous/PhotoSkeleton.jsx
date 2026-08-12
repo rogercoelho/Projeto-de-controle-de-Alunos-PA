@@ -21,7 +21,7 @@ function PhotoSkeleton({ foto, nome }) {
     const nextImgSrc =
       isBlob || isAbsolute
         ? foto
-        : getUploadUrl(foto, "fotos", { cacheBust: true });
+        : getUploadUrl(foto, { cacheBust: true });
 
     setImgSrc(nextImgSrc);
 

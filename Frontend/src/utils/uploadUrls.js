@@ -12,7 +12,7 @@ function encodePathSegments(relativePath) {
     .join("/");
 }
 
-export function getUploadUrl(filePath, legacySubdir = "", options = {}) {
+export function getUploadUrl(filePath, options = {}) {
   const normalized = normalizeUploadPath(filePath);
   if (!normalized) return "";
 
@@ -20,10 +20,10 @@ export function getUploadUrl(filePath, legacySubdir = "", options = {}) {
     return normalized;
   }
 
-  const relativePath = normalized.includes("/")
-    ? normalized
-    : [legacySubdir, normalized].filter(Boolean).join("/");
+  if (!normalized.startsWith("alunos/")) {
+    return "";
+  }
 
   const cacheBust = options.cacheBust ? `?t=${Date.now()}` : "";
-  return `${API_BASE_URL}/uploads/${encodePathSegments(relativePath)}${cacheBust}`;
+  return `${API_BASE_URL}/uploads/${encodePathSegments(normalized)}${cacheBust}`;
 }

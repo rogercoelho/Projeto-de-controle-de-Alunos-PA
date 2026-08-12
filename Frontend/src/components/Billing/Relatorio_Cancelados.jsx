@@ -11,7 +11,7 @@ const moeda = new Intl.NumberFormat("pt-BR", {
   currency: "BRL",
 });
 
-const getComprovanteUrl = (arquivo) => getUploadUrl(arquivo, "comprovantes");
+const getComprovanteUrl = (arquivo) => getUploadUrl(arquivo);
 
 function Relatorio_Cancelados() {
   const [mes, setMes] = useState("");

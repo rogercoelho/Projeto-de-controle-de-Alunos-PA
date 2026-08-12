@@ -539,7 +539,7 @@ function AgendamentoAulas() {
                         <div className="flex items-center gap-3">
                           {agendamento.Aluno?.Alunos_Foto ? (
                             <img
-                              src={getUploadUrl(agendamento.Aluno.Alunos_Foto, "fotos")}
+                              src={getUploadUrl(agendamento.Aluno.Alunos_Foto)}
                               alt={agendamento.Aluno.Alunos_Nome}
                               className="w-10 h-10 rounded-full object-cover"
                             />

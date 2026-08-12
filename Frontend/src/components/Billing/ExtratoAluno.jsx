@@ -21,6 +21,27 @@ function proximaRenovacaoISO(dataISO) {
   return `${anoAlvo}-${String(mesAlvo).padStart(2, "0")}-${String(diaAlvo).padStart(2, "0")}`;
 }
 
+function parseDataLocal(dataISO) {
+  if (!dataISO) return null;
+  const [ano, mes, dia] = String(dataISO).split("T")[0].split("-").map(Number);
+  if (!ano || !mes || !dia) return null;
+  return new Date(ano, mes - 1, dia);
+}
+
+function isFaturamentoVigente(fat, dataReferencia = new Date()) {
+  const inicio = parseDataLocal(fat?.Faturamento_Inicio);
+  const fim = parseDataLocal(fat?.Faturamento_Fim);
+  if (!inicio || !fim || fat?.Faturamento_Cancelado) return false;
+
+  const hoje = new Date(dataReferencia);
+  hoje.setHours(0, 0, 0, 0);
+  inicio.setHours(0, 0, 0, 0);
+  fim.setHours(0, 0, 0, 0);
+
+  return inicio <= hoje && hoje <= fim;
+}
+
+
 /* ── micro helpers ── */
 function StatusBadge({ status }) {
   if (!status) return null;
@@ -1007,6 +1028,21 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
                   );
                 }
 
+                const hoje = new Date();
+                const ultimoFaturamentoVigente = contratacoes
+                  .filter(({ fat }) => isFaturamentoVigente(fat, hoje))
+                  .sort((a, b) => {
+                    const fimA = parseDataLocal(a.fat.Faturamento_Fim)?.getTime() || 0;
+                    const fimB = parseDataLocal(b.fat.Faturamento_Fim)?.getTime() || 0;
+                    const inicioA = parseDataLocal(a.fat.Faturamento_Inicio)?.getTime() || 0;
+                    const inicioB = parseDataLocal(b.fat.Faturamento_Inicio)?.getTime() || 0;
+                    return fimB - fimA || inicioB - inicioA;
+                  })[0]?.fat;
+                const ultimoFaturamentoVigenteId =
+                  ultimoFaturamentoVigente?.id ||
+                  ultimoFaturamentoVigente?.Faturamento_ID ||
+                  null;
+
                 return contratacoes.map(({ plano, fat }, cardIdx) => {
                   const fatId = fat.id || fat.Faturamento_ID;
                   const isPago = !!fat.Faturamento_Data_Pagamento;
@@ -1037,14 +1073,10 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
                   const canceladoMes = canceladoPartes
                     ? parseInt(canceladoPartes[1], 10)
                     : null;
-
-                  // Verifica se o plano tem meses futuros ao mês atual (para exibir botão de cancelar)
-                  const hoje = new Date();
-                  const mesAtualNum = hoje.getFullYear() * 12 + hoje.getMonth();
-                  const temMesFuturo = fatMesesSorted.some(([, m]) => {
-                    const [mAno, mMes] = m.mesAno.split("-").map(Number);
-                    return mAno * 12 + (mMes - 1) > mesAtualNum;
-                  });
+                  const podeGerenciarPlano =
+                    !isCancelado &&
+                    isFaturamentoVigente(fat, hoje) &&
+                    String(fatId || "") === String(ultimoFaturamentoVigenteId || "");
 
                   return (
                     <div
@@ -1474,7 +1506,7 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           {/* Buttons */}
                           <div className="flex flex-wrap gap-2">
-                            {!isCancelado && (
+                            {podeGerenciarPlano && (
                               <button
                                 type="button"
                                 onClick={() => handleCancelarPlano(fatId)}
@@ -1486,7 +1518,7 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
                                   : "🚫 Cancelar Plano"}
                               </button>
                             )}
-                            {!isCancelado && (
+                            {podeGerenciarPlano && (
                               <button
                                 type="button"
                                 onClick={() =>
@@ -1920,7 +1952,7 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
                     Comprovante em formato PDF
                   </p>
                   <a
-                    href={`${getUploadUrl(comprovanteModal, "comprovantes")}`}
+                    href={`${getUploadUrl(comprovanteModal)}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2 rounded-lg transition-colors"
@@ -1930,7 +1962,7 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
                 </div>
               ) : (
                 <img
-                  src={`${getUploadUrl(comprovanteModal, "comprovantes")}`}
+                  src={`${getUploadUrl(comprovanteModal)}`}
                   alt="Comprovante de pagamento"
                   className="max-w-full max-h-[70vh] rounded-xl shadow-lg"
                 />

@@ -16,7 +16,7 @@ const {
 const router = express.Router(); //// Criando uma instância do roteador do Express
 
 function resolverContratoPath(arquivo) {
-  const contratoPath = resolverArquivoUpload(arquivo, "contratos");
+  const contratoPath = resolverArquivoUpload(arquivo);
   return contratoPath && fs.existsSync(contratoPath) ? contratoPath : null;
 }
 
@@ -681,12 +681,12 @@ router.patch(
       const dadosAntigos = atualizaaluno.toJSON();
 
       if (req.files?.foto) {
-        removerArquivoUpload(atualizaaluno.Alunos_Foto, "fotos");
+        removerArquivoUpload(atualizaaluno.Alunos_Foto);
         dadosAtualizacao.Alunos_Foto = getArquivoRelativoSalvo(req.files.foto[0]);
       }
 
       if (req.files?.contrato) {
-        removerArquivoUpload(atualizaaluno.Alunos_Contrato, "contratos");
+        removerArquivoUpload(atualizaaluno.Alunos_Contrato);
         dadosAtualizacao.Alunos_Contrato = getArquivoRelativoSalvo(req.files.contrato[0]);
       }
 
@@ -859,7 +859,7 @@ router.delete("/delete/:aluno_codigo", async (req, res) => {
 
     // Remove foto se existir
     if (aluno.Alunos_Foto) {
-      const fotoPath = resolverArquivoUpload(aluno.Alunos_Foto, "fotos");
+      const fotoPath = resolverArquivoUpload(aluno.Alunos_Foto);
       if (fotoPath && fs.existsSync(fotoPath)) {
         fs.unlinkSync(fotoPath);
       }
@@ -867,7 +867,7 @@ router.delete("/delete/:aluno_codigo", async (req, res) => {
 
     // Remove contrato se existir
     if (aluno.Alunos_Contrato) {
-      const contratoPath = resolverArquivoUpload(aluno.Alunos_Contrato, "contratos");
+      const contratoPath = resolverArquivoUpload(aluno.Alunos_Contrato);
       if (contratoPath && fs.existsSync(contratoPath)) {
         fs.unlinkSync(contratoPath);
       }

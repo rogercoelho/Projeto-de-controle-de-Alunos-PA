@@ -4,14 +4,14 @@ import { formatarDataBR } from "../../utils/Utils";
 import CustomSelect from "../miscellaneous/CustomSelect";
 import MessageToast from "../miscellaneous/MessageToast";
 import useToast from "../../hooks/useToast";
+import { getUploadUrl } from "../../utils/uploadUrls";
 
 const moeda = new Intl.NumberFormat("pt-BR", {
   style: "currency",
   currency: "BRL",
 });
 
-const getComprovanteUrl = (arquivo) =>
-  `${import.meta.env.VITE_API_URL || "https://api2.plantandoalegria.com.br"}/uploads/comprovantes/${arquivo}`;
+const getComprovanteUrl = (arquivo) => getUploadUrl(arquivo, "comprovantes");
 
 function Relatorio_Cancelados() {
   const [mes, setMes] = useState("");

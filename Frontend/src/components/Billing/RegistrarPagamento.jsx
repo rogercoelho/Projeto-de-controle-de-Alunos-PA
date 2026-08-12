@@ -140,17 +140,17 @@ function RegistrarPagamento() {
         const data = new FormData();
         data.append("pagamentos", JSON.stringify(pagamentos));
         data.append("alunoCodigo", codigoAluno);
+        data.append("alunoNome", alunoInfo?.Alunos_Nome || "");
 
-        // Coleta os IDs dos faturamentos que têm comprovante na ordem
-        const faturamentoIds = [];
-        Object.entries(comprovantes).forEach(([fatId, arquivo]) => {
-          if (arquivo) {
-            data.append("comprovantes", arquivo);
-            faturamentoIds.push(fatId);
-          }
-        });
-        // Envia os IDs como JSON para manter a ordem
+        // Coleta os IDs antes dos arquivos para manter o contexto no upload.
+        const comprovantesSelecionados = Object.entries(comprovantes).filter(
+          ([, arquivo]) => arquivo,
+        );
+        const faturamentoIds = comprovantesSelecionados.map(([fatId]) => fatId);
         data.append("faturamentoIds", JSON.stringify(faturamentoIds));
+        comprovantesSelecionados.forEach(([, arquivo]) => {
+          data.append("comprovantes", arquivo);
+        });
 
         await api.patch("/faturamento/registrar-pagamento", data, {
           headers: { "Content-Type": "multipart/form-data" },

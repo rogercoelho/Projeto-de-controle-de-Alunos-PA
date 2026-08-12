@@ -6,6 +6,7 @@ import MessageToast from "../miscellaneous/MessageToast";
 import CustomSelect from "../miscellaneous/CustomSelect";
 import Buttons from "../miscellaneous/Buttons";
 import useToast from "../../hooks/useToast";
+import { getUploadUrl } from "../../utils/uploadUrls";
 
 /* ── Calcula a data de início do próximo ciclo (Faturamento_Fim + 1 mês) ── */
 function proximaRenovacaoISO(dataISO) {
@@ -137,6 +138,7 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
       const data = new FormData();
       data.append("motivo", motivo);
       data.append("alunoCodigo", String(codigoAluno || ""));
+      data.append("alunoNome", extrato?.aluno?.Alunos_Nome || "");
       data.append("comprovanteEstorno", confirmCancelModal.comprovanteEstorno);
       await api.patch(`/faturamento/cancelar-plano/${fatId}`, data, {
         headers: { "Content-Type": "multipart/form-data" },
@@ -261,10 +263,11 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
       data.append("tipoReajuste", reajusteModal.tipo);
       data.append("apartirDe", reajusteModal.mesAPartirDe + "-01");
       data.append("motivo", reajusteModal.motivo.trim());
+      data.append("alunoCodigo", String(codigoAluno || ""));
+      data.append("alunoNome", extrato?.aluno?.Alunos_Nome || "");
       if (reajusteModal.comprovante) {
         data.append("comprovante", reajusteModal.comprovante);
       }
-      data.append("alunoCodigo", String(codigoAluno || ""));
 
       await api.patch(
         `/faturamento/reajuste-plano/${reajusteModal.fatId}`,
@@ -1917,7 +1920,7 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
                     Comprovante em formato PDF
                   </p>
                   <a
-                    href={`${import.meta.env.VITE_API_URL || "https://api2.plantandoalegria.com.br"}/uploads/comprovantes/${comprovanteModal}`}
+                    href={`${getUploadUrl(comprovanteModal, "comprovantes")}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2 rounded-lg transition-colors"
@@ -1927,7 +1930,7 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
                 </div>
               ) : (
                 <img
-                  src={`${import.meta.env.VITE_API_URL || "https://api2.plantandoalegria.com.br"}/uploads/comprovantes/${comprovanteModal}`}
+                  src={`${getUploadUrl(comprovanteModal, "comprovantes")}`}
                   alt="Comprovante de pagamento"
                   className="max-w-full max-h-[70vh] rounded-xl shadow-lg"
                 />

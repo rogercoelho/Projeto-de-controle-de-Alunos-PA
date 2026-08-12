@@ -9,16 +9,37 @@ const Alunos_Faturamento = require("../models/Alunos_Faturamento");
 const Alunos_Faturamento_Reajustes = require("../models/Alunos_Faturamento_Reajustes");
 const Faturamentos_Cancelados = require("../models/Faturamentos_Cancelados");
 const { registrarLog, getUsuarioFromReq } = require("../utils/logger");
+const {
+  getArquivoRelativoSalvo,
+  getPastaAlunoRelativa,
+  getUploadsBaseDir,
+  sanitizarCodigoUpload,
+} = require("../utils/uploadPaths");
 
-// Configuração do multer para upload de comprovantes
+function getContextoUploadAluno(req) {
+  const codigo =
+    req.body.alunoCodigo ||
+    req.body.Aluno_Codigo ||
+    req.body.Alunos_Codigo ||
+    "0";
+  const nome =
+    req.body.alunoNome ||
+    req.body.Aluno_Nome ||
+    req.body.Alunos_Nome ||
+    "aluno";
+
+  return {
+    codigo: sanitizarCodigoUpload(codigo, "0"),
+    pastaRelativa: getPastaAlunoRelativa(codigo, nome),
+  };
+}
+
+// Configuracao do multer para upload de comprovantes
 const storageComprovante = multer.diskStorage({
   destination: function (req, file, cb) {
-    const baseDir =
-      process.env.NODE_ENV === "production"
-        ? "/home2/goutechc/wwwplantandoalegria_API/uploads"
-        : path.join(__dirname, "../uploads");
-
-    const uploadDir = path.join(baseDir, "comprovantes");
+    const contextoAluno = getContextoUploadAluno(req);
+    req._alunoUploadCodigo = contextoAluno.codigo;
+    const uploadDir = path.join(getUploadsBaseDir(), contextoAluno.pastaRelativa);
 
     if (!fs.existsSync(uploadDir)) {
       try {
@@ -32,10 +53,15 @@ const storageComprovante = multer.diskStorage({
   },
   filename: function (req, file, cb) {
     const ext = path.extname(file.originalname);
-    // Obtém o código do aluno
-    const alunoCodigo = req.body.alunoCodigo || "0";
-    // Tenta obter o ID do faturamento correspondente a este arquivo
-    let fatId = "";
+    const alunoCodigo =
+      req._alunoUploadCodigo || sanitizarCodigoUpload(req.body.alunoCodigo);
+    const tipoArquivo =
+      file.fieldname === "comprovanteEstorno"
+        ? "comprovante_estorno"
+        : file.fieldname === "comprovante"
+          ? "comprovante_reajuste"
+          : "comprovante";
+    let fatId = req.params.id || "";
     if (req.body && req.body.faturamentoIds) {
       let faturamentoIds = req.body.faturamentoIds;
       if (typeof faturamentoIds === "string") {
@@ -45,21 +71,16 @@ const storageComprovante = multer.diskStorage({
           faturamentoIds = [];
         }
       }
-      // O campo fieldname é sempre "comprovantes" (array), então usamos o índice do arquivo
-      if (Array.isArray(faturamentoIds) && req.files) {
-        // req.files ainda não está populado neste momento, mas podemos usar req._fileIndex
+      if (Array.isArray(faturamentoIds)) {
         fatId = faturamentoIds[req._fileIndex || 0] || "";
       }
     }
-    // Formato: comprovante_id_ALUNO_fatid_FATURAMENTO_AAAAMMDD_ms
     const now = new Date();
-    const data = now.toISOString().slice(0, 10).replace(/-/g, ""); // AAAAMMDD
+    const data = now.toISOString().slice(0, 10).replace(/-/g, "");
     const ms = now.getMilliseconds().toString().padStart(3, "0");
-    // Monta o nome com id do aluno e fatid do faturamento
     const filename = fatId
-      ? `comprovante_id_${alunoCodigo}_fatid_${fatId}_${data}_${ms}${ext}`
-      : `comprovante_id_${alunoCodigo}_${data}_${ms}${ext}`;
-    // Atualiza índice para o próximo arquivo
+      ? `${tipoArquivo}_id_${alunoCodigo}_fatid_${fatId}_${data}_${ms}${ext}`
+      : `${tipoArquivo}_id_${alunoCodigo}_${data}_${ms}${ext}`;
     req._fileIndex = (req._fileIndex || 0) + 1;
     cb(null, filename);
   },
@@ -454,9 +475,10 @@ router.patch(
           i++
         ) {
           const fatId = faturamentoIds[i];
-          arquivosMap[fatId] = req.files[i].filename;
+          const arquivoRelativo = getArquivoRelativoSalvo(req.files[i]);
+          arquivosMap[fatId] = arquivoRelativo;
           console.log(
-            `Mapeando arquivo ${req.files[i].filename} para faturamento ${fatId}`,
+            `Mapeando arquivo ${arquivoRelativo} para faturamento ${fatId}`,
           );
         }
       }
@@ -839,6 +861,7 @@ router.patch("/cancelar-plano/:id", uploadComprovante.single("comprovanteEstorno
 
     const dadosExcluidos = faturamento.toJSON();
     const dataCancelamento = new Date().toISOString().slice(0, 10);
+    const comprovanteEstornoRelativo = getArquivoRelativoSalvo(req.file);
     await Faturamentos_Cancelados.sync({ alter: true });
     const faturamentoCancelado = await Faturamentos_Cancelados.create({
       ...dadosExcluidos,
@@ -847,7 +870,7 @@ router.patch("/cancelar-plano/:id", uploadComprovante.single("comprovanteEstorno
       Faturamento_Cancelado: true,
       Faturamento_Cancelado_Em: dataCancelamento,
       Faturamento_Cancelado_Motivo: motivoCancelamento,
-      Faturamento_Cancelado_Comprovante: req.file.filename,
+      Faturamento_Cancelado_Comprovante: comprovanteEstornoRelativo,
     });
     const reajustes = await Alunos_Faturamento_Reajustes.findAll({
       where: { Faturamento_ID: id },
@@ -874,7 +897,7 @@ router.patch("/cancelar-plano/:id", uploadComprovante.single("comprovanteEstorno
       Mensagem: "Plano cancelado com sucesso.",
       reajustesExcluidos: reajustes.length,
       motivo: motivoCancelamento,
-      comprovanteEstorno: req.file.filename,
+      comprovanteEstorno: comprovanteEstornoRelativo,
       canceladoId: faturamentoCancelado.id,
     });
   } catch (error) {
@@ -892,16 +915,17 @@ router.patch(
   async (req, res) => {
     try {
       const { id } = req.params;
-      const { novoValor, apartirDe, motivo } = req.body;
+      const { novoValor, apartirDe, motivo, tipoReajuste } = req.body;
+      const comprovanteObrigatorio = tipoReajuste !== "desconto";
 
       if (
         !novoValor ||
         !apartirDe ||
         !String(motivo || "").trim() ||
-        !req.file
+        (comprovanteObrigatorio && !req.file)
       ) {
         return res.status(400).json({
-          Erro: "Os campos novoValor, apartirDe, motivo e comprovante são obrigatórios.",
+          Erro: "Os campos novoValor, apartirDe e motivo são obrigatórios. O comprovante é obrigatório apenas para acréscimo.",
         });
       }
 
@@ -911,6 +935,9 @@ router.patch(
       }
 
       const motivoAjustado = String(motivo).trim();
+      const comprovanteReajusteRelativo = req.file
+        ? getArquivoRelativoSalvo(req.file)
+        : null;
 
       const faturamento = await Alunos_Faturamento.findByPk(id);
       if (!faturamento) {
@@ -933,7 +960,7 @@ router.patch(
           Faturamento_Reajuste_Motivo:
             faturamento.Faturamento_Reajuste_Motivo || "Reajuste anterior",
           Faturamento_Reajuste_Comprovante:
-            faturamento.Faturamento_Reajuste_Comprovante || req.file.filename,
+            faturamento.Faturamento_Reajuste_Comprovante || comprovanteReajusteRelativo,
         });
       }
 
@@ -942,7 +969,7 @@ router.patch(
         Faturamento_Reajuste: valorParsed,
         Faturamento_Reajuste_Partir_De: apartirDe,
         Faturamento_Reajuste_Motivo: motivoAjustado,
-        Faturamento_Reajuste_Comprovante: req.file.filename,
+        Faturamento_Reajuste_Comprovante: comprovanteReajusteRelativo,
       });
 
       await Alunos_Faturamento.update(
@@ -950,7 +977,7 @@ router.patch(
           Faturamento_Reajuste: valorParsed,
           Faturamento_Reajuste_Partir_De: apartirDe,
           Faturamento_Reajuste_Motivo: motivoAjustado,
-          Faturamento_Reajuste_Comprovante: req.file.filename,
+          Faturamento_Reajuste_Comprovante: comprovanteReajusteRelativo,
         },
         { where: { id } },
       );
@@ -968,7 +995,7 @@ router.patch(
           Faturamento_Reajuste: valorParsed,
           Faturamento_Reajuste_Partir_De: apartirDe,
           Faturamento_Reajuste_Motivo: motivoAjustado,
-          Faturamento_Reajuste_Comprovante: req.file.filename,
+          Faturamento_Reajuste_Comprovante: comprovanteReajusteRelativo,
         },
       );
 
@@ -977,7 +1004,7 @@ router.patch(
         apartirDe,
         novoValor: valorParsed,
         motivo: motivoAjustado,
-        comprovante: req.file.filename,
+        comprovante: comprovanteReajusteRelativo,
       });
     } catch (error) {
       console.error("Erro ao aplicar reajuste:", error);

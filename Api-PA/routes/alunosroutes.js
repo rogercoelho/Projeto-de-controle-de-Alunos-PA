@@ -5,24 +5,30 @@ const multer = require("multer"); // Importando multer para upload de arquivos
 const path = require("path"); // Importando path para manipular caminhos de arquivos
 const fs = require("fs"); // Importando fs para manipular arquivos
 const { registrarLog, getUsuarioFromReq } = require("../utils/logger"); // Importando função para registrar logs
+const {
+  getArquivoRelativoSalvo,
+  getPastaAlunoRelativa,
+  getUploadsBaseDir,
+  removerArquivoUpload,
+  resolverArquivoUpload,
+  sanitizarCodigoUpload,
+} = require("../utils/uploadPaths");
 const router = express.Router(); //// Criando uma instância do roteador do Express
 
-// Configuração do multer para upload de arquivos
+function resolverContratoPath(arquivo) {
+  const contratoPath = resolverArquivoUpload(arquivo, "contratos");
+  return contratoPath && fs.existsSync(contratoPath) ? contratoPath : null;
+}
+
+// Configuracao do multer para upload de arquivos
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    // Caminho absoluto do servidor de produção
-    const baseDir =
-      process.env.NODE_ENV === "production"
-        ? "/home2/goutechc/wwwplantandoalegria_API/uploads"
-        : path.join(__dirname, "../uploads");
+    const alunoDirRelativo = getPastaAlunoRelativa(
+      req.body.Alunos_Codigo || req.params.codigo,
+      req.body.Alunos_Nome
+    );
+    const uploadDir = path.join(getUploadsBaseDir(), alunoDirRelativo);
 
-    // Define o diretório de destino baseado no tipo de arquivo
-    const uploadDir =
-      file.fieldname === "foto"
-        ? path.join(baseDir, "fotos")
-        : path.join(baseDir, "contratos");
-
-    // Garante que o diretório existe
     if (!fs.existsSync(uploadDir)) {
       try {
         fs.mkdirSync(uploadDir, { recursive: true });
@@ -34,12 +40,13 @@ const storage = multer.diskStorage({
     cb(null, uploadDir);
   },
   filename: function (req, file, cb) {
-    // Gera nome do arquivo com formato: tipo_id_XXX_AAAAMMDD_ms
-    const codigo = req.body.Alunos_Codigo || "novo";
+    const codigo = sanitizarCodigoUpload(
+      req.body.Alunos_Codigo || req.params.codigo
+    );
     const ext = path.extname(file.originalname);
     const tipo = file.fieldname === "foto" ? "foto" : "contrato";
     const now = new Date();
-    const data = now.toISOString().slice(0, 10).replace(/-/g, ""); // AAAAMMDD
+    const data = now.toISOString().slice(0, 10).replace(/-/g, "");
     const ms = now.getMilliseconds().toString().padStart(3, "0");
     const filename = `${tipo}_id_${codigo}_${data}_${ms}${ext}`;
     cb(null, filename);
@@ -214,20 +221,8 @@ router.get("/contrato-preview/:arquivo", async (req, res) => {
     if (!arquivo) {
       return res.status(400).json({ Erro: "Arquivo de contrato nao informado." });
     }
-    if (
-      arquivo.includes("..") ||
-      arquivo.includes("/") ||
-      arquivo.includes("\\")
-    ) {
-      return res.status(400).json({ Erro: "Nome de arquivo invalido." });
-    }
-
-    const baseDir =
-      process.env.NODE_ENV === "production"
-        ? "/home2/goutechc/wwwplantandoalegria_API/uploads"
-        : path.join(__dirname, "../uploads");
-    const contratoPath = path.join(baseDir, "contratos", arquivo);
-    if (!fs.existsSync(contratoPath)) {
+    const contratoPath = resolverContratoPath(arquivo);
+    if (!contratoPath) {
       return res.status(404).json({ Erro: "Contrato nao encontrado." });
     }
 
@@ -269,20 +264,8 @@ router.get("/contrato-preview", async (req, res) => {
     if (!arquivo) {
       return res.status(400).json({ Erro: "Arquivo de contrato nao informado." });
     }
-    if (
-      arquivo.includes("..") ||
-      arquivo.includes("/") ||
-      arquivo.includes("\\")
-    ) {
-      return res.status(400).json({ Erro: "Nome de arquivo invalido." });
-    }
-
-    const baseDir =
-      process.env.NODE_ENV === "production"
-        ? "/home2/goutechc/wwwplantandoalegria_API/uploads"
-        : path.join(__dirname, "../uploads");
-    const contratoPath = path.join(baseDir, "contratos", arquivo);
-    if (!fs.existsSync(contratoPath)) {
+    const contratoPath = resolverContratoPath(arquivo);
+    if (!contratoPath) {
       return res.status(404).json({ Erro: "Contrato nao encontrado." });
     }
 
@@ -445,9 +428,11 @@ router.post(
       }
 
       // Captura os caminhos dos arquivos enviados
-      const Alunos_Foto = req.files?.foto ? req.files.foto[0].filename : null;
+      const Alunos_Foto = req.files?.foto
+        ? getArquivoRelativoSalvo(req.files.foto[0])
+        : null;
       const Alunos_Contrato = req.files?.contrato
-        ? req.files.contrato[0].filename
+        ? getArquivoRelativoSalvo(req.files.contrato[0])
         : null;
 
       //usando o método create do Sequelize para inserir os dados na tabela Alunos_Cadastro
@@ -694,83 +679,15 @@ router.patch(
 
       // Guarda dados antigos para o log
       const dadosAntigos = atualizaaluno.toJSON();
-      const codigoArquivo = dadosAtualizacao.Alunos_Codigo || codigo;
 
-      // Se novos arquivos foram enviados, atualiza os caminhos com nomes únicos
       if (req.files?.foto) {
-        const baseDir =
-          process.env.NODE_ENV === "production"
-            ? "/home2/goutechc/wwwplantandoalegria_API/uploads"
-            : path.join(__dirname, "../uploads");
-        const pastaFotos = path.join(baseDir, "fotos");
-        const ext = path.extname(req.files.foto[0].originalname);
-        // Formato: foto_id_XXX_AAAAMMDD_ms
-        const now = new Date();
-        const data = now.toISOString().slice(0, 10).replace(/-/g, ""); // AAAAMMDD
-        const ms = now.getMilliseconds().toString().padStart(3, "0");
-        const novoNomeFoto = `foto_id_${codigoArquivo}_${data}_${ms}${ext}`;
-        const novoCaminhoFoto = path.join(pastaFotos, novoNomeFoto);
-        // Renomeia o arquivo salvo pelo multer para o novo nome único
-        fs.renameSync(req.files.foto[0].path, novoCaminhoFoto);
-        // Remove foto antiga se existir e for diferente do novo nome
-        const arquivosFotos = fs.readdirSync(pastaFotos);
-        const fotoAntiga = arquivosFotos.find(
-          (arquivo) =>
-            (arquivo.startsWith(`foto_id_${codigo}_`) ||
-              arquivo.startsWith(`foto_id_${codigoArquivo}_`) ||
-              arquivo.startsWith(`${codigo}_foto`) ||
-              arquivo.startsWith(`${codigoArquivo}_foto`)) &&
-            arquivo !== novoNomeFoto
-        );
-        if (fotoAntiga) {
-          const caminhoFotoAntiga = path.join(pastaFotos, fotoAntiga);
-          if (fs.existsSync(caminhoFotoAntiga)) {
-            fs.unlinkSync(caminhoFotoAntiga);
-          }
-        }
-        dadosAtualizacao.Alunos_Foto = novoNomeFoto;
+        removerArquivoUpload(atualizaaluno.Alunos_Foto, "fotos");
+        dadosAtualizacao.Alunos_Foto = getArquivoRelativoSalvo(req.files.foto[0]);
       }
 
       if (req.files?.contrato) {
-        const baseDir =
-          process.env.NODE_ENV === "production"
-            ? "/home2/goutechc/wwwplantandoalegria_API/uploads"
-            : path.join(__dirname, "../uploads");
-        const pastaContratos = path.join(baseDir, "contratos");
-        const ext = path.extname(req.files.contrato[0].originalname);
-        // Formato: contrato_id_XXX_AAAAMMDD_ms
-        const nowContrato = new Date();
-        const dataContrato = nowContrato
-          .toISOString()
-          .slice(0, 10)
-          .replace(/-/g, ""); // AAAAMMDD
-        const msContrato = nowContrato
-          .getMilliseconds()
-          .toString()
-          .padStart(3, "0");
-        const novoNomeContrato = `contrato_id_${codigoArquivo}_${dataContrato}_${msContrato}${ext}`;
-        const novoCaminhoContrato = path.join(pastaContratos, novoNomeContrato);
-        fs.renameSync(req.files.contrato[0].path, novoCaminhoContrato);
-        // Remove contrato antigo se existir e for diferente do novo nome
-        const arquivosContratos = fs.readdirSync(pastaContratos);
-        const contratoAntigo = arquivosContratos.find(
-          (arquivo) =>
-            (arquivo.startsWith(`contrato_id_${codigo}_`) ||
-              arquivo.startsWith(`contrato_id_${codigoArquivo}_`) ||
-              arquivo.startsWith(`${codigo}_contrato`) ||
-              arquivo.startsWith(`${codigoArquivo}_contrato`)) &&
-            arquivo !== novoNomeContrato
-        );
-        if (contratoAntigo) {
-          const caminhoContratoAntigo = path.join(
-            pastaContratos,
-            contratoAntigo
-          );
-          if (fs.existsSync(caminhoContratoAntigo)) {
-            fs.unlinkSync(caminhoContratoAntigo);
-          }
-        }
-        dadosAtualizacao.Alunos_Contrato = novoNomeContrato;
+        removerArquivoUpload(atualizaaluno.Alunos_Contrato, "contratos");
+        dadosAtualizacao.Alunos_Contrato = getArquivoRelativoSalvo(req.files.contrato[0]);
       }
 
       await atualizaaluno.update(dadosAtualizacao, {
@@ -938,29 +855,20 @@ router.delete("/delete/:aluno_codigo", async (req, res) => {
         Mensagem: "Aluno não encontrado",
       });
     }
-
     // Remove arquivos associados (foto e contrato)
-    const baseDir =
-      process.env.NODE_ENV === "production"
-        ? "/home2/goutechc/wwwplantandoalegria_API/uploads"
-        : path.join(__dirname, "../uploads");
 
     // Remove foto se existir
     if (aluno.Alunos_Foto) {
-      const fotoPath = path.join(baseDir, "fotos", aluno.Alunos_Foto);
-      if (fs.existsSync(fotoPath)) {
+      const fotoPath = resolverArquivoUpload(aluno.Alunos_Foto, "fotos");
+      if (fotoPath && fs.existsSync(fotoPath)) {
         fs.unlinkSync(fotoPath);
       }
     }
 
     // Remove contrato se existir
     if (aluno.Alunos_Contrato) {
-      const contratoPath = path.join(
-        baseDir,
-        "contratos",
-        aluno.Alunos_Contrato
-      );
-      if (fs.existsSync(contratoPath)) {
+      const contratoPath = resolverArquivoUpload(aluno.Alunos_Contrato, "contratos");
+      if (contratoPath && fs.existsSync(contratoPath)) {
         fs.unlinkSync(contratoPath);
       }
     }

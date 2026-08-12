@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import api from "../../services/api";
+import { getUploadUrl } from "../../utils/uploadUrls";
 import MessageToast from "../miscellaneous/MessageToast";
 import useToast from "../../hooks/useToast";
 import CustomSelect from "../miscellaneous/CustomSelect";
@@ -538,7 +539,7 @@ function AgendamentoAulas() {
                         <div className="flex items-center gap-3">
                           {agendamento.Aluno?.Alunos_Foto ? (
                             <img
-                              src={`${getApiBaseUrl()}/uploads/${agendamento.Aluno.Alunos_Foto}`}
+                              src={getUploadUrl(agendamento.Aluno.Alunos_Foto, "fotos")}
                               alt={agendamento.Aluno.Alunos_Nome}
                               className="w-10 h-10 rounded-full object-cover"
                             />

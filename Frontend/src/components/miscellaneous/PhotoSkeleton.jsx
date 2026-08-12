@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import PropTypes from "prop-types";
+import { getUploadUrl } from "../../utils/uploadUrls";
 
 function PhotoSkeleton({ foto, nome }) {
   const [loaded, setLoaded] = useState(false);
@@ -20,7 +21,7 @@ function PhotoSkeleton({ foto, nome }) {
     const nextImgSrc =
       isBlob || isAbsolute
         ? foto
-        : `https://api2.plantandoalegria.com.br/uploads/fotos/${foto}?t=${Date.now()}`;
+        : getUploadUrl(foto, "fotos", { cacheBust: true });
 
     setImgSrc(nextImgSrc);
 

@@ -5,7 +5,12 @@
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
-    "dev": "node app.js"
+    "dev": "node app.js",
+    "migrate:uploads:dry-run": "node scripts/migrate-uploads-to-aluno-folders.js",
+    "migrate:uploads:copy-only": "node scripts/migrate-uploads-to-aluno-folders.js --copy-only",
+    "migrate:uploads:apply": "node scripts/migrate-uploads-to-aluno-folders.js --apply",
+    "migrate:uploads:orphans:dry-run": "node scripts/copy-upload-orphans.js",
+    "migrate:uploads:orphans:copy": "node scripts/copy-upload-orphans.js --apply"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

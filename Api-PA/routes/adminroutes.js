@@ -1,5 +1,4 @@
 const express = require("express");
-const path = require("path");
 const fs = require("fs");
 const Alunos_Cadastros = require("../models/Alunos_Cadastro");
 const Usuarios = require("../models/Usuarios");
@@ -8,23 +7,15 @@ const Alunos_Faturamento_Reajustes = require("../models/Alunos_Faturamento_Reaju
 const Faturamentos_Cancelados = require("../models/Faturamentos_Cancelados");
 const bcrypt = require("bcryptjs");
 const { registrarLog, getUsuarioFromReq } = require("../utils/logger");
+const { resolverArquivoUpload } = require("../utils/uploadPaths");
 const router = express.Router();
-const getUploadsBaseDir = () =>
-  process.env.NODE_ENV === "production"
-    ? "/home2/goutechc/wwwplantandoalegria_API/uploads"
-    : path.join(__dirname, "../uploads");
-
 const excluirComprovante = (nome, descricao) => {
   if (!nome) return;
 
   try {
-    const comprovantePath = path.join(
-      getUploadsBaseDir(),
-      "comprovantes",
-      nome,
-    );
+    const comprovantePath = resolverArquivoUpload(nome, "comprovantes");
 
-    if (fs.existsSync(comprovantePath)) {
+    if (comprovantePath && fs.existsSync(comprovantePath)) {
       fs.unlinkSync(comprovantePath);
       console.log(`${descricao} excluido: ${nome}`);
     } else {
@@ -195,7 +186,6 @@ router.delete("/delete/:tabela/:id", async (req, res) => {
 
     // Se for aluno, exclui foto e contrato associados (se existirem)
     if (tabela === "Alunos_Cadastros") {
-      const baseDir = getUploadsBaseDir();
 
       const arquivos = [
         { campo: registro.Alunos_Foto, subdir: "fotos" },
@@ -205,8 +195,8 @@ router.delete("/delete/:tabela/:id", async (req, res) => {
       for (const { campo, subdir } of arquivos) {
         if (campo) {
           try {
-            const filePath = path.join(baseDir, subdir, campo);
-            if (fs.existsSync(filePath)) {
+            const filePath = resolverArquivoUpload(campo, subdir);
+            if (filePath && fs.existsSync(filePath)) {
               fs.unlinkSync(filePath);
               console.log(`🗑️ Arquivo excluído: ${subdir}/${campo}`);
             } else {

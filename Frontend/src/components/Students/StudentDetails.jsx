@@ -1,9 +1,10 @@
-﻿import { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import PropTypes from "prop-types";
 import PhotoSkeleton from "../miscellaneous/PhotoSkeleton";
 import Buttons from "../miscellaneous/Buttons";
 import { formatarDataBR } from "../../utils/Utils";
 import api from "../../services/api";
+import { getUploadUrl } from "../../utils/uploadUrls";
 
 function StudentDetails({ aluno, onEdit, onToggleSituacao, onBack }) {
   const [showContratoModal, setShowContratoModal] = useState(false);
@@ -12,8 +13,7 @@ function StudentDetails({ aluno, onEdit, onToggleSituacao, onBack }) {
   const [erroContratoPreview, setErroContratoPreview] = useState("");
   const contratoArquivo = String(aluno?.Alunos_Contrato || "");
   const contratoUrl = useMemo(
-    () =>
-      `https://api2.plantandoalegria.com.br/uploads/contratos/${contratoArquivo}`,
+    () => getUploadUrl(contratoArquivo, "contratos"),
     [contratoArquivo]
   );
   const contratoExt = useMemo(() => {

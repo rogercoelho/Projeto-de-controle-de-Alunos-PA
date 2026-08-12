@@ -166,7 +166,7 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
   const handleAbrirReajuste = (fatId, fatMesesSorted) => {
     const hoje = new Date();
     const mesAtualNum = hoje.getFullYear() * 12 + hoje.getMonth();
-    const mesesDisponiveis = fatMesesSorted.length ? fatMesesSorted : [];
+    const mesesDisponiveis = Array.isArray(fatMesesSorted) ? fatMesesSorted : [];
     const mesFuturos = mesesDisponiveis
       .filter(([, m]) => {
         const [mAno, mMes] = m.mesAno.split("-").map(Number);
@@ -176,14 +176,26 @@ function ExtratoAluno({ initialAlunoCodigo } = {}) {
         value: m.mesAno,
         label: nomeMes(m.mesAno),
       }));
-    const primeiroMes = mesFuturos[0]?.value || "";
-    const primeiraParcela = fatMesesSorted.find(
+    const opcoesMeses = mesFuturos.length
+      ? mesFuturos
+      : mesesDisponiveis.map(([, m]) => ({
+          value: m.mesAno,
+          label: nomeMes(m.mesAno),
+        }));
+    const primeiroMes = opcoesMeses[0]?.value || "";
+    const primeiraParcela = mesesDisponiveis.find(
       ([, m]) => m.mesAno === primeiroMes,
     )?.[1];
+
+    if (!primeiroMes) {
+      showToast({ type: "error", text: "Não há parcelas disponíveis para reajuste." });
+      return;
+    }
+
     setReajusteModal({
       fatId,
       mesFuturos: opcoesMeses,
-      fatMesesSorted,
+      fatMesesSorted: mesesDisponiveis,
       mesAPartirDe: primeiroMes,
       tipo: "acrescimo",
       valorAjuste: "",
